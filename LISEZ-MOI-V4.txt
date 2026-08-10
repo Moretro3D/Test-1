@@ -1,0 +1,5 @@
+TAMAPOKE MORETRO UI V4
+- La Poké Ball du bouton JOUER sur la page d'accueil utilise maintenant le nouveau sprite pixel-art.
+- Sprite affiché en 32x32 (16x16 à l'échelle x2), adapté au bouton 52x52.
+- Les sprites RECORDS V3 et les améliorations de fluidité sont conservés.
+- Version 1.29.2-moretro-ui4.

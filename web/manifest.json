@@ -1,25 +1,25 @@
 {
-  "name": "TamaPoke FR - MoRetro UI V3",
-  "version": "1.29.1-moretro-ui3",
+  "name": "TamaPoke FR - MoRetro UI V4",
+  "version": "1.29.2-moretro-ui4",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/tamapoke-1.29.1-moretro-ui3-bootloader.bin",
+          "path": "firmware/tamapoke-1.29.2-moretro-ui4-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/tamapoke-1.29.1-moretro-ui3-partitions.bin",
+          "path": "firmware/tamapoke-1.29.2-moretro-ui4-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/tamapoke-1.29.1-moretro-ui3-boot_app0.bin",
+          "path": "firmware/tamapoke-1.29.2-moretro-ui4-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/tamapoke-1.29.1-moretro-ui3-app.bin",
+          "path": "firmware/tamapoke-1.29.2-moretro-ui4-app.bin",
           "offset": 65536
         }
       ]

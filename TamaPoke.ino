@@ -3693,8 +3693,8 @@ uint16_t recordSpriteColor(char c) {
 
 // Dessin par segments horizontaux : bien moins d'appels graphiques qu'un pixel
 // après l'autre, et rendu net "sprite" à l'échelle 1.
-void drawRecordSprite(int x, int y, uint8_t icon) {
-  if (icon > REC_BATTLE) return;
+void drawRecordSprite(int x, int y, uint8_t icon, uint8_t scale = 1) {
+  if (icon > REC_BATTLE || scale == 0) return;
   for (int row = 0; row < 16; row++) {
     const char *line = REC_SPRITES[icon][row];
     int col = 0;
@@ -3703,7 +3703,7 @@ void drawRecordSprite(int x, int y, uint8_t icon) {
       if (c == '.') { col++; continue; }
       int run = 1;
       while (col + run < 16 && line[col + run] == c) run++;
-      gfx->fillRect(x + col, y + row, run, 1, recordSpriteColor(c));
+      gfx->fillRect(x + col * scale, y + row * scale, run * scale, scale, recordSpriteColor(c));
       col += run;
     }
   }
@@ -5149,7 +5149,12 @@ void drawButtons() {
     int bx = buttons[i].cx - BTN_HALF, by = buttons[i].cy - BTN_HALF;
     if (!pet.sleeping) gfx->fillRoundRect(bx, by, 2 * BTN_HALF, 2 * BTN_HALF, 14, UI_WHITE);
     gfx->drawRoundRect(bx, by, 2 * BTN_HALF, 2 * BTN_HALF, 14, inkColor());
-    if (!off) drawMap(buttons[i].icon, 16, buttons[i].cx - 16, buttons[i].cy - 16, 2, false);
+    if (!off) {
+      // Bouton JOUER de l'accueil : même vraie Poké Ball pixel-art que la page RECORDS.
+      // Les autres boutons conservent leurs sprites d'origine.
+      if (i == 1) drawRecordSprite(buttons[i].cx - 16, buttons[i].cy - 16, REC_BALL, 2);
+      else drawMap(buttons[i].icon, 16, buttons[i].cx - 16, buttons[i].cy - 16, 2, false);
+    }
   }
 }
 
