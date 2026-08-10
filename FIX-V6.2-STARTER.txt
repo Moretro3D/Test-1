@@ -1,0 +1,15 @@
+FIX V6.2 - RESTAURATION DU STARTER
+
+Cause :
+La V6.1 autorisait S'OCCUPER uniquement pour les Pokémon marqués CAPTURÉS.
+Le starter initial est surtout marqué ÉLEVÉ / ENREGISTRÉ dans le Pokédex.
+
+Correction :
+- S'OCCUPER est maintenant disponible pour :
+  * Pokémon capturés
+  * Pokémon déjà élevés / enregistrés
+- Ton starter d'origine peut donc être re-sélectionné depuis sa fiche Pokédex.
+- Son profil V6 sauvegardé est restauré s'il existe.
+- Les Pokémon jamais obtenus restent non sélectionnables.
+
+Version : 1.31.2-moretro-collection-v6.2

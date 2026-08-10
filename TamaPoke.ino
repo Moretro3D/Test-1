@@ -4514,7 +4514,7 @@ void renderGallery() {
       gfx->print(mark);
     }
     // Pokémon capturé : bouton pour le choisir comme compagnon actif.
-    if (caught) {
+    if (caught || reg) {
       bool active = (galleryDetail == pet.speciesId);
       const char *care = active ? "ACTIF" : "S'OCCUPER";
       uint16_t bc = active ? UI_TRACK : UI_BAR_OK;
@@ -4605,8 +4605,8 @@ void renderGallery() {
 
 void galleryTap(int16_t x, int16_t y) {
   if (galleryDetail) {
-    // Le bouton S'OCCUPER n'existe que pour les Pokémon réellement capturés.
-    if (pet.isCaught(galleryDetail) && y >= 378 && y <= 438 && x >= 112 && x <= 354) {
+    // Le bouton S'OCCUPER est disponible pour les Pokémon capturés OU déjà élevés.
+    if ((pet.isCaught(galleryDetail) || pet.isRegistered(galleryDetail)) && y >= 378 && y <= 438 && x >= 112 && x <= 354) {
       if (galleryDetail == pet.speciesId) {
         sfxPlay(SFX_TAP);
         return;

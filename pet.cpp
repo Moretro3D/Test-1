@@ -1072,7 +1072,7 @@ void Pet::saveActiveProfile() {
 }
 
 bool Pet::switchToCaught(int16_t dex) {
-  if (dex < 1 || dex > DEX_COUNT || !isCaught(dex)) return false;
+  if (dex < 1 || dex > DEX_COUNT || (!isCaught(dex) && !isRegistered(dex))) return false;
   if (ceremony != CER_NONE || isEgg()) return false;
   if (dex == speciesId) return true;
 
@@ -1093,7 +1093,7 @@ bool Pet::switchToCaught(int16_t dex) {
     medals=p.medals; lastPetInteractMinute=p.lastPetInteractMinute;
     strncpy(nick,p.nick,sizeof(nick)-1); nick[sizeof(nick)-1]=0;
   } else {
-    // Première prise en charge d'un Pokémon simplement capturé.
+    // Première prise en charge d'un Pokémon capturé ou déjà élevé.
     fullness=80; joy=80; energy=80; hygiene=100; poops=0; weight=0;
     geneAtk=90+random(21); geneDef=90+random(21); geneSpe=90+random(21);
     trAtk=trDef=trSpe=0; berryKnown=false;
