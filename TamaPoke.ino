@@ -4618,7 +4618,7 @@ void galleryTap(int16_t x, int16_t y) {
         sdDirty = true;
         markUiDirty();
         lockTouchBrief();
-        sfxPlay(SFX_CONFIRM);
+        sfxPlay(SFX_CATCH_OK);
       } else {
         sfxPlay(SFX_DENY);
       }

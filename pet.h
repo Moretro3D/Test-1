@@ -278,6 +278,12 @@ public:
   bool savePending() const { return pendingSave; }
   void flushSave();
 
+  // Collection active : mémorise l'état de chaque Pokémon capturé et permet
+  // de reprendre son soin depuis le Pokédex.
+  bool switchToCaught(int16_t dex);
+  bool hasStoredProfile(int16_t dex);
+  void saveActiveProfile();
+
 private:
   Preferences prefs;
   uint32_t lastTick = 0;
@@ -312,11 +318,6 @@ private:
   void hatch();
   void registerSpecies(int16_t dex);
   bool canReceiveExpeditionItem(ExpeditionItem item) const;
-  // Collection active : mémorise l'état de chaque Pokémon capturé et permet
-  // de reprendre son soin depuis le Pokédex.
-  bool switchToCaught(int16_t dex);
-  bool hasStoredProfile(int16_t dex);
-  void saveActiveProfile();
   void save();
   void load();
   static uint8_t clamp100(int v) { return v < 0 ? 0 : (v > 100 ? 100 : v); }
