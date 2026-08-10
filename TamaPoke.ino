@@ -415,13 +415,21 @@ void maybePlayAmbientSound(uint32_t now) {
 
 uint16_t renderIntervalMs() {
   if (screenOff) return 5000;
-  if (battleOpen) return battleResolved ? 320 : 190;
-  if (gameOpen || sackOpen) return 115;
-  if (galleryOpen || cardOpen || kbOpen || clockOpen || helpOpen || gameMenuOpen) return powerSave ? 650 : 320;
-  if (!powerSave) return 100;
+
+  // Cadences légèrement accélérées, mais toujours au-dessus du temps de flush
+  // du framebuffer afin d'éviter les chevauchements DMA / scintillements.
+  if (battleOpen) return battleResolved ? 260 : 155;
+  if (gameOpen || sackOpen) return 95;
+
+  // Les écrans statiques utilisent les flags *Dirty : ce délai ne force pas
+  // un redraw permanent, il rend seulement les transitions plus réactives.
+  if (galleryOpen || cardOpen || kbOpen || clockOpen || helpOpen || gameMenuOpen)
+    return powerSave ? 500 : 220;
+
+  if (!powerSave) return 85;
   if (dimStage >= 2) return 650;
-  if (dimStage >= 1) return 350;
-  return 180;
+  if (dimStage >= 1) return 300;
+  return 150;
 }
 
 bool lightSleepAllowed(uint32_t now) {
@@ -3319,18 +3327,25 @@ void renderClock() {
   gfx->setCursor(LANG_PILL_X + (LANG_PILL_W - (int)strlen(lp) * 12) / 2, LANG_PILL_Y + 8);
   gfx->print(lp);
 
-  gfx->fillRoundRect(96, 404, 110, 40, 13, UI_WHITE);
-  gfx->drawRoundRect(96, 404, 110, 40, 13, UI_INK);
+  // séparation visuelle sous les réglages
+  gfx->drawFastHLine(74, 352, 318, UI_TRACK);
+
+  // boutons du bas remontés pour mieux utiliser l'espace disponible
+  const int CLOCK_ACTION_Y = 370;
+  const int CLOCK_ACTION_H = 44;
+
+  gfx->fillRoundRect(88, CLOCK_ACTION_Y, 122, CLOCK_ACTION_H, 14, UI_WHITE);
+  gfx->drawRoundRect(88, CLOCK_ACTION_Y, 122, CLOCK_ACTION_H, 14, UI_INK);
   gfx->setTextColor(UI_INK);
   gfx->setTextSize(2);
   const char *hw = HELP_WORD[gLang];
-  gfx->setCursor(96 + (110 - (int)strlen(hw) * 12) / 2, 417);
+  gfx->setCursor(88 + (122 - (int)strlen(hw) * 12) / 2, CLOCK_ACTION_Y + 14);
   gfx->print(hw);
 
-  gfx->fillRoundRect(230, 404, 156, 40, 13, UI_BAR_OK);
+  gfx->fillRoundRect(224, CLOCK_ACTION_Y, 166, CLOCK_ACTION_H, 14, UI_BAR_OK);
   gfx->setTextColor(UI_BG_DAY);
   gfx->setTextSize(3);
-  gfx->setCursor(230 + (156 - 36) / 2, 414);
+  gfx->setCursor(224 + (166 - 36) / 2, CLOCK_ACTION_Y + 11);
   gfx->print("OK");
   gfx->flush();
 }
@@ -3364,8 +3379,8 @@ void clockTap(int16_t x, int16_t y) {
       return;
     }
   }
-  if (y >= 404 && y <= 444 && x >= 96 && x <= 206) { openHelp(); return; }
-  if (y >= 404 && y <= 444 && x >= 230 && x <= 386) { applyClock(); return; }
+  if (y >= 366 && y <= 420 && x >= 84 && x <= 214) { openHelp(); return; }
+  if (y >= 366 && y <= 420 && x >= 220 && x <= 394) { applyClock(); return; }
 }
 
 // llama + numero de racha arriba a la izquierda
@@ -3547,20 +3562,173 @@ static constexpr uint8_t REC_CLEAN  = 3;
 static constexpr uint8_t REC_TYPE   = 4;
 static constexpr uint8_t REC_BATTLE = 5;
 
-void drawRecordIcon(int cx, int cy, uint8_t icon, uint16_t color) {
-  switch (icon) {
-    case REC_BALL: gfx->fillCircle(cx,cy,9,UI_WHITE); gfx->drawCircle(cx,cy,9,UI_INK); gfx->drawFastHLine(cx-8,cy,17,UI_INK); gfx->fillCircle(cx,cy,3,UI_WHITE); gfx->drawCircle(cx,cy,3,UI_INK); gfx->fillRect(cx-7,cy-6,14,5,UI_BAR_BAD); break;
-    case REC_CATCH: gfx->drawCircle(cx,cy,9,color); gfx->drawCircle(cx,cy,5,color); gfx->fillCircle(cx,cy,2,UI_BAR_WARN); break;
-    case REC_MEMO: gfx->drawRoundRect(cx-7,cy-9,14,18,2,color); gfx->drawFastVLine(cx-4,cy-7,14,color); gfx->drawFastHLine(cx-1,cy-4,6,color); gfx->drawFastHLine(cx-1,cy,6,color); gfx->drawFastHLine(cx-1,cy+4,6,color); break;
-    case REC_CLEAN: gfx->drawFastHLine(cx-8,cy,7,color); gfx->drawFastVLine(cx-5,cy-4,9,color); gfx->drawFastHLine(cx+2,cy+4,7,color); gfx->drawFastVLine(cx+5,cy,9,color); break;
-    case REC_TYPE: gfx->drawTriangle(cx-8,cy-8,cx+8,cy-8,cx,cy+10,color); gfx->drawFastVLine(cx,cy-6,12,color); break;
-    case REC_BATTLE: gfx->drawLine(cx-8,cy-8,cx+8,cy+8,color); gfx->drawLine(cx+8,cy-8,cx-8,cy+8,color); gfx->drawFastHLine(cx-9,cy+6,6,color); gfx->drawFastHLine(cx+4,cy+6,6,color); break;
+// Petits sprites pixel-art 16x16 intégrés au firmware.
+// '.' = transparent, K=noir, R=rouge, W=blanc, B=bleu,
+// Y=jaune, G=vert, P=violet, O=orange, S=gris.
+static const char *const REC_SPRITES[6][16] = {
+  { // Poké Ball
+    ".....KKKKKK.....",
+    "...KKRRRRRRKK...",
+    "..KRRRRRRRRRRK..",
+    ".KRRRRRRRRRRRRK.",
+    ".KRRRRRRRRRRRRK.",
+    "KRRRRRRRRRRRRRRK",
+    "KRRRRRKKKKRRRRRK",
+    "KKKKKKKWWKKKKKKK",
+    "KWWWWWKWWKWWWWWK",
+    "KWWWWWWKKWWWWWWK",
+    "KWWWWWWWWWWWWWWK",
+    ".KWWWWWWWWWWWWK.",
+    ".KWWWWWWWWWWWWK.",
+    "..KWWWWWWWWWWK..",
+    "...KKWWWWWWKK...",
+    ".....KKKKKK....."
+  },
+  { // Capture / cible
+    "......YYYY......",
+    "....YYKKKKYY....",
+    "...YKKWWWWKKY...",
+    "..YKWBBBBBBWKY..",
+    ".YKWBBYYYYBBWKY.",
+    ".YKWBYYKKYYBWKY.",
+    "YKWBYYKWWKYYBWKY",
+    "YKWBYKWRRWKYBWKY",
+    "YKWBYKWRRWKYBWKY",
+    "YKWBYYKWWKYYBWKY",
+    ".YKWBYYKKYYBWKY.",
+    ".YKWBBYYYYBBWKY.",
+    "..YKWBBBBBBWKY..",
+    "...YKKWWWWKKY...",
+    "....YYKKKKYY....",
+    "......YYYY......"
+  },
+  { // Mémo / carnet
+    "...BBBBBBBBBB...",
+    "..BKKKKKKKKKKB..",
+    "..BWWWWWWWWWWB..",
+    "..BWBKKKKKKKWB..",
+    "..BWWWWWWWWWWB..",
+    "..BWBKKKKKKKWB..",
+    "..BWWWWWWWWWWB..",
+    "..BWBKKKKKKKWB..",
+    "..BWWWWWWWWWWB..",
+    "..BWBKKKKKKKWB..",
+    "..BWWWWWWWWWWB..",
+    "..BWBKKKKKKKWB..",
+    "..BWWWWWWWWWWB..",
+    "..BKKKKKKKKKKB..",
+    "...BBBBBBBBBB...",
+    "................"
+  },
+  { // Nettoyage / étincelles
+    ".......Y........",
+    ".......Y........",
+    ".....YYYYY......",
+    ".......Y........",
+    ".......Y.....W..",
+    "..W..........W..",
+    "..W........WWW..",
+    "WWWWW.........W.",
+    "..W.............",
+    "..W....Y........",
+    ".......Y........",
+    ".....YYYYY......",
+    ".......Y........",
+    ".......Y........",
+    "................",
+    "................"
+  },
+  { // Type / bouclier
+    "....PPPPPPPP....",
+    "...PKKKKKKKKP...",
+    "..PKBBBBBBBBKP..",
+    "..PKBBBBBBBBKP..",
+    "..PKBBBWWBBBK...",
+    "..PKBBBWWBBBK...",
+    "..PKBBBWWBBBK...",
+    "...KBBBWWBBBK...",
+    "...KBBBWWBBBK...",
+    "...KBBBWWBBK....",
+    "....KBBWWBBK....",
+    "....KBBWWBK.....",
+    ".....KBWWK......",
+    "......KWWK......",
+    ".......KK.......",
+    "................"
+  },
+  { // Combat / épées croisées
+    "KK..........KK..",
+    ".KK........KK...",
+    "..KK......KK....",
+    "...KK....KK.....",
+    "....KK..KK......",
+    ".....KKKK.......",
+    "......KK........",
+    ".....KKKK.......",
+    "....KK..KK......",
+    "...KK....KK.....",
+    "..KK......KK....",
+    ".OK........KO...",
+    "OO..........OO..",
+    ".O..........O...",
+    "................",
+    "................"
+  }
+};
+
+uint16_t recordSpriteColor(char c) {
+  switch (c) {
+    case 'K': return UI_INK;
+    case 'R': return UI_BAR_BAD;
+    case 'W': return UI_WHITE;
+    case 'B': return C565(0x42, 0x86, 0xd8);
+    case 'Y': return UI_BAR_WARN;
+    case 'G': return UI_BAR_OK;
+    case 'P': return C565(0xa8, 0x55, 0xc9);
+    case 'O': return C565(0xe0, 0x87, 0x2a);
+    case 'S': return UI_TRACK;
+    default:  return UI_WHITE;
+  }
+}
+
+// Dessin par segments horizontaux : bien moins d'appels graphiques qu'un pixel
+// après l'autre, et rendu net "sprite" à l'échelle 1.
+void drawRecordSprite(int x, int y, uint8_t icon) {
+  if (icon > REC_BATTLE) return;
+  for (int row = 0; row < 16; row++) {
+    const char *line = REC_SPRITES[icon][row];
+    int col = 0;
+    while (col < 16) {
+      char c = line[col];
+      if (c == '.') { col++; continue; }
+      int run = 1;
+      while (col + run < 16 && line[col + run] == c) run++;
+      gfx->fillRect(x + col, y + row, run, 1, recordSpriteColor(c));
+      col += run;
+    }
   }
 }
 
 void drawPersonalityRecord(int x,int y,const char *label,uint16_t val,uint16_t color,uint8_t icon) {
-  const int w=118,h=42; gfx->fillRoundRect(x,y,w,h,8,UI_WHITE); gfx->drawRoundRect(x,y,w,h,8,color); drawRecordIcon(x+18,y+21,icon,color);
-  gfx->setTextColor(color); gfx->setTextSize(1); gfx->setCursor(x+34,y+5); gfx->print(label); char num[8]; snprintf(num,sizeof(num),"%u",val); gfx->setTextColor(UI_INK); gfx->setTextSize(2); gfx->setCursor(x+34,y+19); gfx->print(num);
+  const int w=118,h=42;
+  gfx->fillRoundRect(x,y,w,h,8,UI_WHITE);
+  gfx->drawRoundRect(x,y,w,h,8,color);
+
+  // Fond clair derrière le sprite : aspect "badge" propre.
+  gfx->fillRoundRect(x+7,y+9,24,24,6,lerp565(color, UI_WHITE, 1, 5));
+  drawRecordSprite(x+11,y+13,icon);
+
+  gfx->setTextColor(color);
+  gfx->setTextSize(1);
+  gfx->setCursor(x+36,y+5);
+  gfx->print(label);
+
+  char num[8];
+  snprintf(num,sizeof(num),"%u",val);
+  gfx->setTextColor(UI_INK);
+  gfx->setTextSize(2);
+  gfx->setCursor(x+36,y+19);
+  gfx->print(num);
 }
 
 // pagina 1: personalidad calculada + records largos, sin tocar balance
