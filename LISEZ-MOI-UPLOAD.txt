@@ -1,0 +1,14 @@
+TAMAPOKE MORETRO - VERSION FINAL POUR TEST-1
+
+1. Décompresse complètement le ZIP sur le Bureau.
+2. Ouvre le dossier obtenu.
+3. Double-clique sur ENVOYER_SUR_GITHUB.bat.
+4. Le script configure automatiquement :
+   - Git user.name = Moretro3D
+   - Git user.email = morgan.duncas@gmail.com
+5. Il envoie automatiquement tous les fichiers et dossiers vers :
+   https://github.com/Moretro3D/Test-1
+6. Quand "TERMINE" s'affiche, ouvre :
+   https://github.com/Moretro3D/Test-1/actions
+
+Le ZIP contient l'arborescence complète du Web Flasher TamaPoke.
