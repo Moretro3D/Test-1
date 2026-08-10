@@ -3540,9 +3540,14 @@ uint16_t personalityColor(PetPersonality p) {
   }
 }
 
-enum RecordIcon : uint8_t { REC_BALL, REC_CATCH, REC_MEMO, REC_CLEAN, REC_TYPE, REC_BATTLE };
+static constexpr uint8_t REC_BALL   = 0;
+static constexpr uint8_t REC_CATCH  = 1;
+static constexpr uint8_t REC_MEMO   = 2;
+static constexpr uint8_t REC_CLEAN  = 3;
+static constexpr uint8_t REC_TYPE   = 4;
+static constexpr uint8_t REC_BATTLE = 5;
 
-void drawRecordIcon(int cx, int cy, RecordIcon icon, uint16_t color) {
+void drawRecordIcon(int cx, int cy, uint8_t icon, uint16_t color) {
   switch (icon) {
     case REC_BALL: gfx->fillCircle(cx,cy,9,UI_WHITE); gfx->drawCircle(cx,cy,9,UI_INK); gfx->drawFastHLine(cx-8,cy,17,UI_INK); gfx->fillCircle(cx,cy,3,UI_WHITE); gfx->drawCircle(cx,cy,3,UI_INK); gfx->fillRect(cx-7,cy-6,14,5,UI_BAR_BAD); break;
     case REC_CATCH: gfx->drawCircle(cx,cy,9,color); gfx->drawCircle(cx,cy,5,color); gfx->fillCircle(cx,cy,2,UI_BAR_WARN); break;
@@ -3553,7 +3558,7 @@ void drawRecordIcon(int cx, int cy, RecordIcon icon, uint16_t color) {
   }
 }
 
-void drawPersonalityRecord(int x,int y,const char *label,uint16_t val,uint16_t color,RecordIcon icon) {
+void drawPersonalityRecord(int x,int y,const char *label,uint16_t val,uint16_t color,uint8_t icon) {
   const int w=118,h=42; gfx->fillRoundRect(x,y,w,h,8,UI_WHITE); gfx->drawRoundRect(x,y,w,h,8,color); drawRecordIcon(x+18,y+21,icon,color);
   gfx->setTextColor(color); gfx->setTextSize(1); gfx->setCursor(x+34,y+5); gfx->print(label); char num[8]; snprintf(num,sizeof(num),"%u",val); gfx->setTextColor(UI_INK); gfx->setTextSize(2); gfx->setCursor(x+34,y+19); gfx->print(num);
 }

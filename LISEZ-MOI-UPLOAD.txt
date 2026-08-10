@@ -1,3 +1,5 @@
+FIX RECORDICON : remplacement du type enum personnalisé par uint8_t pour compatibilité avec le préprocesseur Arduino.
+
 CORRECTION BUILD GITHUB : le script compile maintenant TamaPoke.ino dans un dossier temporaire TamaPoke,
 donc le dépôt peut s'appeler Test-1 sans provoquer l'erreur Test-1.ino manquant.
 
