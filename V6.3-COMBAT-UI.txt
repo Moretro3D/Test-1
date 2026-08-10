@@ -1,0 +1,15 @@
+TamaPoke MoRetro V6.3 - COMBAT UI
+
+Modifications :
+- écran de combat entièrement réorganisé
+- adversaire en haut à droite
+- compagnon en bas à gauche
+- cartes nom/niveau/PV/types plus lisibles
+- sprites mieux séparés
+- suppression des statistiques Tours / Dégâts sur l'écran de victoire
+- résultat dans une carte compacte
+- boutons de combat conservés dans leurs zones tactiles existantes
+- capture et récompense conservées
+- logique de jeu et restauration du starter V6.2 conservées
+
+Version : 1.31.3-moretro-combat-ui-v6.3

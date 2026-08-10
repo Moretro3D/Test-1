@@ -2874,131 +2874,132 @@ void renderBattle() {
   const DexEntry &mine = DEX_TBL[pet.speciesId];
   const DexEntry &wild = DEX_TBL[battleDex];
 
+  // V6.3 : interface de combat plus proche d'un vrai écran Pokémon.
+  // Adversaire en haut à droite, compagnon en bas à gauche.
+  char mineName[24], wildName[24];
+  snprintf(mineName, sizeof(mineName), "%s Lv.%u",
+           pet.nick[0] ? pet.nick : dexName(pet.speciesId), battlePlayer.level);
+  snprintf(wildName, sizeof(wildName), "%s Lv.%u", dexName(battleDex), battleLevel);
+
+  // Petite étiquette de contexte, discrète.
+  gfx->fillRoundRect(142, 18, 182, 30, 12, lerp565(UI_TRACK, UI_WHITE, 2, 5));
   gfx->setTextColor(ink);
-  gfx->setTextSize(3);
-  gfx->setCursor(CX - strlen(T(S_WILD_BATTLE)) * 9, 34);
+  gfx->setTextSize(1);
+  gfx->setCursor(CX - (int)strlen(T(S_WILD_BATTLE)) * 3, 29);
   gfx->print(T(S_WILD_BATTLE));
 
-  char left[24], right[24];
-  snprintf(left, sizeof(left), "%s Lv.%u", pet.nick[0] ? pet.nick : dexName(pet.speciesId), battlePlayer.level);
-  snprintf(right, sizeof(right), "%s Lv.%u", dexName(battleDex), battleLevel);
-  gfx->setTextSize(2);
-  gfx->setCursor(28, 82);
-  gfx->print(left);
-  int rightLen = strlen(right);
-  int rightTextSize = rightLen <= 12 ? 2 : 1;
-  int rightTextW = rightLen * (rightTextSize == 2 ? 12 : 6);
-  int rightX = 408 - rightTextW;
-  if (rightX < 246) rightX = 246;
-  gfx->setTextSize(rightTextSize);
-  gfx->setCursor(rightX, rightTextSize == 2 ? 82 : 88);
-  gfx->print(right);
-  gfx->setTextSize(2);
+  // ----- Carte du Pokémon sauvage -----
+  gfx->fillRoundRect(238, 58, 190, 88, 14, UI_WHITE);
+  gfx->drawRoundRect(238, 58, 190, 88, 14, UI_TRACK);
+  gfx->setTextColor(UI_INK);
+  int wrLen = strlen(wildName);
+  int wrSize = wrLen <= 14 ? 2 : 1;
+  gfx->setTextSize(wrSize);
+  gfx->setCursor(250, wrSize == 2 ? 72 : 77);
+  gfx->print(wildName);
+  gfx->setTextSize(1);
+  gfx->setCursor(250, 96);
+  gfx->print("PV");
+  drawBattleHpBar(272, 93, battleRun.enemyHp, battleRun.enemyMaxHp, UI_BAR_BAD);
+  drawTypeChips(250, 116, wild, false);
 
-  uint16_t playerMax = battleRun.playerMaxHp;
-  uint16_t enemyMax = battleRun.enemyMaxHp;
-  uint16_t playerCur = battleRun.playerHp;
-  uint16_t enemyCur = battleRun.enemyHp;
-  drawBattleHpBar(28, 110, playerCur, playerMax, UI_BAR_OK);
-  drawBattleHpBar(288, 110, enemyCur, enemyMax, UI_BAR_BAD);
-  drawTypeChips(28, 130, mine, false);
-  drawTypeChips(438, 130, wild, true);
+  // ----- Carte de notre Pokémon -----
+  gfx->fillRoundRect(38, 244, 190, 88, 14, UI_WHITE);
+  gfx->drawRoundRect(38, 244, 190, 88, 14, UI_TRACK);
+  gfx->setTextColor(UI_INK);
+  int mnLen = strlen(mineName);
+  int mnSize = mnLen <= 14 ? 2 : 1;
+  gfx->setTextSize(mnSize);
+  gfx->setCursor(50, mnSize == 2 ? 258 : 263);
+  gfx->print(mineName);
+  gfx->setTextSize(1);
+  gfx->setCursor(50, 282);
+  gfx->print("PV");
+  drawBattleHpBar(72, 279, battleRun.playerHp, battleRun.playerMaxHp, UI_BAR_OK);
+  drawTypeChips(50, 302, mine, false);
 
-  if (!battleResolved) {
-    gfx->fillRoundRect(188, 102, 90, 32, 9, UI_TRACK);
-    gfx->setTextColor(UI_BG_DAY);
-    gfx->setTextSize(2);
-    gfx->setCursor(188 + (90 - (int)strlen(T(S_RUN_BATTLE)) * 12) / 2, 111);
-    gfx->print(T(S_RUN_BATTLE));
-  }
-
-  if (pmd.loaded) drawPmdAct(PMD_IDLE, 142, 286, millis(), true, false, 3);
-  else {
-    const uint8_t *th = thumbs.get(pet.speciesId);
-    if (th) drawThumb(th, 94, 166, 3, false);
-  }
-  if (wildPmd.loaded) drawPmdActM(wildPmd, PMD_IDLE, 328, 286, millis(), true, false, 3);
+  // Sprites : sauvage plus haut/droite, compagnon plus bas/gauche.
+  if (wildPmd.loaded) drawPmdActM(wildPmd, PMD_IDLE, 334, 224, millis(), true, false, 3);
   else {
     const uint8_t *th = thumbs.get(battleDex);
-    if (th) drawThumb(th, 280, 166, 3, false);
+    if (th) drawThumb(th, 286, 104, 3, false);
+  }
+
+  if (pmd.loaded) drawPmdAct(PMD_IDLE, 138, 246, millis(), true, false, 3);
+  else {
+    const uint8_t *th = thumbs.get(pet.speciesId);
+    if (th) drawThumb(th, 90, 126, 3, false);
   }
 
   if (battleResolved) {
+    // Carte de résultat compacte : plus de tours/dégâts empilés au centre.
+    gfx->fillRoundRect(78, 326, 310, 122, 18, UI_WHITE);
+    gfx->drawRoundRect(78, 326, 310, 122, 18,
+                       battleTurn.playerWon ? UI_BAR_OK : UI_BAR_BAD);
+
     const char *res = battleTurn.playerWon ? T(S_WIN) : T(S_LOSS);
     gfx->setTextColor(battleTurn.playerWon ? UI_BAR_OK : UI_BAR_BAD);
-    gfx->setTextSize(4);
-    gfx->setCursor(CX - strlen(res) * 12, 300);
+    gfx->setTextSize(3);
+    gfx->setCursor(CX - (int)strlen(res) * 9, 340);
     gfx->print(res);
-    char rounds[20], damage[28];
-    snprintf(rounds, sizeof(rounds), T(S_ROUNDS_FMT), battleRun.round);
-    snprintf(damage, sizeof(damage), T(S_DAMAGE_FMT), battleRun.playerDamageTotal, battleRun.enemyDamageTotal);
-    gfx->setTextColor(ink);
-    gfx->setTextSize(2);
-    gfx->setCursor(CX - strlen(rounds) * 6, 334);
-    gfx->print(rounds);
-    gfx->setCursor(CX - strlen(damage) * 6, 356);
-    gfx->print(damage);
+
+    int infoY = 373;
     if (battleTurn.playerWon) {
       char reward[20];
       battleRewardText(reward, sizeof(reward));
       if (reward[0]) {
         gfx->setTextColor(UI_BAR_WARN);
-        gfx->setCursor(CX - strlen(reward) * 6, 378);
+        gfx->setTextSize(2);
+        gfx->setCursor(CX - (int)strlen(reward) * 6, infoY);
         gfx->print(reward);
       }
     } else if (battleRespectCatch && battleCatchOffered && !battleCatchDone) {
       gfx->setTextColor(UI_BAR_WARN);
-      gfx->setTextSize(2);
-      gfx->setCursor(CX - strlen(T(S_CLOSE_CHANCE)) * 6, 378);
+      gfx->setTextSize(1);
+      gfx->setCursor(CX - (int)strlen(T(S_CLOSE_CHANCE)) * 3, infoY + 3);
       gfx->print(T(S_CLOSE_CHANCE));
     }
+
     if (battleCatchOffered && !battleCatchDone) {
-      gfx->fillRoundRect(76, 396, 148, 52, 14, UI_BAR_OK);
-      gfx->fillRoundRect(242, 396, 148, 52, 14, UI_TRACK);
+      gfx->fillRoundRect(88, 394, 138, 44, 13, UI_BAR_OK);
+      gfx->fillRoundRect(240, 394, 138, 44, 13, UI_TRACK);
       gfx->setTextColor(UI_BG_DAY);
-      drawBattleButtonLabel(76, 414, 148, T(S_CATCH_WILD));
-      drawBattleButtonLabel(242, 414, 148, T(S_LEAVE_WILD));
+      drawBattleButtonLabel(88, 408, 138, T(S_CATCH_WILD));
+      drawBattleButtonLabel(240, 408, 138, T(S_LEAVE_WILD));
     } else {
       if (battleCatchDone && battleCatchTried) {
         const char *catchMsg = battleCatchSuccess ? T(S_CAUGHT_OK) : T(S_ESCAPED);
         gfx->setTextColor(battleCatchSuccess ? UI_BAR_OK : UI_BAR_BAD);
-        gfx->setTextSize(2);
-        gfx->setCursor(CX - strlen(catchMsg) * 6, 378);
+        gfx->setTextSize(1);
+        gfx->setCursor(CX - (int)strlen(catchMsg) * 3, 391);
         gfx->print(catchMsg);
       }
-      gfx->fillRoundRect(118, 396, 230, 52, 14, UI_BAR_OK);
+      gfx->fillRoundRect(118, 398, 230, 42, 13, UI_BAR_OK);
       gfx->setTextColor(UI_BG_DAY);
-      gfx->setTextSize(3);
-      gfx->setCursor(CX - strlen(T(S_OK)) * 9, 413);
+      gfx->setTextSize(2);
+      gfx->setCursor(CX - (int)strlen(T(S_OK)) * 6, 411);
       gfx->print(T(S_OK));
     }
   } else {
-    char roundBuf[14];
-    snprintf(roundBuf, sizeof(roundBuf), "R%u", battleRun.round + 1);
-    gfx->setTextColor(ink);
-    gfx->setTextSize(2);
-    gfx->setCursor(32, 318);
-    gfx->print(roundBuf);
+    // Message de tour très discret entre les deux zones.
     if (battleMsg[0]) {
-      gfx->setCursor(CX - strlen(battleMsg) * 6, 318);
+      gfx->fillRoundRect(154, 330, 158, 24, 9, lerp565(UI_TRACK, UI_WHITE, 2, 5));
+      gfx->setTextColor(ink);
+      gfx->setTextSize(1);
+      int msgW = (int)strlen(battleMsg) * 6;
+      gfx->setCursor(CX - msgW / 2, 338);
       gfx->print(battleMsg);
-      if (battleTurn.enemyDamage > 0) {
-        char eb[16];
-        snprintf(eb, sizeof(eb), "-%u", battleTurn.enemyDamage);
-        gfx->setTextColor(UI_BAR_BAD);
-        gfx->setCursor(CX - strlen(eb) * 6, 340);
-        gfx->print(eb);
-      }
     }
 
     if (battleAttackMenuUntil) {
-      gfx->fillRoundRect(74, 298, 150, 46, 12, UI_BAR_BAD);
-      gfx->fillRoundRect(242, 298, 150, 46, 12, UI_BAR_WARN);
+      gfx->fillRoundRect(74, 306, 150, 42, 12, UI_BAR_BAD);
+      gfx->fillRoundRect(242, 306, 150, 42, 12, UI_BAR_WARN);
       gfx->setTextColor(UI_BG_DAY);
-      drawBattleButtonLabel(74, 312, 150, T(S_QUICK_ATTACK));
-      drawBattleButtonLabel(242, 312, 150, T(S_HEAVY_ATTACK));
+      drawBattleButtonLabel(74, 318, 150, T(S_QUICK_ATTACK));
+      drawBattleButtonLabel(242, 318, 150, T(S_HEAVY_ATTACK));
     }
 
+    // Les trois commandes restent dans la zone tactile d'origine.
     gfx->fillRoundRect(58, 358, 108, 58, 13, UI_BAR_BAD);
     gfx->fillRoundRect(179, 358, 108, 58, 13, 0x4C98);
     gfx->fillRoundRect(300, 358, 108, 58, 13, UI_BAR_OK);
