@@ -1,4 +1,4 @@
-name: Build firmware + deploy web flasher
+name: TamaPoke MoRetro - Build + Web Flasher
 
 on:
   push:
@@ -11,55 +11,72 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: "tamapoke-pages"
   cancel-in-progress: true
 
 jobs:
   build:
+    name: Compiler et verifier TamaPoke
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Recuperer le projet
         uses: actions/checkout@v6
 
-      - name: Install Arduino CLI
+      - name: Installer Arduino CLI
         uses: arduino/setup-arduino-cli@v2
         with:
           version: "1.x"
 
-      - name: Configure ESP32 board manager
+      - name: Installer ESP32
         run: |
           arduino-cli config init
           arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
           arduino-cli core update-index
           arduino-cli core install esp32:esp32
 
-      - name: Install TamaPoke libraries
+      - name: Installer les bibliotheques TamaPoke
         run: |
           arduino-cli lib update-index
           arduino-cli lib install "GFX Library for Arduino"
           arduino-cli lib install "SensorLib"
           arduino-cli lib install "XPowersLib"
 
-      - name: Compile firmware and rebuild web binaries
+      - name: Compiler le firmware
         run: |
           chmod +x tools/build_web.sh
           bash tools/build_web.sh
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+      - name: Verifier le Web Flasher et les binaires
+        run: |
+          python3 tools/verify_web.py
 
-      - name: Upload web flasher
+      - name: Conserver une copie du firmware compile
+        uses: actions/upload-artifact@v4
+        with:
+          name: TamaPoke-MoRetro-firmware
+          path: |
+            web/firmware/*.bin
+            web/manifest.json
+          if-no-files-found: error
+
+      - name: Preparer le site pour GitHub Pages
         uses: actions/upload-pages-artifact@v4
         with:
           path: web
 
   deploy:
+    name: Publier le Web Flasher
+    needs: build
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
+
     steps:
-      - name: Deploy GitHub Pages
+      - name: Configurer GitHub Pages
+        uses: actions/configure-pages@v6
+
+      - name: Publier sur GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

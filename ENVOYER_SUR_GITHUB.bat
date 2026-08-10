@@ -1,78 +1,63 @@
 @echo off
 chcp 65001 >nul
-title TamaPoke MoRetro - Test-1 FINAL
+title TamaPoke MoRetro - Test-1 FINAL VERIFIE
 cd /d "%~dp0"
 
 echo ============================================================
-echo   TamaPoke MoRetro - Envoi FINAL vers GitHub Test-1
+echo   TamaPoke MoRetro - FINAL VERIFIE
 echo ============================================================
-echo.
-echo Depot :
-echo https://github.com/Moretro3D/Test-1.git
+echo Depot : https://github.com/Moretro3D/Test-1
 echo.
 
 where git >nul 2>nul
 if errorlevel 1 (
   echo [ERREUR] Git for Windows n'est pas installe.
-  echo Installe Git for Windows puis relance ce fichier.
   pause
   exit /b 1
 )
 
-echo [0/6] Configuration Git...
 git config --global user.name "Moretro3D"
 git config --global user.email "morgan.duncas@gmail.com"
 
-if not exist ".git" (
-  echo Initialisation du depot local...
-  git init
-)
-
+if not exist ".git" git init
 git branch -M main
-
 git remote remove origin >nul 2>nul
 git remote add origin https://github.com/Moretro3D/Test-1.git
 
-echo [1/6] Recuperation du depot distant...
+echo [1/4] Recuperation du depot...
 git fetch origin main >nul 2>nul
-
-echo [2/6] Synchronisation...
 git ls-remote --exit-code --heads origin main >nul 2>nul
-if not errorlevel 1 (
-  git reset --mixed origin/main
-)
+if not errorlevel 1 git reset --mixed origin/main
 
-echo [3/6] Ajout de tous les fichiers et dossiers...
+echo [2/4] Ajout des fichiers...
 git add -A
 
-echo [4/6] Creation du commit...
-git commit -m "TamaPoke MoRetro Web Flasher FINAL"
-if errorlevel 1 (
-  echo Aucun nouveau changement a committer, on continue quand meme...
-)
+echo [3/4] Commit...
+git commit -m "TamaPoke MoRetro FINAL verifie"
+if errorlevel 1 echo Aucun nouveau changement a committer, poursuite...
 
-echo [5/6] Envoi vers Moretro3D/Test-1...
+echo [4/4] Push GitHub...
 git push -u origin main
-
 if errorlevel 1 (
   echo.
-  echo [ERREUR] Le push a echoue.
-  echo.
-  echo Si GitHub demande une connexion :
-  echo 1. Connecte-toi dans la fenetre qui s'ouvre.
-  echo 2. Puis relance ENVOYER_SUR_GITHUB.bat
+  echo [ERREUR] Push impossible. Connecte-toi a GitHub si une fenetre apparait puis relance.
   pause
   exit /b 1
 )
 
-echo [6/6] TERMINE !
 echo.
 echo ============================================================
-echo Tout a ete envoye vers :
-echo https://github.com/Moretro3D/Test-1
-echo.
-echo Ouvre maintenant :
-echo https://github.com/Moretro3D/Test-1/actions
+echo PUSH TERMINE
 echo ============================================================
 echo.
+echo IMPORTANT - UNE SEULE FOIS POUR CE NOUVEAU DEPOT :
+echo 1. Settings ^> Pages
+echo 2. Source = GitHub Actions
+echo.
+echo J'ouvre maintenant la page Settings ^> Pages.
+echo Apres avoir choisi GitHub Actions, ouvre Actions et relance si necessaire.
+echo.
+start "" "https://github.com/Moretro3D/Test-1/settings/pages"
+timeout /t 3 >nul
+start "" "https://github.com/Moretro3D/Test-1/actions"
 pause

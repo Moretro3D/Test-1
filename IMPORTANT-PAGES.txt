@@ -1,0 +1,14 @@
+TAMAPOKE TEST-1 — ÉTAPE GITHUB PAGES OBLIGATOIRE
+
+Le firmware et le Web Flasher sont construits automatiquement par GitHub Actions.
+
+Pour un NOUVEAU dépôt GitHub, GitHub impose toutefois d'activer Pages une fois :
+1. https://github.com/Moretro3D/Test-1/settings/pages
+2. Dans "Build and deployment" / "Source" : choisir "GitHub Actions".
+3. Revenir dans Actions et relancer le workflow si le premier déploiement a échoué.
+
+Cette activation ne peut pas être faite par le GITHUB_TOKEN standard du workflow.
+Après cette activation unique, les prochains push compileront et republieront automatiquement.
+
+URL attendue après déploiement :
+https://moretro3d.github.io/Test-1/
