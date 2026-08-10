@@ -1043,7 +1043,80 @@ PetMood Pet::mood() const {
   return MOOD_HAPPY;
 }
 
+static void petProfileKey(int16_t dex, char *out, size_t n) {
+  snprintf(out, n, "p%03d", (int)dex);
+}
+
+bool Pet::hasStoredProfile(int16_t dex) {
+  if (dex < 1 || dex > DEX_COUNT) return false;
+  char key[8];
+  petProfileKey(dex, key, sizeof(key));
+  return prefs.getBytesLength(key) == sizeof(StoredPetProfile);
+}
+
+void Pet::saveActiveProfile() {
+  if (speciesId < 1 || speciesId > DEX_COUNT) return;
+  StoredPetProfile p;
+  p.fullness=fullness; p.joy=joy; p.energy=energy; p.hygiene=hygiene;
+  p.poops=poops; p.weight=weight;
+  p.geneAtk=geneAtk; p.geneDef=geneDef; p.geneSpe=geneSpe;
+  p.trAtk=trAtk; p.trDef=trDef; p.trSpe=trSpe;
+  p.flags=(berryKnown?1:0)|(shiny?2:0)|(sleeping?4:0);
+  p.ageMinutes=ageMinutes; p.careMistakes=careMistakes; p.bond=bond;
+  p.medals=medals; p.lastPetInteractMinute=lastPetInteractMinute;
+  strncpy(p.nick,nick,sizeof(p.nick)-1);
+  p.nick[sizeof(p.nick)-1]=0;
+  char key[8];
+  petProfileKey(speciesId,key,sizeof(key));
+  prefs.putBytes(key,&p,sizeof(p));
+}
+
+bool Pet::switchToCaught(int16_t dex) {
+  if (dex < 1 || dex > DEX_COUNT || !isCaught(dex)) return false;
+  if (ceremony != CER_NONE || isEgg()) return false;
+  if (dex == speciesId) return true;
+
+  // Garde l'individu actuel avant le changement.
+  saveActiveProfile();
+
+  char key[8];
+  petProfileKey(dex,key,sizeof(key));
+  StoredPetProfile p;
+  size_t got=prefs.getBytes(key,&p,sizeof(p));
+  if (got==sizeof(p) && p.version==1) {
+    fullness=p.fullness; joy=p.joy; energy=p.energy; hygiene=p.hygiene;
+    poops=p.poops; weight=p.weight;
+    geneAtk=p.geneAtk; geneDef=p.geneDef; geneSpe=p.geneSpe;
+    trAtk=p.trAtk; trDef=p.trDef; trSpe=p.trSpe;
+    berryKnown=(p.flags&1); shiny=(p.flags&2); sleeping=(p.flags&4);
+    ageMinutes=p.ageMinutes; careMistakes=p.careMistakes; bond=p.bond;
+    medals=p.medals; lastPetInteractMinute=p.lastPetInteractMinute;
+    strncpy(nick,p.nick,sizeof(nick)-1); nick[sizeof(nick)-1]=0;
+  } else {
+    // Première prise en charge d'un Pokémon simplement capturé.
+    fullness=80; joy=80; energy=80; hygiene=100; poops=0; weight=0;
+    geneAtk=90+random(21); geneDef=90+random(21); geneSpe=90+random(21);
+    trAtk=trDef=trSpe=0; berryKnown=false;
+    shiny=isShinyRegistered(dex); sleeping=false;
+    ageMinutes=0; careMistakes=0; bond=0; medals=0;
+    lastPetInteractMinute=0; nick[0]=0;
+  }
+
+  speciesId=dex;
+  prevSpeciesId=-1;
+  ceremony=CER_NONE;
+  evolveUntil=0;
+  neglectTicks=0;
+  mistakeCooldown=0;
+  starterPick=false;
+  registerSpecies(dex);
+  saveActiveProfile();
+  save();
+  return true;
+}
+
 void Pet::save() {
+  saveActiveProfile();
   ticksSinceSave = 0;
   pendingSave = false;
   prefs.putUChar("full", fullness);
@@ -1197,5 +1270,9 @@ void Pet::load() {
   }
   prefs.getString("nick", nick, sizeof(nick));
   // siembra: la mascota actual cuenta como criada (guardados antiguos)
-  if (speciesId >= 1) registerSpecies(speciesId);
+  if (speciesId >= 1) {
+    registerSpecies(speciesId);
+    // Migration V5 -> V6 : le Pokémon actif existant devient le premier profil.
+    if (!hasStoredProfile(speciesId)) saveActiveProfile();
+  }
 }

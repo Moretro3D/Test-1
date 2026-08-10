@@ -4513,10 +4513,22 @@ void renderGallery() {
       gfx->setCursor(CX - strlen(mark) * 6, reg ? 376 : 366);
       gfx->print(mark);
     }
-    gfx->setTextColor(UI_INK);
-    gfx->setTextSize(2);
-    gfx->setCursor(CX - strlen(T(S_DETAIL_BACK)) * 6, 408);
-    gfx->print(T(S_DETAIL_BACK));
+    // Pokémon capturé : bouton pour le choisir comme compagnon actif.
+    if (caught) {
+      bool active = (galleryDetail == pet.speciesId);
+      const char *care = active ? "ACTIF" : "S'OCCUPER";
+      uint16_t bc = active ? UI_TRACK : UI_BAR_OK;
+      gfx->fillRoundRect(128, 386, 210, 42, 13, bc);
+      gfx->setTextColor(UI_WHITE);
+      gfx->setTextSize(2);
+      gfx->setCursor(CX - (int)strlen(care) * 6, 400);
+      gfx->print(care);
+    } else {
+      gfx->setTextColor(UI_INK);
+      gfx->setTextSize(2);
+      gfx->setCursor(CX - strlen(T(S_DETAIL_BACK)) * 6, 408);
+      gfx->print(T(S_DETAIL_BACK));
+    }
     gfx->flush();
     return;
   }
@@ -4592,7 +4604,27 @@ void renderGallery() {
 }
 
 void galleryTap(int16_t x, int16_t y) {
-  if (galleryDetail) {  // volver a la rejilla
+  if (galleryDetail) {
+    // Le bouton S'OCCUPER n'existe que pour les Pokémon réellement capturés.
+    if (pet.isCaught(galleryDetail) && y >= 378 && y <= 438 && x >= 112 && x <= 354) {
+      if (galleryDetail == pet.speciesId) {
+        sfxPlay(SFX_TAP);
+        return;
+      }
+      if (pet.switchToCaught(galleryDetail)) {
+        galleryOpen = false;
+        galleryDetail = 0;
+        galleryPmd.unload();
+        sdDirty = true;
+        markUiDirty();
+        lockTouchBrief();
+        sfxPlay(SFX_CONFIRM);
+      } else {
+        sfxPlay(SFX_DENY);
+      }
+      return;
+    }
+    // Toucher ailleurs revient à la grille.
     galleryDetail = 0;
     galleryPmd.unload();
     galleryDirty = true;

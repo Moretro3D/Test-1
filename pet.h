@@ -80,6 +80,20 @@ struct BattleReward {
   uint8_t amount = 0;
 };
 
+struct StoredPetProfile {
+  uint8_t version = 1;
+  uint8_t fullness = 80, joy = 80, energy = 80, hygiene = 100;
+  uint8_t poops = 0, weight = 0;
+  uint8_t geneAtk = 100, geneDef = 100, geneSpe = 100;
+  uint8_t trAtk = 0, trDef = 0, trSpe = 0;
+  uint8_t flags = 0;  // bit0 berryKnown, bit1 shiny, bit2 sleeping
+  uint32_t ageMinutes = 0;
+  uint8_t careMistakes = 0, bond = 0;
+  uint16_t medals = 0;
+  uint32_t lastPetInteractMinute = 0;
+  char nick[12] = "";
+};
+
 class Pet {
 public:
   // Estadisticas 0..100
@@ -298,6 +312,11 @@ private:
   void hatch();
   void registerSpecies(int16_t dex);
   bool canReceiveExpeditionItem(ExpeditionItem item) const;
+  // Collection active : mémorise l'état de chaque Pokémon capturé et permet
+  // de reprendre son soin depuis le Pokédex.
+  bool switchToCaught(int16_t dex);
+  bool hasStoredProfile(int16_t dex);
+  void saveActiveProfile();
   void save();
   void load();
   static uint8_t clamp100(int v) { return v < 0 ? 0 : (v > 100 ? 100 : v); }

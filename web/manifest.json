@@ -1,25 +1,25 @@
 {
-  "name": "TamaPoke FR - MoRetro Johto V5.1",
-  "version": "1.30.1-moretro-johto-v5.1",
+  "name": "TamaPoke FR - MoRetro Collection Active V6",
+  "version": "1.31.0-moretro-collection-v6",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/tamapoke-1.30.1-moretro-johto-v5.1-bootloader.bin",
+          "path": "firmware/tamapoke-1.31.0-moretro-collection-v6-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/tamapoke-1.30.1-moretro-johto-v5.1-partitions.bin",
+          "path": "firmware/tamapoke-1.31.0-moretro-collection-v6-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/tamapoke-1.30.1-moretro-johto-v5.1-boot_app0.bin",
+          "path": "firmware/tamapoke-1.31.0-moretro-collection-v6-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/tamapoke-1.30.1-moretro-johto-v5.1-app.bin",
+          "path": "firmware/tamapoke-1.31.0-moretro-collection-v6-app.bin",
           "offset": 65536
         }
       ]
