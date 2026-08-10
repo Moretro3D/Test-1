@@ -197,11 +197,12 @@ void Pet::flushSave() {
 // quedan miembros sin registrar en la linea evolutiva de esta base?
 bool Pet::lineHasUnregistered(int16_t base) const {
   int16_t cur = base;
-  for (int guard = 0; cur >= 1 && cur <= 151 && guard < 6; guard++) {
+  for (int guard = 0; cur >= 1 && cur <= DEX_COUNT && guard < 6; guard++) {
     if (!isRegistered(cur)) return true;
     if (cur == DEX_EEVEE) {
-      for (int16_t b = 134; b <= 136; b++)
-        if (!isRegistered(b)) return true;
+      static const int16_t EEVEE_FORMS[] = { 134, 135, 136, 196, 197 };
+      for (uint8_t i = 0; i < sizeof(EEVEE_FORMS) / sizeof(EEVEE_FORMS[0]); i++)
+        if (!isRegistered(EEVEE_FORMS[i])) return true;
       return false;
     }
     cur = DEX_TBL[cur].evolvesTo;
@@ -210,7 +211,7 @@ bool Pet::lineHasUnregistered(int16_t base) const {
 }
 
 uint8_t Pet::eggRarity() const {
-  return (eggTarget >= 1 && eggTarget <= 151) ? DEX_TBL[eggTarget].rarity : R_COMUN;
+  return (eggTarget >= 1 && eggTarget <= DEX_COUNT) ? DEX_TBL[eggTarget].rarity : R_COMUN;
 }
 
 // elige la especie del huevo: tirada de rareza (mejorada por una despedida
@@ -235,9 +236,9 @@ int16_t Pet::pickEggSpecies() {
   // si la pokedex del tier esta completa, vale cualquiera del tier
   for (int pass = 0; pass < 2; pass++) {
     for (int t = tier; t >= R_COMUN; t--) {
-      int16_t cand[80];
+      int16_t cand[160];
       int n = 0;
-      for (int16_t d = 1; d <= 151 && n < 80; d++) {
+      for (int16_t d = 1; d <= DEX_COUNT && n < 160; d++) {
         if (DEX_TBL[d].rarity != t) continue;
         if (pass == 0 && !lineHasUnregistered(d)) continue;
         cand[n++] = d;
@@ -249,7 +250,7 @@ int16_t Pet::pickEggSpecies() {
 }
 
 void Pet::registerSpecies(int16_t dex) {
-  if (dex < 1 || dex > 151) return;
+  if (dex < 1 || dex > DEX_COUNT) return;
   bool wasKnown = isRegistered(dex) || isCaught(dex);
   dexReg[(dex - 1) >> 3] |= (1 << ((dex - 1) & 7));
   if (shiny) dexShinyReg[(dex - 1) >> 3] |= (1 << ((dex - 1) & 7));
@@ -394,21 +395,21 @@ uint16_t Pet::speStat() const {
 
 uint16_t Pet::registeredCount() const {
   uint16_t n = 0;
-  for (int i = 1; i <= 151; i++)
+  for (int i = 1; i <= DEX_COUNT; i++)
     if (isRegistered(i)) n++;
   return n;
 }
 
 uint16_t Pet::caughtCount() const {
   uint16_t n = 0;
-  for (int i = 1; i <= 151; i++)
+  for (int i = 1; i <= DEX_COUNT; i++)
     if (isCaught(i)) n++;
   return n;
 }
 
 uint16_t Pet::knownDexCount() const {
   uint16_t n = 0;
-  for (int i = 1; i <= 151; i++)
+  for (int i = 1; i <= DEX_COUNT; i++)
     if (isRegistered(i) || isCaught(i)) n++;
   return n;
 }
@@ -475,7 +476,7 @@ uint8_t Pet::applyDexRewards() {
 }
 
 void Pet::registerCaught(int16_t dex) {
-  if (dex < 1 || dex > 151) return;
+  if (dex < 1 || dex > DEX_COUNT) return;
   bool wasKnown = isRegistered(dex) || isCaught(dex);
   dexCaught[(dex - 1) >> 3] |= (1 << ((dex - 1) & 7));
   noteDailyGoal(DAILY_GOAL_CATCH, 1);
@@ -610,13 +611,32 @@ void Pet::evolve() {
   const DexEntry &d = DEX_TBL[speciesId];
   prevSpeciesId = speciesId;
   int16_t next = d.evolvesTo;
+
+  // Branches Kanto/Johto. TamaPoke converts stone/trade/friendship mechanics
+  // into simple care/level branches so they remain usable as a Tamagotchi.
   if (speciesId == DEX_EEVEE) {
-    // rama de Eevee: prefiere la evolucion que falte en la pokedex
-    int16_t opts[3];
-    int n = 0;
-    for (int16_t b = 134; b <= 136; b++)
-      if (!isRegistered(b)) opts[n++] = b;
-    next = n > 0 ? opts[random(n)] : (int16_t)(134 + random(3));
+    // Avec un lien élevé : Mentali le jour, Noctali la nuit.
+    // Sinon on garde les trois évolutions Kanto.
+    if (bond >= 70 && lastSeenEpoch) {
+      uint8_t hour = (uint8_t)((lastSeenEpoch / 3600UL) % 24UL);
+      next = (hour >= 18 || hour < 6) ? 197 : 196;
+    } else {
+      static const int16_t OLD_FORMS[] = { 134, 135, 136 };
+      int16_t missing[3];
+      int n = 0;
+      for (uint8_t i = 0; i < 3; i++)
+        if (!isRegistered(OLD_FORMS[i])) missing[n++] = OLD_FORMS[i];
+      next = n ? missing[random(n)] : OLD_FORMS[random(3)];
+    }
+  } else if (speciesId == 44) {       // Gloom -> Vileplume / Bellossom
+    next = !isRegistered(182) && random(2) ? 182 : 45;
+  } else if (speciesId == 61) {       // Poliwhirl -> Poliwrath / Politoed
+    next = !isRegistered(186) && random(2) ? 186 : 62;
+  } else if (speciesId == 79) {       // Slowpoke -> Slowbro / Slowking
+    next = !isRegistered(199) && random(2) ? 199 : 80;
+  } else if (speciesId == 236) {      // Tyrogue
+    uint16_t a = atkStat(), df = defStat();
+    next = (a > df) ? 106 : (df > a) ? 107 : 237;
   }
   speciesId = next;
   registerSpecies(speciesId);
@@ -1083,6 +1103,14 @@ void Pet::save() {
   prefs.putString("nick", nick);
 }
 
+static void loadCompatBitmap(Preferences &prefs, const char *key, uint8_t *dst, size_t dstLen) {
+  memset(dst, 0, dstLen);
+  size_t oldLen = prefs.getBytesLength(key);
+  if (!oldLen) return;
+  size_t n = oldLen < dstLen ? oldLen : dstLen;
+  prefs.getBytes(key, dst, n);
+}
+
 void Pet::load() {
   fullness = prefs.getUChar("full", 80);
   joy = prefs.getUChar("joy", 80);
@@ -1105,7 +1133,7 @@ void Pet::load() {
   shiny = prefs.getBool("shy", false);
   eggShiny = prefs.getBool("eshy", false);
   starterPick = prefs.getBool("stpk", false);
-  prefs.getBytes("dexsh", dexShinyReg, sizeof(dexShinyReg));
+  loadCompatBitmap(prefs, "dexsh", dexShinyReg, sizeof(dexShinyReg));
   ageMinutes = prefs.getUInt("age", 0);
   if (prefs.isKey("dexn")) {
     speciesId = prefs.getShort("dexn", -1);
@@ -1122,8 +1150,8 @@ void Pet::load() {
   careMistakes = prefs.getUChar("mist", 0);
   sleeping = prefs.getBool("sleep", false);
   lastEnd = prefs.getUChar("lend", CER_NONE);
-  prefs.getBytes("dexreg", dexReg, sizeof(dexReg));
-  prefs.getBytes("dexcgt", dexCaught, sizeof(dexCaught));
+  loadCompatBitmap(prefs, "dexreg", dexReg, sizeof(dexReg));
+  loadCompatBitmap(prefs, "dexcgt", dexCaught, sizeof(dexCaught));
   streak = prefs.getUShort("strk", 0);
   bestStreak = prefs.getUShort("bstrk", 0);
   lastCareDay = prefs.getUInt("cday", 0);

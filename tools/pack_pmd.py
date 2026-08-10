@@ -152,7 +152,7 @@ def pack(dexnum, shiny=False):
 if __name__ == '__main__':
     args = sys.argv[1:]
     solo_normal = 'normal' in args
-    nums = [int(a) for a in args if a.isdigit()] or list(range(1, 152))
+    nums = [int(a) for a in args if a.isdigit()] or list(range(1, 252))
     fallos = []
     for n in nums:
         for sh in ([False] if solo_normal else [False, True]):

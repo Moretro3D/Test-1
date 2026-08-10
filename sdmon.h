@@ -12,7 +12,7 @@ struct SdMon {
   uint16_t pal[256];
   uint8_t *data = nullptr;  // frames * w * h indices (0xFF = transparente)
 
-  bool load(uint8_t dexNum, bool shiny = false);
+  bool load(uint8_t dexNum, bool shiny = false);  // 1..251 (uint8_t suffit)
   void unload();
 };
 

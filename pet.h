@@ -95,16 +95,16 @@ public:
   bool berryKnown = false;  // ya descubrio su baya favorita
   bool shiny = false;       // variante de color rara (se sortea en el huevo)
   uint32_t ageMinutes = 0;
-  int16_t speciesId = -1;      // numero de Pokedex (1-151), -1 = huevo
+  int16_t speciesId = -1;      // numero de Pokedex (1-251), -1 = huevo
   int16_t prevSpeciesId = -1;  // para la animacion de evolucion
   uint8_t careMistakes = 0;   // descuidos: cada uno retrasa la evolucion 1 nivel
   bool sleeping = false;
   uint32_t lastSeenEpoch = 0;   // ultima hora RTC vista (para progresion offline)
   uint8_t ceremony = CER_NONE;  // despedida/escapada/liberacion en curso
   uint8_t lastEnd = CER_NONE;   // como acabo la anterior (afecta al huevo)
-  uint8_t dexReg[19] = { 0 };       // pokedex de criados (bitmap 151 bits)
-  uint8_t dexShinyReg[19] = { 0 };  // criados en version shiny
-  uint8_t dexCaught[19] = { 0 };    // pokedex de salvajes capturados
+  uint8_t dexReg[32] = { 0 };       // pokedex de criados (bitmap 251 bits)
+  uint8_t dexShinyReg[32] = { 0 };  // criados en version shiny
+  uint8_t dexCaught[32] = { 0 };    // pokedex de salvajes capturados
   // racha de cuidado diario (del jugador: persiste entre crianzas)
   uint16_t streak = 0, bestStreak = 0;
   uint32_t lastCareDay = 0;
@@ -215,13 +215,13 @@ public:
   void dbgRunawayReady() { fullness = joy = energy = hygiene = 0; neglectTicks = RUNAWAY_TICKS; }  // test
   uint8_t level() const { return 1 + ageMinutes / MINUTES_PER_LEVEL; }
   bool isRegistered(int16_t dex) const {
-    return dex >= 1 && dex <= 151 && (dexReg[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
+    return dex >= 1 && dex <= 251 && (dexReg[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
   }
   bool isCaught(int16_t dex) const {
-    return dex >= 1 && dex <= 151 && (dexCaught[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
+    return dex >= 1 && dex <= 251 && (dexCaught[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
   }
   bool isShinyRegistered(int16_t dex) const {
-    return dex >= 1 && dex <= 151 && (dexShinyReg[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
+    return dex >= 1 && dex <= 251 && (dexShinyReg[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
   }
   uint16_t registeredCount() const;
   uint16_t caughtCount() const;

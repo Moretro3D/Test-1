@@ -42,6 +42,14 @@ jobs:
           arduino-cli lib install "SensorLib"
           arduino-cli lib install "XPowersLib"
 
+      - name: Cache sprites PMD Johto
+        uses: actions/cache@v4
+        with:
+          path: |
+            tools/pmd_cache
+            tools/sdcard/mons
+          key: tamapoke-pmd-251-v1
+
       - name: Compiler le firmware
         run: |
           chmod +x tools/build_web.sh

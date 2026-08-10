@@ -692,8 +692,8 @@ void handleSerial() {
     delay(100);
     ESP.restart();
   } else if (line == "REG") {
-    Serial.printf("pokedex %u/151:", pet.registeredCount());
-    for (int i = 1; i <= 151; i++)
+    Serial.printf("pokedex %u/251:", pet.registeredCount());
+    for (int i = 1; i <= DEX_COUNT; i++)
       if (pet.isRegistered(i)) Serial.printf(" %d", i);
     Serial.println();
     Serial.println("DONE");
@@ -4422,16 +4422,16 @@ void keyboardTap(int16_t x, int16_t y) {
 #define GAL_CELL 80
 
 bool galleryDexVisible(int16_t dex) {
-  if (dex < 1 || dex > 151) return false;
+  if (dex < 1 || dex > DEX_COUNT) return false;
   if (galleryFilter == 1) return pet.isRegistered(dex);
   if (galleryFilter == 2) return pet.isCaught(dex);
   return true;
 }
 
 uint16_t galleryFilteredCount() {
-  if (galleryFilter == 0) return 151;
+  if (galleryFilter == 0) return DEX_COUNT;
   uint16_t count = 0;
-  for (int16_t dex = 1; dex <= 151; dex++)
+  for (int16_t dex = 1; dex <= DEX_COUNT; dex++)
     if (galleryDexVisible(dex)) count++;
   return count;
 }
@@ -4443,7 +4443,7 @@ int galleryPageCount() {
 }
 
 int16_t galleryDexAt(uint16_t index) {
-  for (int16_t dex = 1; dex <= 151; dex++) {
+  for (int16_t dex = 1; dex <= DEX_COUNT; dex++) {
     if (!galleryDexVisible(dex)) continue;
     if (index == 0) return dex;
     index--;

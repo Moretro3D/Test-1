@@ -9,7 +9,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 FQBN="esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
-VERSION="1.29.2-moretro-ui4"
+VERSION="1.30.0-moretro-johto-v5"
 
 echo "Préparation du sketch TamaPoke..."
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/tamapoke-ci.XXXXXX")"
@@ -40,7 +40,25 @@ cp "$BUILD/TamaPoke.ino.bin" "$ROOT/web/firmware/tamapoke-$VERSION-app.bin"
 echo "Firmware OK."
 ls -lh "$ROOT/web/firmware/tamapoke-$VERSION-app.bin"
 
-echo "Empaquetage des sprites..."
+echo "Préparation des sprites Johto #152-251..."
+missing=0
+for n in $(seq 152 251); do
+  printf -v num "%03d" "$n"
+  if [ ! -f "$ROOT/tools/sdcard/mons/p${num}.bin" ] || [ ! -f "$ROOT/tools/sdcard/mons/ps${num}.bin" ]; then
+    missing=1
+    break
+  fi
+done
+
+if [ "$missing" -eq 1 ]; then
+  echo "Téléchargement/packaging PMD SpriteCollab pour Johto..."
+  python3 "$ROOT/tools/pack_pmd.py" $(seq 152 251)
+fi
+
+echo "Génération des 251 miniatures Pokédex..."
+python3 "$ROOT/tools/make_thumbs.py"
+
+echo "Empaquetage des sprites Kanto + Johto..."
 python3 "$ROOT/tools/pack_bundle.py"
 
 echo "BUILD TERMINE"
