@@ -9,7 +9,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 FQBN="esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
-VERSION="1.30.0-moretro-johto-v5"
+VERSION="1.30.1-moretro-johto-v5.1"
 
 echo "Préparation du sketch TamaPoke..."
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/tamapoke-ci.XXXXXX")"
@@ -39,6 +39,15 @@ cp "$BUILD/TamaPoke.ino.bin" "$ROOT/web/firmware/tamapoke-$VERSION-app.bin"
 
 echo "Firmware OK."
 ls -lh "$ROOT/web/firmware/tamapoke-$VERSION-app.bin"
+
+echo "Vérification de Pillow pour le générateur PMD..."
+python3 - <<'PY'
+try:
+    from PIL import Image
+    print("Pillow disponible :", Image.__version__)
+except Exception as exc:
+    raise SystemExit("Pillow/PIL absent : " + str(exc))
+PY
 
 echo "Préparation des sprites Johto #152-251..."
 missing=0
