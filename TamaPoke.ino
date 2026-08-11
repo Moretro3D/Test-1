@@ -2888,10 +2888,8 @@ void renderBattle() {
   gfx->setCursor(CX - (int)strlen(T(S_WILD_BATTLE)) * 3, 29);
   gfx->print(T(S_WILD_BATTLE));
 
-  // ----- Carte du Pokémon sauvage -----
-  gfx->fillRoundRect(238, 58, 190, 88, 14, UI_WHITE);
-  gfx->drawRoundRect(238, 58, 190, 88, 14, UI_TRACK);
-  gfx->setTextColor(UI_INK);
+  // ----- Infos du Pokémon sauvage, sans cadre -----
+  gfx->setTextColor(UI_WHITE);
   int wrLen = strlen(wildName);
   int wrSize = wrLen <= 14 ? 2 : 1;
   gfx->setTextSize(wrSize);
@@ -2903,10 +2901,8 @@ void renderBattle() {
   drawBattleHpBar(272, 93, battleRun.enemyHp, battleRun.enemyMaxHp, UI_BAR_BAD);
   drawTypeChips(250, 116, wild, false);
 
-  // ----- Carte de notre Pokémon -----
-  gfx->fillRoundRect(38, 244, 190, 88, 14, UI_WHITE);
-  gfx->drawRoundRect(38, 244, 190, 88, 14, UI_TRACK);
-  gfx->setTextColor(UI_INK);
+  // ----- Infos de notre Pokémon, sans cadre -----
+  gfx->setTextColor(UI_WHITE);
   int mnLen = strlen(mineName);
   int mnSize = mnLen <= 14 ? 2 : 1;
   gfx->setTextSize(mnSize);
@@ -3328,12 +3324,42 @@ void renderClock() {
   gfx->setCursor(LANG_PILL_X + (LANG_PILL_W - (int)strlen(lp) * 12) / 2, LANG_PILL_Y + 8);
   gfx->print(lp);
 
+
+  // Cadre d'affichage : accessible directement dans les réglages.
+  gfx->setTextColor(UI_INK);
+  gfx->setTextSize(1);
+  gfx->setCursor(86, 340);
+  gfx->print("CADRE");
+
+  uint8_t frameCount = pet.unlockedCollectionFrameCount();
+  char frameLabel[16];
+  snprintf(frameLabel, sizeof(frameLabel), "%u/%u",
+           (unsigned)(pet.collectionFrame + 1), (unsigned)frameCount);
+
+  gfx->fillRoundRect(146, 330, 38, 28, 9, UI_WHITE);
+  gfx->drawRoundRect(146, 330, 38, 28, 9, UI_INK);
+  gfx->setTextSize(2);
+  gfx->setCursor(158, 337);
+  gfx->print("<");
+
+  gfx->fillRoundRect(194, 330, 112, 28, 9, UI_WHITE);
+  gfx->drawRoundRect(194, 330, 112, 28, 9, UI_INK);
+  gfx->setTextSize(1);
+  gfx->setCursor(250 - (int)strlen(frameLabel) * 3, 340);
+  gfx->print(frameLabel);
+
+  gfx->fillRoundRect(316, 330, 38, 28, 9, UI_WHITE);
+  gfx->drawRoundRect(316, 330, 38, 28, 9, UI_INK);
+  gfx->setTextSize(2);
+  gfx->setCursor(328, 337);
+  gfx->print(">");
+
   // séparation visuelle sous les réglages
-  gfx->drawFastHLine(74, 352, 318, UI_TRACK);
+  gfx->drawFastHLine(74, 364, 318, UI_TRACK);
 
   // boutons du bas remontés pour mieux utiliser l'espace disponible
-  const int CLOCK_ACTION_Y = 370;
-  const int CLOCK_ACTION_H = 44;
+  const int CLOCK_ACTION_Y = 374;
+  const int CLOCK_ACTION_H = 42;
 
   gfx->fillRoundRect(88, CLOCK_ACTION_Y, 122, CLOCK_ACTION_H, 14, UI_WHITE);
   gfx->drawRoundRect(88, CLOCK_ACTION_Y, 122, CLOCK_ACTION_H, 14, UI_INK);
@@ -3380,8 +3406,27 @@ void clockTap(int16_t x, int16_t y) {
       return;
     }
   }
-  if (y >= 366 && y <= 420 && x >= 84 && x <= 214) { openHelp(); return; }
-  if (y >= 366 && y <= 420 && x >= 220 && x <= 394) { applyClock(); return; }
+  // Sélection du cadre depuis les réglages.
+  if (y >= 324 && y <= 364) {
+    uint8_t count = pet.unlockedCollectionFrameCount();
+    if (count > 0 && x >= 136 && x <= 190) {
+      uint8_t next = pet.collectionFrame == 0 ? count - 1 : pet.collectionFrame - 1;
+      if (pet.setCollectionFrame(next)) sfxPlay(SFX_MENU);
+      clockDirty = true;
+      lockTouchBrief();
+      return;
+    }
+    if (count > 0 && x >= 308 && x <= 364) {
+      uint8_t next = (uint8_t)((pet.collectionFrame + 1) % count);
+      if (pet.setCollectionFrame(next)) sfxPlay(SFX_MENU);
+      clockDirty = true;
+      lockTouchBrief();
+      return;
+    }
+  }
+
+  if (y >= 370 && y <= 424 && x >= 84 && x <= 214) { openHelp(); return; }
+  if (y >= 370 && y <= 424 && x >= 220 && x <= 394) { applyClock(); return; }
 }
 
 // llama + numero de racha arriba a la izquierda
@@ -4514,6 +4559,14 @@ void renderGallery() {
       gfx->setCursor(CX - strlen(mark) * 6, reg ? 376 : 366);
       gfx->print(mark);
     }
+    // Bouton RETOUR vers la grille Pokédex.
+    gfx->fillRoundRect(22, 20, 54, 34, 10, UI_WHITE);
+    gfx->drawRoundRect(22, 20, 54, 34, 10, UI_INK);
+    gfx->setTextColor(UI_INK);
+    gfx->setTextSize(2);
+    gfx->setCursor(42, 28);
+    gfx->print("<");
+
     // Pokémon capturé : bouton pour le choisir comme compagnon actif.
     if (caught || reg) {
       bool active = (galleryDetail == pet.speciesId);
@@ -4538,6 +4591,14 @@ void renderGallery() {
   galleryDirty = false;
 
   gfx->fillScreen(UI_BG_DAY);
+  // Bouton RETOUR : quitte le Pokédex.
+  gfx->fillRoundRect(22, 18, 54, 34, 10, UI_WHITE);
+  gfx->drawRoundRect(22, 18, 54, 34, 10, UI_INK);
+  gfx->setTextColor(UI_INK);
+  gfx->setTextSize(2);
+  gfx->setCursor(42, 26);
+  gfx->print("<");
+
   gfx->setTextColor(UI_INK);
   gfx->setTextSize(3);
   gfx->setCursor(CX - 7 * 9, 28);
@@ -4606,6 +4667,16 @@ void renderGallery() {
 
 void galleryTap(int16_t x, int16_t y) {
   if (galleryDetail) {
+    // RETOUR explicite vers la grille.
+    if (x >= 12 && x <= 88 && y >= 10 && y <= 66) {
+      galleryDetail = 0;
+      galleryPmd.unload();
+      galleryDirty = true;
+      lockTouchBrief();
+      sfxPlay(SFX_TAP);
+      return;
+    }
+
     // Le bouton S'OCCUPER est disponible pour les Pokémon capturés OU déjà élevés.
     if ((pet.isCaught(galleryDetail) || pet.isRegistered(galleryDetail)) && y >= 378 && y <= 438 && x >= 112 && x <= 354) {
       if (galleryDetail == pet.speciesId) {
@@ -4629,6 +4700,14 @@ void galleryTap(int16_t x, int16_t y) {
     galleryDetail = 0;
     galleryPmd.unload();
     galleryDirty = true;
+    sfxPlay(SFX_TAP);
+    return;
+  }
+  if (x >= 12 && x <= 88 && y >= 8 && y <= 62) {
+    galleryOpen = false;
+    galleryPmd.unload();
+    markUiDirty();
+    lockTouchBrief();
     sfxPlay(SFX_TAP);
     return;
   }
