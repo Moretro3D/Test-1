@@ -1,0 +1,17 @@
+TAMAPOKE MORETRO — GRAPHIC REFRESH V7
+
+REFONTE :
+- Mode sombre manuel et persistant.
+- Le mode sombre force aussi les scènes/minijeux sur palette nocturne.
+- Nouvelle vraie page AFFICHAGE dans les réglages.
+- Page Affichage : mode CLAIR/SOMBRE + aperçu du cadre + choix < >.
+- 6 templates de cadre : Aucun, Classique, Pokéball, Or, Argent, Néon.
+- Les cadres restent liés aux récompenses Pokédex déjà existantes.
+- Cartes, panneaux et textes statiques utilisent maintenant une palette dynamique.
+- Combat : suppression totale de la capsule/cadre blanc du haut.
+- Écran de résultat combat sombre et plus discret.
+- Pokédex et fiches adaptés au mode sombre.
+- Boutons et panneaux harmonisés.
+- Collection Active, starter restaurable, Johto 251, sprites 2G et Web Flasher conservés.
+
+VERSION : 1.32.0-moretro-graphic-v7

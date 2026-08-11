@@ -1,25 +1,25 @@
 {
-  "name": "TamaPoke FR - MoRetro V6.4",
-  "version": "1.31.4-moretro-v6.4.0",
+  "name": "TamaPoke FR - MoRetro Graphic Refresh V7",
+  "version": "1.32.0-moretro-graphic-v7",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/tamapoke-1.31.4-moretro-v6.4.0-bootloader.bin",
+          "path": "firmware/tamapoke-1.32.0-moretro-graphic-v7-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/tamapoke-1.31.4-moretro-v6.4.0-partitions.bin",
+          "path": "firmware/tamapoke-1.32.0-moretro-graphic-v7-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/tamapoke-1.31.4-moretro-v6.4.0-boot_app0.bin",
+          "path": "firmware/tamapoke-1.32.0-moretro-graphic-v7-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/tamapoke-1.31.4-moretro-v6.4.0-app.bin",
+          "path": "firmware/tamapoke-1.32.0-moretro-graphic-v7-app.bin",
           "offset": 65536
         }
       ]

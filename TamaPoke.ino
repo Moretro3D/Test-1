@@ -80,6 +80,8 @@ bool expeditionTrainChoiceOpen = false;
 bool clockOpen = false;       // pantalla de ajuste de hora (deslizar abajo)
 int clockH = 12, clockM = 0;  // hora en edicion
 bool powerSave = false;       // ahorro opcional: off por defecto
+bool darkMode = false;        // thème sombre manuel, persistant
+uint8_t settingsPage = 0;     // 0 = réglages principaux, 1 = affichage/cadres
 bool helpOpen = false;
 uint8_t helpPage = 0;
 bool uiDirty = true;
@@ -203,6 +205,32 @@ void setPowerSave(bool on) {
   p.putBool("psave", powerSave);
   p.end();
 }
+
+#define C565(r, g, b) ((uint16_t)((((r) >> 3) << 11) | (((g) >> 2) << 5) | ((b) >> 3)))
+void loadDarkMode() {
+  Preferences p;
+  p.begin("tamapoke", true);
+  darkMode = p.getBool("darkui", false);
+  p.end();
+}
+
+void setDarkMode(bool on) {
+  darkMode = on;
+  Preferences p;
+  p.begin("tamapoke", false);
+  p.putBool("darkui", darkMode);
+  p.end();
+  uiDirty = cardDirty = galleryDirty = clockDirty = helpDirty = true;
+}
+
+// Palette dynamique de l'interface. Les sprites conservent leurs vraies couleurs.
+uint16_t uiBg()    { return darkMode ? C565(0x0b,0x0e,0x18) : UI_BG_DAY; }
+uint16_t uiPanel() { return darkMode ? C565(0x19,0x20,0x31) : UI_WHITE; }
+uint16_t uiPanel2(){ return darkMode ? C565(0x22,0x2b,0x40) : C565(0xf7,0xf5,0xed); }
+uint16_t uiInk()   { return darkMode ? C565(0xee,0xf1,0xff) : UI_INK; }
+uint16_t uiSub()   { return darkMode ? C565(0x9f,0xaa,0xc6) : UI_TRACK; }
+uint16_t uiLine()  { return darkMode ? C565(0x44,0x50,0x70) : UI_TRACK; }
+
 
 // botones de icono siguiendo el arco inferior de la pantalla redonda
 // (los exteriores van mas altos para no salirse del circulo)
@@ -369,6 +397,7 @@ void setup() {
   }
   pet.syncClock(e);
   loadPowerSave();
+  loadDarkMode();
 
   audioBegin();  // ES8311 + I2S + amplificador (suena un jingle de arranque)
 
@@ -1177,11 +1206,10 @@ void onTap(int16_t x, int16_t y) {
 // ---------- render ----------
 
 bool gNight = false;  // noche real (por hora) o durmiendo: lo fija render()
-uint16_t inkColor() { return gNight ? UI_INK_NIGHT : UI_INK; }
+uint16_t inkColor() { return (darkMode || gNight) ? UI_INK_NIGHT : UI_INK; }
 
 // ---------- escena de fondo: bioma del tipo + hora real del RTC ----------
 
-#define C565(r, g, b) ((uint16_t)((((r) >> 3) << 11) | (((g) >> 2) << 5) | ((b) >> 3)))
 #define HORIZON 232  // linea donde el cielo se encuentra con el suelo
 
 uint16_t lerp565(uint16_t a, uint16_t b, int i, int n) {
@@ -1311,9 +1339,9 @@ void drawScene(uint8_t biome, uint32_t now, bool night) {
 void renderStarterSelect() {
   if (!starterDirty) { perfRenderSkipCount++; return; }
   starterDirty = false;
-  gfx->fillScreen(UI_BG_DAY);
+  gfx->fillScreen(uiBg());
   const char *t = T(S_CHOOSE_STARTER);
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
   gfx->setCursor(CX - strlen(t) * 6, 68);
   gfx->print(t);
@@ -1321,11 +1349,11 @@ void renderStarterSelect() {
     int16_t d = STARTER_DEX[i];
     const DexEntry &de = DEX_TBL[d];
     int ry = STARTER_ROW_Y + i * (STARTER_ROW_H + STARTER_ROW_GAP);
-    gfx->fillRoundRect(70, ry, 326, STARTER_ROW_H, 14, lerp565(de.accent, UI_WHITE, 6, 8));
+    gfx->fillRoundRect(70, ry, 326, STARTER_ROW_H, 14, lerp565(de.accent, uiPanel(), 6, 8));
     gfx->drawRoundRect(70, ry, 326, STARTER_ROW_H, 14, de.accent);
     const uint8_t *th = thumbs.get(d);     // miniatura del inicial (si la SD esta lista)
     if (th) drawThumb(th, 76, ry - 5, 3, false);
-    gfx->setTextColor(UI_INK);
+    gfx->setTextColor(uiInk());
     gfx->setTextSize(3);
     gfx->setCursor(178, ry + 24);
     gfx->print(dexName(d));
@@ -1372,7 +1400,7 @@ void render() {
     return;
   }
   int h = sceneHour();
-  gNight = pet.sleeping || h < 6 || h >= 20;
+  gNight = darkMode || pet.sleeping || h < 6 || h >= 20;
   // drawScene cubre los 466x466 completos: sin fillScreen(NEGRO) previo para
   // que un flush DMA solapado nunca capture negro a medias (anti-parpadeo)
   drawScene(pet.isEgg() ? 0 : DEX_TBL[pet.speciesId].biome, millis(), gNight);
@@ -1405,7 +1433,7 @@ void render() {
     }
     char reg[24];
     snprintf(reg, sizeof(reg), T(S_POKEDEX_FMT), pet.registeredCount());
-    gfx->fillRect(0, 312, 466, 154, gNight ? UI_BG_NIGHT : UI_BG_DAY);
+    gfx->fillRect(0, 312, 466, 154, gNight ? UI_BG_NIGHT : uiBg());
     gfx->setTextColor(inkColor());
     gfx->setTextSize(2);
     gfx->setCursor(CX - strlen(reg) * 6, 348);
@@ -1422,7 +1450,7 @@ void render() {
     drawBath();
     drawPoops();
     // panel inferior: base limpia para barras y botones sobre el paisaje
-    gfx->fillRect(0, 312, 466, 154, gNight ? UI_BG_NIGHT : UI_BG_DAY);
+    gfx->fillRect(0, 312, 466, 154, gNight ? UI_BG_NIGHT : uiBg());
     drawBars();
     drawButtons();
     drawCelebration();
@@ -1450,7 +1478,7 @@ void render() {
     if (millis() > feedMenuUntil) {
       feedMenuUntil = 0;
     } else {
-      gfx->fillRoundRect(101, 288, 264, 64, 14, UI_WHITE);
+      gfx->fillRoundRect(101, 288, 264, 64, 14, uiPanel());
       gfx->drawRoundRect(101, 288, 264, 64, 14, inkColor());
       drawMap(SPR_ICON_FOOD, 16, 110, 296, 3, false);
       drawMap(SPR_ICON_BERRY_B, 16, 176, 296, 3, false);
@@ -1464,11 +1492,11 @@ void render() {
     if (millis() > confirmUntil) {
       confirmUntil = 0;
     } else {
-      gfx->fillRoundRect(94, 168, 278, 152, 16, UI_WHITE);
-      gfx->drawRoundRect(94, 168, 278, 152, 16, UI_INK);
+      gfx->fillRoundRect(94, 168, 278, 152, 16, uiPanel());
+      gfx->drawRoundRect(94, 168, 278, 152, 16, uiInk());
       char q[28];
       snprintf(q, sizeof(q), T(S_RELEASE_FMT), dexName(pet.speciesId));
-      gfx->setTextColor(UI_INK);
+      gfx->setTextColor(uiInk());
       gfx->setTextSize(2);
       gfx->setCursor(CX - strlen(q) * 6, 196);
       gfx->print(q);
@@ -1495,9 +1523,9 @@ void render() {
 
 void drawGameMenu() {
   gameMenuDirty = false;
-  gfx->fillRoundRect(78, 112, 310, 266, 18, UI_WHITE);
-  gfx->drawRoundRect(78, 112, 310, 266, 18, UI_INK);
-  gfx->setTextColor(UI_INK);
+  gfx->fillRoundRect(78, 112, 310, 266, 18, uiPanel());
+  gfx->drawRoundRect(78, 112, 310, 266, 18, uiInk());
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
   const char *title = "PLAY";
   gfx->setCursor(CX - strlen(title) * 9, 124);
@@ -1507,7 +1535,7 @@ void drawGameMenu() {
   for (int i = 0; i < 5; i++) {
     const GameMenuTile &t = GAME_MENU_TILES[i];
     gfx->fillRoundRect(t.x, t.y, t.w, t.h, 14, cols[i]);
-    gfx->drawRoundRect(t.x, t.y, t.w, t.h, 14, UI_INK);
+    gfx->drawRoundRect(t.x, t.y, t.w, t.h, 14, uiInk());
     gfx->setTextColor(i == 1 ? UI_INK : UI_BG_DAY);
     gfx->setTextSize(2);
     gfx->setCursor(t.x + (t.w - (int)strlen(labels[i]) * 12) / 2, t.y + (t.h - 16) / 2);
@@ -1922,7 +1950,7 @@ uint16_t battleTypeColor(uint8_t type);
 void renderSack() {
   uint32_t now = millis();
   drawGameScene();  // fondo del habitat
-  bool night = sceneHour() < 6 || sceneHour() >= 20;
+  bool night = darkMode || sceneHour() < 6 || sceneHour() >= 20;
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
 
   // pantalla de resultado
@@ -2001,7 +2029,7 @@ void renderSack() {
 // fondo del minijuego: hatibat del bicho (cielo por hora + suelo del bioma)
 void drawGameScene() {
   int hh = sceneHour();
-  bool night = hh < 6 || hh >= 20;
+  bool night = darkMode || hh < 6 || hh >= 20;
   uint16_t top, bot;
   if (night)       { top = C565(0x0c, 0x12, 0x24); bot = C565(0x1e, 0x26, 0x46); }
   else if (hh < 8) { top = C565(0xd1, 0x6a, 0x86); bot = C565(0xf3, 0xb8, 0x7c); }
@@ -2024,7 +2052,7 @@ void drawGameResult(const char *recordFmt, uint16_t record, StrId gainFmt) {
     gameOpen = false;
     return;
   }
-  bool night = sceneHour() < 6 || sceneHour() >= 20;
+  bool night = darkMode || sceneHour() < 6 || sceneHour() >= 20;
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
   char buf[22];
   snprintf(buf, sizeof(buf), T(S_SCORE_FMT), gameScore);
@@ -2071,7 +2099,7 @@ void renderCatchGame() {
     spawnCatchTarget();
   }
   drawGameScene();
-  bool night = sceneHour() < 6 || sceneHour() >= 20;
+  bool night = darkMode || sceneHour() < 6 || sceneHour() >= 20;
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
   gfx->setTextColor(ink);
   gfx->setTextSize(3);
@@ -2138,7 +2166,7 @@ void renderMemoGame() {
   }
   stepMemoGame();
   drawGameScene();
-  bool night = sceneHour() < 6 || sceneHour() >= 20;
+  bool night = darkMode || sceneHour() < 6 || sceneHour() >= 20;
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
   char roundBuf[18], rec[16];
   snprintf(roundBuf, sizeof(roundBuf), T(S_ROUND_FMT), memoRounds + 1);
@@ -2195,7 +2223,7 @@ void renderCleanGame() {
     cleanSpawnAt = now + 720 - (gameScore > 12 ? 260 : gameScore * 20);
   }
   drawGameScene();
-  bool night = sceneHour() < 6 || sceneHour() >= 20;
+  bool night = darkMode || sceneHour() < 6 || sceneHour() >= 20;
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
   gfx->setTextColor(ink);
   gfx->setTextSize(3);
@@ -2245,7 +2273,7 @@ void renderTypeGame() {
     nextTypeQuestion();
   }
   drawGameScene();
-  bool night = sceneHour() < 6 || sceneHour() >= 20;
+  bool night = darkMode || sceneHour() < 6 || sceneHour() >= 20;
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
   gfx->setTextColor(ink);
   gfx->setTextSize(3);
@@ -2265,9 +2293,9 @@ void renderTypeGame() {
   }
 
   const char *enemy = battleTypeName(typeEnemy);
-  gfx->fillRoundRect(118, 126, 230, 54, 14, lerp565(battleTypeColor(typeEnemy), UI_WHITE, 4, 8));
+  gfx->fillRoundRect(118, 126, 230, 54, 14, lerp565(battleTypeColor(typeEnemy), uiPanel(), 4, 8));
   gfx->drawRoundRect(118, 126, 230, 54, 14, ink);
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
   gfx->setCursor(CX - strlen(enemy) * 9, 143);
   gfx->print(enemy);
@@ -2276,9 +2304,9 @@ void renderTypeGame() {
     int bx = 88;
     int by = 210 + i * 60;
     const char *label = battleTypeName(typeChoice[i]);
-    gfx->fillRoundRect(bx, by, 290, 48, 12, lerp565(battleTypeColor(typeChoice[i]), UI_WHITE, 5, 8));
+    gfx->fillRoundRect(bx, by, 290, 48, 12, lerp565(battleTypeColor(typeChoice[i]), uiPanel(), 5, 8));
     gfx->drawRoundRect(bx, by, 290, 48, 12, ink);
-    gfx->setTextColor(UI_INK);
+    gfx->setTextColor(uiInk());
     gfx->setTextSize(2);
     gfx->setCursor(bx + (290 - (int)strlen(label) * 12) / 2, by + 17);
     gfx->print(label);
@@ -2295,7 +2323,7 @@ void renderGame() {
   // sin fillScreen(NEGRO): drawGameScene cubre los 466x466 completos. Si el
   // DMA del flush anterior aun lee el buffer, vera contenido valido (no negro
   // a medio pintar), que era el parpadeo a 25 fps.
-  bool night = sceneHour() < 6 || sceneHour() >= 20;
+  bool night = darkMode || sceneHour() < 6 || sceneHour() >= 20;
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
 
   if (gameMode == 1) {
@@ -2795,10 +2823,10 @@ void drawTypeChip(int x, int y, uint8_t type) {
   if (type == TYPE_NONE) return;
   const char *label = battleTypeName(type);
   int w = typeChipWidth(type);
-  gfx->fillRoundRect(x, y, w, 16, 5, lerp565(battleTypeColor(type), UI_WHITE, 5, 8));
-  gfx->drawRoundRect(x, y, w, 16, 5, UI_INK);
+  gfx->fillRoundRect(x, y, w, 16, 5, lerp565(battleTypeColor(type), uiPanel(), 5, 8));
+  gfx->drawRoundRect(x, y, w, 16, 5, uiInk());
   gfx->setTextSize(1);
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setCursor(x + 7, y + 5);
   gfx->print(label);
 }
@@ -2814,9 +2842,9 @@ void drawTypeChips(int x, int y, const DexEntry &d, bool alignRight) {
 }
 
 void drawWildPrompt() {
-  gfx->fillRoundRect(82, 156, 302, 178, 18, UI_WHITE);
-  gfx->drawRoundRect(82, 156, 302, 178, 18, UI_INK);
-  gfx->setTextColor(UI_INK);
+  gfx->fillRoundRect(82, 156, 302, 178, 18, uiPanel());
+  gfx->drawRoundRect(82, 156, 302, 178, 18, uiInk());
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
   gfx->setCursor(CX - strlen(T(S_WILD_Q)) * 9, 176);
   gfx->print(T(S_WILD_Q));
@@ -2869,7 +2897,7 @@ void drawPetEvent() {
 void renderBattle() {
   if (battleResolved) battleDirty = false;
   drawGameScene();
-  bool night = sceneHour() < 6 || sceneHour() >= 20;
+  bool night = darkMode || sceneHour() < 6 || sceneHour() >= 20;
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
   const DexEntry &mine = DEX_TBL[pet.speciesId];
   const DexEntry &wild = DEX_TBL[battleDex];
@@ -2881,11 +2909,10 @@ void renderBattle() {
            pet.nick[0] ? pet.nick : dexName(pet.speciesId), battlePlayer.level);
   snprintf(wildName, sizeof(wildName), "%s Lv.%u", dexName(battleDex), battleLevel);
 
-  // Petite étiquette de contexte, discrète.
-  gfx->fillRoundRect(142, 18, 182, 30, 12, lerp565(UI_TRACK, UI_WHITE, 2, 5));
-  gfx->setTextColor(ink);
+  // Titre directement sur le décor : aucune capsule blanche.
+  gfx->setTextColor(UI_WHITE);
   gfx->setTextSize(1);
-  gfx->setCursor(CX - (int)strlen(T(S_WILD_BATTLE)) * 3, 29);
+  gfx->setCursor(CX - (int)strlen(T(S_WILD_BATTLE)) * 3, 26);
   gfx->print(T(S_WILD_BATTLE));
 
   // ----- Infos du Pokémon sauvage, sans cadre -----
@@ -2929,7 +2956,7 @@ void renderBattle() {
 
   if (battleResolved) {
     // Carte de résultat compacte : plus de tours/dégâts empilés au centre.
-    gfx->fillRoundRect(78, 326, 310, 122, 18, UI_WHITE);
+    gfx->fillRoundRect(78, 326, 310, 122, 18, C565(0x12,0x1c,0x36));
     gfx->drawRoundRect(78, 326, 310, 122, 18,
                        battleTurn.playerWon ? UI_BAR_OK : UI_BAR_BAD);
 
@@ -2979,7 +3006,7 @@ void renderBattle() {
   } else {
     // Message de tour très discret entre les deux zones.
     if (battleMsg[0]) {
-      gfx->fillRoundRect(154, 330, 158, 24, 9, lerp565(UI_TRACK, UI_WHITE, 2, 5));
+      gfx->fillRoundRect(154, 330, 158, 24, 9, lerp565(UI_TRACK, uiPanel(), 2, 5));
       gfx->setTextColor(ink);
       gfx->setTextSize(1);
       int msgW = (int)strlen(battleMsg) * 6;
@@ -3013,7 +3040,7 @@ void renderBattle() {
 // ---------- ficha del bicho (deslizar vertical) ----------
 
 void drawCardStat(int y, const char *label, uint16_t val, uint16_t maxBar, uint16_t color) {
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
   gfx->setCursor(96, y);
   gfx->print(label);
@@ -3053,9 +3080,9 @@ void applyClock() {
 }
 
 void drawClockBtn(int x, int y, const char *l) {
-  gfx->fillRoundRect(x, y, 58, 58, 12, UI_WHITE);
-  gfx->drawRoundRect(x, y, 58, 58, 12, UI_INK);
-  gfx->setTextColor(UI_INK);
+  gfx->fillRoundRect(x, y, 58, 58, 12, uiPanel());
+  gfx->drawRoundRect(x, y, 58, 58, 12, uiInk());
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(4);
   gfx->setCursor(x + 17, y + 15);
   gfx->print(l);
@@ -3181,11 +3208,11 @@ static const char *const HELP_LINES[LANG_COUNT][HELP_PAGE_COUNT][HELP_LINE_COUNT
 
 void renderHelp() {
   helpDirty = false;
-  gfx->fillScreen(UI_BG_DAY);
+  gfx->fillScreen(uiBg());
   uint8_t lang = (gLang < LANG_COUNT) ? (uint8_t)gLang : (uint8_t)LANG_EN;
   if (helpPage >= HELP_PAGE_COUNT) helpPage = 0;
 
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
   const char *h = HELP_WORD[lang];
   gfx->setCursor(CX - strlen(h) * 9, 36);
@@ -3197,7 +3224,7 @@ void renderHelp() {
   gfx->setCursor(CX - strlen(title) * 6, 76);
   gfx->print(title);
 
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   for (uint8_t i = 0; i < HELP_LINE_COUNT; i++) {
     const char *line = HELP_LINES[lang][helpPage][i];
     gfx->setCursor(CX - strlen(line) * 6, 116 + i * 34);
@@ -3211,9 +3238,9 @@ void renderHelp() {
   gfx->print(pg);
 
   if (helpPage > 0) {
-    gfx->fillRoundRect(48, 398, 82, 42, 12, UI_WHITE);
-    gfx->drawRoundRect(48, 398, 82, 42, 12, UI_INK);
-    gfx->setTextColor(UI_INK);
+    gfx->fillRoundRect(48, 398, 82, 42, 12, uiPanel());
+    gfx->drawRoundRect(48, 398, 82, 42, 12, uiInk());
+    gfx->setTextColor(uiInk());
     gfx->setTextSize(2);
     gfx->setCursor(72, 412);
     gfx->print("<<");
@@ -3225,9 +3252,9 @@ void renderHelp() {
   gfx->setCursor(154 + (158 - (int)strlen(ok) * 12) / 2, 412);
   gfx->print(ok);
   if (helpPage + 1 < HELP_PAGE_COUNT) {
-    gfx->fillRoundRect(336, 398, 82, 42, 12, UI_WHITE);
-    gfx->drawRoundRect(336, 398, 82, 42, 12, UI_INK);
-    gfx->setTextColor(UI_INK);
+    gfx->fillRoundRect(336, 398, 82, 42, 12, uiPanel());
+    gfx->drawRoundRect(336, 398, 82, 42, 12, uiInk());
+    gfx->setTextColor(uiInk());
     gfx->setCursor(360, 412);
     gfx->print(">>");
   }
@@ -3270,163 +3297,195 @@ void helpTap(int16_t x, int16_t y) {
   if (x < CX && helpPage > 0) { helpPage--; helpDirty = true; sfxPlay(SFX_MENU); return; }
 }
 
-void renderClock() {
-  clockDirty = false;
-  gfx->fillScreen(UI_BG_DAY);
-  gfx->setTextColor(UI_INK);
+const char *frameTemplateName(uint8_t frame) {
+  static const char *const NAMES[] = {
+    "AUCUN", "CLASSIQUE", "POKEBALL", "OR", "ARGENT", "NEON"
+  };
+  return frame < 6 ? NAMES[frame] : "CADRE";
+}
+
+void drawSettingsRow(int x, int y, int w, int h, const char *label, const char *value, bool selected=false) {
+  uint16_t fill = selected ? C565(0x43,0x2f,0x75) : uiPanel();
+  gfx->fillRoundRect(x,y,w,h,12,fill);
+  gfx->drawRoundRect(x,y,w,h,12, selected ? C565(0xa8,0x7d,0xff) : uiLine());
+  gfx->setTextColor(selected ? UI_WHITE : uiInk());
+  gfx->setTextSize(2);
+  gfx->setCursor(x+14,y+12);
+  gfx->print(label);
+  if (value && value[0]) {
+    int vw=(int)strlen(value)*12;
+    gfx->setTextColor(selected ? UI_WHITE : uiSub());
+    gfx->setCursor(x+w-vw-14,y+12);
+    gfx->print(value);
+  }
+}
+
+void renderDisplaySettings() {
+  clockDirty=false;
+  gfx->fillScreen(uiBg());
+
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
-  gfx->setCursor(CX - strlen(T(S_SET_TIME)) * 9, 44);
-  gfx->print(T(S_SET_TIME));
+  const char *title="AFFICHAGE";
+  gfx->setCursor(CX-(int)strlen(title)*9,38);
+  gfx->print(title);
 
-  char t[8];
-  snprintf(t, sizeof(t), "%02d:%02d", clockH, clockM);
-  gfx->setTextSize(7);
-  gfx->setCursor(CX - 105, 108);
-  gfx->print(t);
-
-  drawClockBtn(104, 190, "-");  // hora -
-  drawClockBtn(170, 190, "+");  // hora +
-  drawClockBtn(252, 190, "-");  // min -
-  drawClockBtn(318, 190, "+");  // min +
+  // Retour
+  gfx->fillRoundRect(30,28,54,36,10,uiPanel());
+  gfx->drawRoundRect(30,28,54,36,10,uiLine());
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
-  gfx->setTextColor(UI_TRACK);
-  gfx->setCursor(120, 256);
-  gfx->print(T(S_HOUR));
-  gfx->setCursor(276, 256);
-  gfx->print(T(S_MIN));
-
-  // selector de sonido: mucho / medio / poco / apagado
-  uint8_t sndMode = audioMode();
-  const char *sl = soundModeLabel();
-  gfx->fillRoundRect(SOUND_PILL_X, LANG_PILL_Y, SOUND_PILL_W, LANG_PILL_H, 8, sndMode ? UI_BAR_OK : UI_WHITE);
-  gfx->drawRoundRect(SOUND_PILL_X, LANG_PILL_Y, SOUND_PILL_W, LANG_PILL_H, 8, UI_INK);
-  gfx->setTextColor(sndMode ? UI_BG_DAY : UI_INK);
-  gfx->setTextSize(2);
-  gfx->setCursor(SOUND_PILL_X + (SOUND_PILL_W - (int)strlen(sl) * 12) / 2, LANG_PILL_Y + 8);
-  gfx->print(sl);
-
-  // selector de ahorro opcional: apagado por defecto, persistente
-  const char *pl = powerSaveLabel();
-  gfx->fillRoundRect(PSAVE_PILL_X, LANG_PILL_Y, PSAVE_PILL_W, LANG_PILL_H, 8, powerSave ? UI_BAR_WARN : UI_WHITE);
-  gfx->drawRoundRect(PSAVE_PILL_X, LANG_PILL_Y, PSAVE_PILL_W, LANG_PILL_H, 8, UI_INK);
-  gfx->setTextColor(powerSave ? UI_BG_DAY : UI_INK);
-  gfx->setTextSize(2);
-  gfx->setCursor(PSAVE_PILL_X + (PSAVE_PILL_W - (int)strlen(pl) * 12) / 2, LANG_PILL_Y + 8);
-  gfx->print(pl);
-
-  // selector de idioma: una pildora que cicla los 6 idiomas al tocar
-  gfx->fillRoundRect(LANG_PILL_X, LANG_PILL_Y, LANG_PILL_W, LANG_PILL_H, 8, UI_WHITE);
-  gfx->drawRoundRect(LANG_PILL_X, LANG_PILL_Y, LANG_PILL_W, LANG_PILL_H, 8, UI_INK);
-  char lp[10];
-  snprintf(lp, sizeof(lp), "%s >", LANG_CODES[gLang]);
-  gfx->setTextColor(UI_INK);
-  gfx->setTextSize(2);
-  gfx->setCursor(LANG_PILL_X + (LANG_PILL_W - (int)strlen(lp) * 12) / 2, LANG_PILL_Y + 8);
-  gfx->print(lp);
-
-
-  // Cadre d'affichage : accessible directement dans les réglages.
-  gfx->setTextColor(UI_INK);
-  gfx->setTextSize(1);
-  gfx->setCursor(86, 340);
-  gfx->print("CADRE");
-
-  uint8_t frameCount = pet.unlockedCollectionFrameCount();
-  char frameLabel[16];
-  snprintf(frameLabel, sizeof(frameLabel), "%u/%u",
-           (unsigned)(pet.collectionFrame + 1), (unsigned)frameCount);
-
-  gfx->fillRoundRect(146, 330, 38, 28, 9, UI_WHITE);
-  gfx->drawRoundRect(146, 330, 38, 28, 9, UI_INK);
-  gfx->setTextSize(2);
-  gfx->setCursor(158, 337);
+  gfx->setCursor(49,38);
   gfx->print("<");
 
-  gfx->fillRoundRect(194, 330, 112, 28, 9, UI_WHITE);
-  gfx->drawRoundRect(194, 330, 112, 28, 9, UI_INK);
+  drawSettingsRow(64,88,338,48,"MODE",darkMode ? "SOMBRE" : "CLAIR", darkMode);
+
+  // Grande prévisualisation réelle du cadre.
+  gfx->fillRoundRect(76,154,314,196,20,uiPanel2());
+  gfx->drawRoundRect(76,154,314,196,20,uiLine());
+  drawCollectionFrame(CX,244,76,pet.collectionFrame);
+
+  // Poké Ball centrale légère pour visualiser les templates même sans sprite.
+  gfx->fillCircle(CX,244,24,C565(0xe8,0x50,0x3a));
+  gfx->fillRect(CX-24,242,48,5,uiInk());
+  gfx->fillCircle(CX,244,8,UI_WHITE);
+  gfx->drawCircle(CX,244,8,uiInk());
+
+  uint8_t unlocked=pet.unlockedCollectionFrameCount();
+  const char *fn=frameTemplateName(pet.collectionFrame);
+  gfx->setTextColor(uiInk());
+  gfx->setTextSize(2);
+  gfx->setCursor(CX-(int)strlen(fn)*6,310);
+  gfx->print(fn);
+
+  char count[18];
+  snprintf(count,sizeof(count),"%u/%u",(unsigned)(pet.collectionFrame+1),(unsigned)unlocked);
+  gfx->setTextColor(uiSub());
   gfx->setTextSize(1);
-  gfx->setCursor(250 - (int)strlen(frameLabel) * 3, 340);
-  gfx->print(frameLabel);
+  gfx->setCursor(CX-(int)strlen(count)*3,334);
+  gfx->print(count);
 
-  gfx->fillRoundRect(316, 330, 38, 28, 9, UI_WHITE);
-  gfx->drawRoundRect(316, 330, 38, 28, 9, UI_INK);
-  gfx->setTextSize(2);
-  gfx->setCursor(328, 337);
-  gfx->print(">");
-
-  // séparation visuelle sous les réglages
-  gfx->drawFastHLine(74, 364, 318, UI_TRACK);
-
-  // boutons du bas remontés pour mieux utiliser l'espace disponible
-  const int CLOCK_ACTION_Y = 374;
-  const int CLOCK_ACTION_H = 42;
-
-  gfx->fillRoundRect(88, CLOCK_ACTION_Y, 122, CLOCK_ACTION_H, 14, UI_WHITE);
-  gfx->drawRoundRect(88, CLOCK_ACTION_Y, 122, CLOCK_ACTION_H, 14, UI_INK);
-  gfx->setTextColor(UI_INK);
-  gfx->setTextSize(2);
-  const char *hw = HELP_WORD[gLang];
-  gfx->setCursor(88 + (122 - (int)strlen(hw) * 12) / 2, CLOCK_ACTION_Y + 14);
-  gfx->print(hw);
-
-  gfx->fillRoundRect(224, CLOCK_ACTION_Y, 166, CLOCK_ACTION_H, 14, UI_BAR_OK);
-  gfx->setTextColor(UI_BG_DAY);
+  // Flèches de choix.
+  gfx->fillRoundRect(82,218,52,52,14,uiPanel());
+  gfx->drawRoundRect(82,218,52,52,14,uiLine());
+  gfx->fillRoundRect(332,218,52,52,14,uiPanel());
+  gfx->drawRoundRect(332,218,52,52,14,uiLine());
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
-  gfx->setCursor(224 + (166 - 36) / 2, CLOCK_ACTION_Y + 11);
+  gfx->setCursor(98,229); gfx->print("<");
+  gfx->setCursor(348,229); gfx->print(">");
+
+  gfx->setTextColor(uiSub());
+  gfx->setTextSize(1);
+  const char *hint="CADRES DEBLOQUES VIA LE POKEDEX";
+  gfx->setCursor(CX-(int)strlen(hint)*3,368);
+  gfx->print(hint);
+
+  gfx->fillRoundRect(128,394,210,44,14,UI_BAR_OK);
+  gfx->setTextColor(UI_WHITE);
+  gfx->setTextSize(2);
+  gfx->setCursor(CX-12,408);
   gfx->print("OK");
   gfx->flush();
 }
 
-void clockTap(int16_t x, int16_t y) {
-  if (y >= 190 && y <= 248) {  // fila de botones +/-
-    if (x >= 104 && x < 162) clockH = (clockH + 23) % 24;
-    else if (x >= 170 && x < 228) clockH = (clockH + 1) % 24;
-    else if (x >= 252 && x < 310) clockM = (clockM + 59) % 60;
-    else if (x >= 318 && x < 376) clockM = (clockM + 1) % 60;
-    clockDirty = true;
+void renderClock() {
+  if (settingsPage==1) { renderDisplaySettings(); return; }
+
+  clockDirty=false;
+  gfx->fillScreen(uiBg());
+
+  gfx->setTextColor(uiInk());
+  gfx->setTextSize(3);
+  const char *title="REGLAGES";
+  gfx->setCursor(CX-(int)strlen(title)*9,34);
+  gfx->print(title);
+
+  // Heure compacte.
+  char t[8];
+  snprintf(t,sizeof(t),"%02d:%02d",clockH,clockM);
+  gfx->setTextColor(uiSub());
+  gfx->setTextSize(4);
+  gfx->setCursor(CX-60,76);
+  gfx->print(t);
+
+  drawClockBtn(104,126,"-");
+  drawClockBtn(170,126,"+");
+  drawClockBtn(252,126,"-");
+  drawClockBtn(318,126,"+");
+
+  // Paramètres principaux sous forme de cartes propres.
+  const char *sl=soundModeLabel();
+  drawSettingsRow(58,198,350,46,"SON",sl,false);
+
+  drawSettingsRow(58,250,350,46,"ECO",powerSave ? "ON" : "OFF",powerSave);
+
+  char langVal[10];
+  snprintf(langVal,sizeof(langVal),"%s",LANG_CODES[gLang]);
+  drawSettingsRow(58,302,168,46,"LANGUE",langVal,false);
+  drawSettingsRow(240,302,168,46,"AFFICHAGE",darkMode ? "SOMBRE" : ">",true);
+
+  gfx->fillRoundRect(58,364,154,46,14,uiPanel());
+  gfx->drawRoundRect(58,364,154,46,14,uiLine());
+  gfx->setTextColor(uiInk());
+  gfx->setTextSize(2);
+  const char *hw=HELP_WORD[gLang];
+  gfx->setCursor(58+(154-(int)strlen(hw)*12)/2,378);
+  gfx->print(hw);
+
+  gfx->fillRoundRect(226,364,182,46,14,UI_BAR_OK);
+  gfx->setTextColor(UI_WHITE);
+  gfx->setTextSize(3);
+  gfx->setCursor(299,374);
+  gfx->print("OK");
+  gfx->flush();
+}
+
+void clockTap(int16_t x,int16_t y) {
+  if (settingsPage==1) {
+    if ((x>=20 && x<=94 && y>=18 && y<=72) || (x>=118 && x<=348 && y>=388 && y<=448)) {
+      settingsPage=0; clockDirty=true; sfxPlay(SFX_TAP); lockTouchBrief(); return;
+    }
+    if (x>=54 && x<=412 && y>=78 && y<=144) {
+      setDarkMode(!darkMode); clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
+    }
+    uint8_t count=pet.unlockedCollectionFrameCount();
+    if (y>=204 && y<=282 && count>0) {
+      if (x>=68 && x<=150) {
+        uint8_t next=pet.collectionFrame==0 ? count-1 : pet.collectionFrame-1;
+        pet.setCollectionFrame(next); clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
+      }
+      if (x>=316 && x<=398) {
+        uint8_t next=(uint8_t)((pet.collectionFrame+1)%count);
+        pet.setCollectionFrame(next); clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
+      }
+    }
     return;
   }
-  if (y >= LANG_PILL_Y && y <= LANG_PILL_Y + LANG_PILL_H) {
-    if (x >= SOUND_PILL_X && x < SOUND_PILL_X + SOUND_PILL_W) {
-      audioSetMode(nextSoundMode());
-      clockDirty = true;
-      if (audioEnabled()) sfxPlay(SFX_LEVEL);  // confirma el nuevo modo si no esta apagado
-      return;
-    }
-    if (x >= PSAVE_PILL_X && x < PSAVE_PILL_X + PSAVE_PILL_W) {
-      setPowerSave(!powerSave);
-      clockDirty = true;
-      sfxPlay(powerSave ? SFX_MENU : SFX_TAP);
-      return;
-    }
-    if (x >= LANG_PILL_X && x < LANG_PILL_X + LANG_PILL_W) {  // cicla idioma
-      setLang((Lang)((gLang + 1) % LANG_COUNT));
-      clockDirty = true;
-      sfxPlay(SFX_TAP);
-      return;
-    }
-  }
-  // Sélection du cadre depuis les réglages.
-  if (y >= 324 && y <= 364) {
-    uint8_t count = pet.unlockedCollectionFrameCount();
-    if (count > 0 && x >= 136 && x <= 190) {
-      uint8_t next = pet.collectionFrame == 0 ? count - 1 : pet.collectionFrame - 1;
-      if (pet.setCollectionFrame(next)) sfxPlay(SFX_MENU);
-      clockDirty = true;
-      lockTouchBrief();
-      return;
-    }
-    if (count > 0 && x >= 308 && x <= 364) {
-      uint8_t next = (uint8_t)((pet.collectionFrame + 1) % count);
-      if (pet.setCollectionFrame(next)) sfxPlay(SFX_MENU);
-      clockDirty = true;
-      lockTouchBrief();
-      return;
-    }
-  }
 
-  if (y >= 370 && y <= 424 && x >= 84 && x <= 214) { openHelp(); return; }
-  if (y >= 370 && y <= 424 && x >= 220 && x <= 394) { applyClock(); return; }
+  if (y>=120 && y<=184) {
+    if (x>=104 && x<162) clockH=(clockH+23)%24;
+    else if (x>=170 && x<228) clockH=(clockH+1)%24;
+    else if (x>=252 && x<310) clockM=(clockM+59)%60;
+    else if (x>=318 && x<376) clockM=(clockM+1)%60;
+    clockDirty=true; return;
+  }
+  if (x>=48 && x<=418 && y>=188 && y<=244) {
+    audioSetMode(nextSoundMode()); clockDirty=true;
+    if (audioEnabled()) sfxPlay(SFX_LEVEL);
+    return;
+  }
+  if (x>=48 && x<=418 && y>=242 && y<=300) {
+    setPowerSave(!powerSave); clockDirty=true; sfxPlay(SFX_MENU); return;
+  }
+  if (x>=48 && x<=232 && y>=294 && y<=354) {
+    setLang((Lang)((gLang+1)%LANG_COUNT)); clockDirty=true; sfxPlay(SFX_TAP); return;
+  }
+  if (x>=232 && x<=418 && y>=294 && y<=354) {
+    settingsPage=1; clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
+  }
+  if (x>=48 && x<=220 && y>=354 && y<=420) { openHelp(); return; }
+  if (x>=220 && x<=420 && y>=354 && y<=420) { applyClock(); return; }
 }
 
 // llama + numero de racha arriba a la izquierda
@@ -3461,8 +3520,8 @@ void drawCelebration() {
   }
   if (!l1) return;
   gfx->fillRoundRect(73, 150, 320, 96, 16, UI_BAR_WARN);
-  gfx->drawRoundRect(73, 150, 320, 96, 16, UI_INK);
-  gfx->setTextColor(UI_INK);
+  gfx->drawRoundRect(73, 150, 320, 96, 16, uiInk());
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
   gfx->setCursor(CX - strlen(l1) * 9, 176);
   gfx->print(l1);
@@ -3473,32 +3532,70 @@ void drawCelebration() {
 
 uint16_t collectionFrameColor(uint8_t frame) {
   static const uint16_t COLORS[] = {
-    UI_TRACK, UI_BAR_WARN, UI_BAR_OK, 0x4C98, UI_BAR_BAD, 0xF3B7,
+    UI_TRACK,
+    C565(0x8d,0x62,0xc4), // classique violet
+    C565(0xe8,0x50,0x3a), // pokeball rouge
+    C565(0xe8,0xb8,0x42), // or
+    C565(0xb6,0xc0,0xd0), // argent
+    C565(0x55,0xd7,0xff), // neon cyan
   };
-  return COLORS[frame < sizeof(COLORS) / sizeof(COLORS[0]) ? frame : 0];
+  return COLORS[frame < 6 ? frame : 0];
 }
 
-void drawCollectionFrame(int cx, int cy, int radius, uint8_t frame) {
-  if (frame == 0) return;
-  uint16_t color = collectionFrameColor(frame);
-  gfx->drawCircle(cx, cy, radius, color);
-  if (frame >= 2) gfx->drawCircle(cx, cy, radius - 8, color);
-  if (frame >= 3) {
-    gfx->fillCircle(cx, cy - radius, 4, color);
-    gfx->fillCircle(cx + radius, cy, 4, color);
-    gfx->fillCircle(cx, cy + radius, 4, color);
-    gfx->fillCircle(cx - radius, cy, 4, color);
-  }
-  if (frame >= 4) {
-    gfx->drawLine(cx - radius + 12, cy - radius + 12, cx + radius - 12, cy + radius - 12, color);
-    gfx->drawLine(cx + radius - 12, cy - radius + 12, cx - radius + 12, cy + radius - 12, color);
-  }
-  if (frame >= 5) {
-    gfx->drawCircle(cx, cy, radius + 8, color);
-    gfx->fillCircle(cx, cy - radius - 8, 3, UI_BAR_WARN);
-    gfx->fillCircle(cx + radius + 8, cy, 3, UI_BAR_WARN);
-    gfx->fillCircle(cx, cy + radius + 8, 3, UI_BAR_WARN);
-    gfx->fillCircle(cx - radius - 8, cy, 3, UI_BAR_WARN);
+void drawFrameMiniBall(int cx,int cy,int r) {
+  gfx->fillCircle(cx,cy,r,C565(0xe8,0x50,0x3a));
+  gfx->fillRect(cx-r,cy-1,r*2+1,3,uiInk());
+  gfx->fillCircle(cx,cy,max(2,r/3),UI_WHITE);
+  gfx->drawCircle(cx,cy,max(2,r/3),uiInk());
+}
+
+void drawCollectionFrame(int cx,int cy,int radius,uint8_t frame) {
+  if (frame==0) return;
+  uint16_t color=collectionFrameColor(frame);
+
+  if (frame==1) { // CLASSIQUE
+    gfx->drawCircle(cx,cy,radius,color);
+    gfx->drawCircle(cx,cy,radius-5,color);
+    for (int a=0;a<4;a++) {
+      int dx=(a==1?radius:(a==3?-radius:0));
+      int dy=(a==0?-radius:(a==2?radius:0));
+      gfx->fillCircle(cx+dx,cy+dy,3,color);
+    }
+  } else if (frame==2) { // POKEBALL
+    gfx->drawCircle(cx,cy,radius,color);
+    gfx->drawCircle(cx,cy,radius-6,uiInk());
+    drawFrameMiniBall(cx,cy-radius,8);
+    drawFrameMiniBall(cx+radius,cy,8);
+    drawFrameMiniBall(cx,cy+radius,8);
+    drawFrameMiniBall(cx-radius,cy,8);
+  } else if (frame==3) { // OR
+    gfx->drawCircle(cx,cy,radius,color);
+    gfx->drawCircle(cx,cy,radius-8,color);
+    for (int a=0;a<8;a++) {
+      float ang=a*(PI/4.0f);
+      gfx->fillCircle(cx+(int)(cosf(ang)*radius),cy+(int)(sinf(ang)*radius),4,color);
+    }
+  } else if (frame==4) { // ARGENT
+    gfx->drawCircle(cx,cy,radius,color);
+    gfx->drawCircle(cx,cy,radius-4,color);
+    gfx->drawCircle(cx,cy,radius-10,uiLine());
+    for (int a=0;a<4;a++) {
+      float ang=a*(PI/2.0f)+PI/4.0f;
+      int px=cx+(int)(cosf(ang)*radius);
+      int py=cy+(int)(sinf(ang)*radius);
+      gfx->fillCircle(px,py,5,color);
+      gfx->fillCircle(px,py,2,uiBg());
+    }
+  } else { // NEON
+    uint16_t purple=C565(0xb0,0x62,0xff);
+    gfx->drawCircle(cx,cy,radius,color);
+    gfx->drawCircle(cx,cy,radius-3,purple);
+    gfx->drawCircle(cx,cy,radius+5,uiLine());
+    for (int a=0;a<12;a++) {
+      float ang=a*(PI/6.0f);
+      uint16_t c=(a&1)?purple:color;
+      gfx->fillCircle(cx+(int)(cosf(ang)*(radius+5)),cy+(int)(sinf(ang)*(radius+5)),2,c);
+    }
   }
 }
 
@@ -3545,7 +3642,7 @@ void renderCardProfile() {
   gfx->fillTriangle(sx + 8, sy + 7, sx + 4, sy + 18, sx + 12, sy + 18, UI_BAR_WARN);
   char rl[30];
   snprintf(rl, sizeof(rl), T(S_STREAK_FMT), pet.streak, pet.bestStreak);
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
   gfx->setCursor(sx + 24, sy + 2);
   gfx->print(rl);
@@ -3559,7 +3656,7 @@ void renderCardProfile() {
   char info[40];
   snprintf(info, sizeof(info), T(S_INFO_FMT), berry,
            (unsigned long)(pet.ageMinutes / 1440));
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
   gfx->setCursor(CX - strlen(info) * 6, 296);
   gfx->print(info);
@@ -3757,11 +3854,11 @@ void drawRecordSprite(int x, int y, uint8_t icon, uint8_t scale = 1) {
 
 void drawPersonalityRecord(int x,int y,const char *label,uint16_t val,uint16_t color,uint8_t icon) {
   const int w=118,h=42;
-  gfx->fillRoundRect(x,y,w,h,8,UI_WHITE);
+  gfx->fillRoundRect(x,y,w,h,8,uiPanel());
   gfx->drawRoundRect(x,y,w,h,8,color);
 
   // Fond clair derrière le sprite : aspect "badge" propre.
-  gfx->fillRoundRect(x+7,y+9,24,24,6,lerp565(color, UI_WHITE, 1, 5));
+  gfx->fillRoundRect(x+7,y+9,24,24,6,lerp565(color, uiPanel(), 1, 5));
   drawRecordSprite(x+11,y+13,icon);
 
   gfx->setTextColor(color);
@@ -3771,7 +3868,7 @@ void drawPersonalityRecord(int x,int y,const char *label,uint16_t val,uint16_t c
 
   char num[8];
   snprintf(num,sizeof(num),"%u",val);
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
   gfx->setCursor(x+36,y+19);
   gfx->print(num);
@@ -3780,10 +3877,10 @@ void drawPersonalityRecord(int x,int y,const char *label,uint16_t val,uint16_t c
 // pagina 1: personalidad calculada + records largos, sin tocar balance
 void renderCardPersonality() {
   PetPersonality pers=pet.personality(); const char *title=T(S_PERSONALITY); const char *name=T(personalityNameId(pers)); const char *hint=T(personalityHintId(pers)); uint16_t col=personalityColor(pers);
-  gfx->setTextColor(UI_INK); gfx->setTextSize(3); gfx->setCursor(CX-strlen(title)*9,38); gfx->print(title);
+  gfx->setTextColor(uiInk()); gfx->setTextSize(3); gfx->setCursor(CX-strlen(title)*9,38); gfx->print(title);
   gfx->fillRoundRect(62,78,342,70,16,col); gfx->setTextColor(UI_BG_DAY); int nts=(strlen(name)<=10)?3:2; gfx->setTextSize(nts); gfx->setCursor(CX-strlen(name)*(nts==3?9:6),nts==3?96:103); gfx->print(name); gfx->setTextSize(2); gfx->setCursor(CX-strlen(hint)*6,128); gfx->print(hint);
   drawCardStat(170,T(S_VIN),pet.bond,100,C565(0xd4,0x52,0x7e)); drawCardStat(208,T(S_BAR_JOY),pet.joy,100,UI_BAR_WARN);
-  gfx->setTextColor(UI_INK); gfx->setTextSize(2); gfx->setCursor(CX-strlen(T(S_RECORDS))*6,252); gfx->print(T(S_RECORDS));
+  gfx->setTextColor(uiInk()); gfx->setTextSize(2); gfx->setCursor(CX-strlen(T(S_RECORDS))*6,252); gfx->print(T(S_RECORDS));
   drawPersonalityRecord(52,276,T(S_GAME_BALL),pet.gameHi,UI_BAR_OK,REC_BALL); drawPersonalityRecord(178,276,T(S_GAME_CATCH),pet.catchHi,UI_BAR_WARN,REC_CATCH); drawPersonalityRecord(304,276,T(S_GAME_MEMO),pet.memoHi,0x4C98,REC_MEMO);
   drawPersonalityRecord(52,326,T(S_GAME_CLEAN),pet.cleanHi,UI_BAR_OK,REC_CLEAN); drawPersonalityRecord(178,326,T(S_GAME_TYPE),pet.typeHi,0xF3B7,REC_TYPE); drawPersonalityRecord(304,326,T(S_BATTLE),pet.bestBattleStreak,UI_BAR_BAD,REC_BATTLE);
 }
@@ -3816,7 +3913,7 @@ void drawDailyGoalRow(int y, uint8_t idx) {
   uint8_t progress = pet.dailyGoalProgress[idx] > target ? target : pet.dailyGoalProgress[idx];
   bool done = pet.dailyGoalComplete(idx);
   uint16_t col = dailyGoalColor(type);
-  gfx->fillRoundRect(58, y, 350, 52, 12, done ? col : UI_WHITE);
+  gfx->fillRoundRect(58, y, 350, 52, 12, done ? col : uiPanel());
   gfx->drawRoundRect(58, y, 350, 52, 12, col);
   gfx->setTextSize(2);
   gfx->setTextColor(done ? UI_BG_DAY : UI_INK);
@@ -3838,7 +3935,7 @@ void drawDailyGoalRow(int y, uint8_t idx) {
 // pagina 2: objetivos diarios
 void renderCardDaily() {
   pet.ensureDailyGoals();
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
   gfx->setCursor(CX - strlen(T(S_DAILY)) * 9, 44);
   gfx->print(T(S_DAILY));
@@ -3916,15 +4013,15 @@ void renderCardBox() {
   uint8_t pages = boxPageCount();
   if (boxPage >= pages) boxPage = pages - 1;
 
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
   gfx->setCursor(CX - strlen(T(S_BOX)) * 9, 42);
   gfx->print(T(S_BOX));
 
   const char *sort = boxSortLabel();
-  gfx->fillRoundRect(302, 62, 106, 28, 9, UI_WHITE);
-  gfx->drawRoundRect(302, 62, 106, 28, 9, UI_INK);
-  gfx->setTextColor(UI_INK);
+  gfx->fillRoundRect(302, 62, 106, 28, 9, uiPanel());
+  gfx->drawRoundRect(302, 62, 106, 28, 9, uiInk());
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(1);
   gfx->setCursor(302 + (106 - (int)strlen(sort) * 6) / 2, 73);
   gfx->print(sort);
@@ -3934,7 +4031,7 @@ void renderCardBox() {
   snprintf(known, sizeof(known), T(S_KNOWN_FMT), pet.knownDexCount());
   snprintf(goal, sizeof(goal), T(S_DEX_GOAL_FMT), pet.nextDexGoal());
   gfx->setTextSize(2);
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setCursor(72, 70);
   gfx->print(caught);
   gfx->setTextColor(UI_TRACK);
@@ -3944,7 +4041,7 @@ void renderCardBox() {
   gfx->print(goal);
 
   if (pet.caughtCount() == 0) {
-    gfx->fillRoundRect(82, 178, 302, 72, 16, UI_WHITE);
+    gfx->fillRoundRect(82, 178, 302, 72, 16, uiPanel());
     gfx->drawRoundRect(82, 178, 302, 72, 16, UI_TRACK);
     gfx->setTextColor(UI_TRACK);
     gfx->setTextSize(2);
@@ -3959,13 +4056,13 @@ void renderCardBox() {
     const DexEntry &d = DEX_TBL[dex];
     int y = 122 + i * 42;
     bool raised = pet.isRegistered(dex);
-    gfx->fillRoundRect(58, y, 350, 34, 9, UI_WHITE);
+    gfx->fillRoundRect(58, y, 350, 34, 9, uiPanel());
     gfx->drawRoundRect(58, y, 350, 34, 9, d.accent);
     char name[24];
     snprintf(name, sizeof(name), "#%03d %s", dex, dexName(dex));
     int ts = strlen(name) <= 16 ? 2 : 1;
     gfx->setTextSize(ts);
-    gfx->setTextColor(UI_INK);
+    gfx->setTextColor(uiInk());
     gfx->setCursor(72, y + (ts == 2 ? 7 : 5));
     gfx->print(name);
     char types[22];
@@ -3998,7 +4095,7 @@ void renderCardBox() {
 
 // pagina 3: combate (4 barras + botones)
 void renderCardStats() {
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
   gfx->setCursor(CX - strlen(T(S_BATTLE)) * 9, 48);
   gfx->print(T(S_BATTLE));
@@ -4012,7 +4109,7 @@ void renderCardStats() {
   snprintf(wl, sizeof(wl), T(S_WL_FMT), pet.battleWins, pet.battleLosses);
   snprintf(bs, sizeof(bs), T(S_BSTREAK_FMT), pet.battleStreak);
   snprintf(bb, sizeof(bb), T(S_BBEST_FMT), pet.bestBattleStreak);
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
   gfx->setCursor(74, 266);
   gfx->print(wl);
@@ -4042,7 +4139,7 @@ void renderCardMedals() {
     if (pet.hasMedal(1 << i)) got++;
   char head[20];
   snprintf(head, sizeof(head), T(S_MEDALS_FMT), got, MED_COUNT);
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
   gfx->setCursor(CX - strlen(head) * 9, 48);
   gfx->print(head);
@@ -4069,7 +4166,7 @@ void renderCardMedals() {
 // que antes eran invisibles (cuanto falta para subir/evolucionar y por que)
 void renderCardProgress() {
   const DexEntry &d = DEX_TBL[pet.speciesId];
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
   gfx->setCursor(CX - strlen(T(S_PROGRESS)) * 9, 44);
   gfx->print(T(S_PROGRESS));
@@ -4089,7 +4186,7 @@ void renderCardProgress() {
   if (fw > 0) gfx->fillRoundRect(bx + 2, by + 2, fw, bh - 4, 5, UI_BAR_OK);
   char nx[26];
   snprintf(nx, sizeof(nx), T(S_NEXT_LVL_FMT), MINUTES_PER_LEVEL - into, pet.level() + 1);
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
   gfx->setCursor(CX - strlen(nx) * 6, by + 32);
   gfx->print(nx);
@@ -4154,7 +4251,7 @@ void drawExpeditionItem(int x, int y, ExpeditionItem item) {
   const int w = 172, h = 54;
   uint8_t count = pet.itemCounts[item];
   uint16_t col = expeditionItemColor(item);
-  gfx->fillRoundRect(x, y, w, h, 9, count ? UI_WHITE : C565(0xe4, 0xe8, 0xee));
+  gfx->fillRoundRect(x, y, w, h, 9, count ? uiPanel() : C565(0xe4, 0xe8, 0xee));
   gfx->drawRoundRect(x, y, w, h, 9, count ? col : UI_TRACK);
   gfx->fillCircle(x + 22, y + 27, 12, count ? col : UI_TRACK);
   if (item == EXP_ITEM_ENERGY) gfx->fillRect(x + 20, y + 17, 5, 20, UI_WHITE);
@@ -4174,10 +4271,10 @@ void drawExpeditionItem(int x, int y, ExpeditionItem item) {
 }
 
 void renderExpeditionTrainChoice() {
-  gfx->fillRoundRect(58, 118, 350, 190, 14, UI_WHITE);
-  gfx->drawRoundRect(58, 118, 350, 190, 14, UI_INK);
+  gfx->fillRoundRect(58, 118, 350, 190, 14, uiPanel());
+  gfx->drawRoundRect(58, 118, 350, 190, 14, uiInk());
   const char *title = T(S_ITEM_TRAIN);
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
   gfx->setCursor(CX - strlen(title) * 6, 136);
   gfx->print(title);
@@ -4213,7 +4310,7 @@ void renderExpeditionTrainChoice() {
 
 void renderCardExpedition() {
   uint32_t nowEpoch = expeditionNowEpoch();
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
   gfx->setCursor(CX - strlen(T(S_EXPEDITION)) * 9, 42);
   gfx->print(T(S_EXPEDITION));
@@ -4277,7 +4374,7 @@ void renderCardExpedition() {
     }
   }
 
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
   gfx->setCursor(CX - strlen(T(S_INVENTORY)) * 6, 174);
   gfx->print(T(S_INVENTORY));
@@ -4365,7 +4462,7 @@ void expeditionCardTap(int16_t x, int16_t y) {
 
 void renderCard() {
   cardDirty = false;
-  gfx->fillScreen(UI_BG_DAY);
+  gfx->fillScreen(uiBg());
   if (cardPage == 0) renderCardProfile();
   else if (cardPage == 1) renderCardPersonality();
   else if (cardPage == 2) renderCardDaily();
@@ -4409,14 +4506,14 @@ void openKeyboard() {
 
 void renderKeyboard() {
   keyboardDirty = false;
-  gfx->fillScreen(UI_BG_DAY);
-  gfx->setTextColor(UI_INK);
+  gfx->fillScreen(uiBg());
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
   gfx->setCursor(CX - strlen(T(S_NAME)) * 6, 56);
   gfx->print(T(S_NAME));
   // buffer actual
-  gfx->fillRoundRect(83, 84, 300, 40, 8, UI_WHITE);
-  gfx->drawRoundRect(83, 84, 300, 40, 8, UI_INK);
+  gfx->fillRoundRect(83, 84, 300, 40, 8, uiPanel());
+  gfx->drawRoundRect(83, 84, 300, 40, 8, uiInk());
   gfx->setTextSize(3);
   gfx->setCursor(95, 94);
   gfx->print(nameLen ? nameBuf : "_");
@@ -4424,9 +4521,9 @@ void renderKeyboard() {
   for (int i = 0; i < 30; i++) {
     int x = KB_X + (i % KB_COLS) * KB_W, y = KB_Y + (i / KB_COLS) * KB_H;
     bool special = (i >= 28);
-    gfx->fillRoundRect(x, y, KB_W - 6, KB_H - 6, 6, special ? UI_BAR_WARN : UI_WHITE);
-    gfx->drawRoundRect(x, y, KB_W - 6, KB_H - 6, 6, UI_INK);
-    gfx->setTextColor(UI_INK);
+    gfx->fillRoundRect(x, y, KB_W - 6, KB_H - 6, 6, special ? UI_BAR_WARN : uiPanel());
+    gfx->drawRoundRect(x, y, KB_W - 6, KB_H - 6, 6, uiInk());
+    gfx->setTextColor(uiInk());
     gfx->setTextSize(2);
     if (i < 28) {
       gfx->setCursor(x + KB_W / 2 - 9, y + KB_H / 2 - 10);
@@ -4516,7 +4613,7 @@ void drawThumb(const uint8_t *b, int x, int y, int s, bool sil) {
 
 void renderGallery() {
   if (galleryDetail) {  // vista detalle: se redibuja siempre (animada)
-    gfx->fillScreen(UI_BG_DAY);
+    gfx->fillScreen(uiBg());
     const DexEntry &d = DEX_TBL[galleryDetail];
     bool reg = pet.isRegistered(galleryDetail);
     bool caught = pet.isCaught(galleryDetail);
@@ -4560,9 +4657,9 @@ void renderGallery() {
       gfx->print(mark);
     }
     // Bouton RETOUR vers la grille Pokédex.
-    gfx->fillRoundRect(22, 20, 54, 34, 10, UI_WHITE);
-    gfx->drawRoundRect(22, 20, 54, 34, 10, UI_INK);
-    gfx->setTextColor(UI_INK);
+    gfx->fillRoundRect(22, 20, 54, 34, 10, uiPanel());
+    gfx->drawRoundRect(22, 20, 54, 34, 10, uiInk());
+    gfx->setTextColor(uiInk());
     gfx->setTextSize(2);
     gfx->setCursor(42, 28);
     gfx->print("<");
@@ -4578,7 +4675,7 @@ void renderGallery() {
       gfx->setCursor(CX - (int)strlen(care) * 6, 400);
       gfx->print(care);
     } else {
-      gfx->setTextColor(UI_INK);
+      gfx->setTextColor(uiInk());
       gfx->setTextSize(2);
       gfx->setCursor(CX - strlen(T(S_DETAIL_BACK)) * 6, 408);
       gfx->print(T(S_DETAIL_BACK));
@@ -4590,19 +4687,20 @@ void renderGallery() {
   if (!galleryDirty) return;  // la rejilla es estatica
   galleryDirty = false;
 
-  gfx->fillScreen(UI_BG_DAY);
+  gfx->fillScreen(uiBg());
   // Bouton RETOUR : quitte le Pokédex.
-  gfx->fillRoundRect(22, 18, 54, 34, 10, UI_WHITE);
-  gfx->drawRoundRect(22, 18, 54, 34, 10, UI_INK);
-  gfx->setTextColor(UI_INK);
+  gfx->fillRoundRect(22, 18, 54, 34, 10, uiPanel());
+  gfx->drawRoundRect(22, 18, 54, 34, 10, uiInk());
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
   gfx->setCursor(42, 26);
   gfx->print("<");
 
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
   gfx->setCursor(CX - 7 * 9, 28);
   gfx->print("POKEDEX");
+  gfx->drawFastHLine(150,56,166,darkMode?C565(0x8f,0x62,0xff):UI_TRACK);
 
   char head[28];
   snprintf(head, sizeof(head), "R:%u C:%u", pet.registeredCount(), pet.caughtCount());
@@ -4616,7 +4714,7 @@ void renderGallery() {
     uint16_t fill = (galleryFilter == i) ? UI_INK : UI_WHITE;
     uint16_t text = (galleryFilter == i) ? UI_BG_DAY : UI_INK;
     gfx->fillRoundRect(fx, 74, 96, 18, 6, fill);
-    gfx->drawRoundRect(fx, 74, 96, 18, 6, UI_INK);
+    gfx->drawRoundRect(fx, 74, 96, 18, 6, uiInk());
     gfx->setTextColor(text);
     gfx->setTextSize(1);
     gfx->setCursor(fx + (96 - (int)strlen(filters[i]) * 6) / 2, 80);
@@ -4844,9 +4942,9 @@ void drawChoiceDialog() {
     q = T(S_FAR_Q); o1 = T(S_FAR_GO); o2 = T(S_FAR_STAY);
     c1 = UI_BAR_WARN; t1 = UI_INK; c2 = UI_BAR_OK; t2 = UI_WHITE;
   }
-  gfx->fillRoundRect(73, 156, 320, 188, 16, UI_WHITE);
-  gfx->drawRoundRect(73, 156, 320, 188, 16, UI_INK);
-  gfx->setTextColor(UI_INK);
+  gfx->fillRoundRect(73, 156, 320, 188, 16, uiPanel());
+  gfx->drawRoundRect(73, 156, 320, 188, 16, uiInk());
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
   gfx->setCursor(CX - (int)strlen(q) * 6, 176);
   gfx->print(q);
@@ -4881,11 +4979,11 @@ void drawFarewellButton() {
   int p = (int)(4 * sinf(now * 0.005f));
   int x = FAR_BTN_X - p, y = FAR_BTN_Y - p, w = FAR_BTN_W + 2 * p, h = FAR_BTN_H + 2 * p;
   gfx->fillRoundRect(x, y, w, h, 16, UI_BAR_WARN);
-  gfx->drawRoundRect(x, y, w, h, 16, UI_INK);
+  gfx->drawRoundRect(x, y, w, h, 16, uiInk());
   char buf[52];
   const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
   snprintf(buf, sizeof(buf), T(S_FAREWELL_BTN), nm);
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
   gfx->setCursor(CX - (int)strlen(buf) * 6, y + h / 2 - 8);
   gfx->print(buf);
@@ -5259,7 +5357,7 @@ void drawButtons() {
   for (int i = 0; i < 4; i++) {
     bool off = pet.sleeping && i != 2;  // durmiendo solo funciona LUZ
     int bx = buttons[i].cx - BTN_HALF, by = buttons[i].cy - BTN_HALF;
-    if (!pet.sleeping) gfx->fillRoundRect(bx, by, 2 * BTN_HALF, 2 * BTN_HALF, 14, UI_WHITE);
+    if (!pet.sleeping) gfx->fillRoundRect(bx, by, 2 * BTN_HALF, 2 * BTN_HALF, 14, uiPanel());
     gfx->drawRoundRect(bx, by, 2 * BTN_HALF, 2 * BTN_HALF, 14, inkColor());
     if (!off) {
       // Bouton JOUER de l'accueil : même vraie Poké Ball pixel-art que la page RECORDS.
