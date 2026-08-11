@@ -9,7 +9,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 FQBN="esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
-VERSION="1.32.2-moretro-photo-fix-v7.2"
+VERSION="1.33.1-moretro-hoenn-v8.1-safe"
 
 echo "Préparation du sketch TamaPoke..."
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/tamapoke-ci.XXXXXX")"
@@ -49,9 +49,9 @@ except Exception as exc:
     raise SystemExit("Pillow/PIL absent : " + str(exc))
 PY
 
-echo "Préparation des sprites Johto #152-251..."
+echo "Préparation des sprites Johto + Hoenn #152-386..."
 missing=0
-for n in $(seq 152 251); do
+for n in $(seq 152 386); do
   printf -v num "%03d" "$n"
   if [ ! -f "$ROOT/tools/sdcard/mons/p${num}.bin" ] || [ ! -f "$ROOT/tools/sdcard/mons/ps${num}.bin" ]; then
     missing=1
@@ -60,14 +60,14 @@ for n in $(seq 152 251); do
 done
 
 if [ "$missing" -eq 1 ]; then
-  echo "Téléchargement/packaging PMD SpriteCollab pour Johto..."
-  python3 "$ROOT/tools/pack_pmd.py" $(seq 152 251)
+  echo "Téléchargement/packaging PMD SpriteCollab pour Johto + Hoenn..."
+  python3 "$ROOT/tools/pack_pmd.py" $(seq 152 386)
 fi
 
-echo "Génération des 251 miniatures Pokédex..."
+echo "Génération des 386 miniatures Pokédex..."
 python3 "$ROOT/tools/make_thumbs.py"
 
-echo "Empaquetage des sprites Kanto + Johto..."
+echo "Empaquetage des sprites Kanto + Johto + Hoenn..."
 python3 "$ROOT/tools/pack_bundle.py"
 
 echo "BUILD TERMINE"

@@ -24,6 +24,6 @@ struct SpeciesChirpProfile {
   uint8_t count;
 };
 
-// Liefert fuer jede Kanto-Dexnummer ein eigenes, begrenztes Syntheseprofil.
+// Liefert fuer jede unterstuetzte Dexnummer 1-386 ein eigenes, begrenztes Syntheseprofil.
 // Ungueltige Dexnummern liefern false und erzeugen nie Audio.
 bool speciesChirpProfile(int16_t dex, SpeciesChirpProfile *out);

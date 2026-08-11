@@ -15,7 +15,7 @@ Genera /mons/pNNN.bin (y psNNN.bin shiny) en formato TPK2 multi-accion:
 Acciones: 0 Idle, 1 WalkL, 2 WalkR, 3 Sleep, 4 Eat, 5 Hurt, 6 Attack,
 7 Pose, 8 Hop, 9 Nod, 10 DeepBreath, 11 Sit. Las que falten se omiten.
 
-  python3 tools/pack_pmd.py             # los 251, normal + shiny
+  python3 tools/pack_pmd.py             # los 386, normal + shiny
   python3 tools/pack_pmd.py 7 25        # dex concretos
   python3 tools/pack_pmd.py normal 1 4  # solo normales
 """
@@ -152,7 +152,7 @@ def pack(dexnum, shiny=False):
 if __name__ == '__main__':
     args = sys.argv[1:]
     solo_normal = 'normal' in args
-    nums = [int(a) for a in args if a.isdigit()] or list(range(1, 252))
+    nums = [int(a) for a in args if a.isdigit()] or list(range(1, 387))
     fallos = []
     for n in nums:
         for sh in ([False] if solo_normal else [False, True]):

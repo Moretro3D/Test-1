@@ -444,18 +444,18 @@ void maybePlayAmbientSound(uint32_t now) {
 
 uint16_t renderIntervalMs() {
   if (screenOff) return 5000;
-  if (battleOpen) return battleResolved ? 235 : 140;
-  if (gameOpen || sackOpen) return 88;
 
-  // Pages statiques : les flags Dirty empêchent les redraws inutiles.
-  // On réduit uniquement la latence de réaction tactile.
+  if (battleOpen) return battleResolved ? 210 : 125;
+  if (gameOpen || sackOpen) return 78;
+
+  // Pages statiques pilotées par Dirty : faible latence sans redraw permanent.
   if (galleryOpen || cardOpen || kbOpen || clockOpen || helpOpen || gameMenuOpen)
-    return powerSave ? 440 : 170;
+    return powerSave ? 400 : 135;
 
-  if (!powerSave) return 78;
+  if (!powerSave) return 68;
   if (dimStage >= 2) return 650;
-  if (dimStage >= 1) return 270;
-  return 135;
+  if (dimStage >= 1) return 250;
+  return 120;
 }
 
 bool lightSleepAllowed(uint32_t now) {
@@ -718,7 +718,7 @@ void handleSerial() {
     delay(100);
     ESP.restart();
   } else if (line == "REG") {
-    Serial.printf("pokedex %u/251:", pet.registeredCount());
+    Serial.printf("pokedex %u/386:", pet.registeredCount());
     for (int i = 1; i <= DEX_COUNT; i++)
       if (pet.isRegistered(i)) Serial.printf(" %d", i);
     Serial.println();
@@ -3420,7 +3420,7 @@ void renderClock() {
   char langVal[10];
   snprintf(langVal,sizeof(langVal),"%s",LANG_CODES[gLang]);
   drawSettingsRow(58,302,168,46,"LANGUE",langVal,false);
-  drawSettingsRow(240,302,168,46,"AFFICHAGE",darkMode ? "SOMBRE" : ">",true);
+  drawSettingsRow(240,302,168,46,"AFFICHAGE","",true);
 
   gfx->fillRoundRect(58,364,154,46,14,uiPanel());
   gfx->drawRoundRect(58,364,154,46,14,uiLine());

@@ -436,12 +436,12 @@ bool Pet::setCollectionFrame(uint8_t frame) {
   return true;
 }
 
-uint8_t Pet::nextDexGoal() const {
-  static const uint8_t GOALS[] = { 10, 25, 50, 100, 151 };
+uint16_t Pet::nextDexGoal() const {
+  static const uint16_t GOALS[] = { 10, 25, 50, 100, 151, 251, 386 };
   uint16_t known = knownDexCount();
   for (uint8_t i = 0; i < sizeof(GOALS); i++)
     if (known < GOALS[i]) return GOALS[i];
-  return 151;
+  return 386;
 }
 
 uint8_t Pet::applyDexRewards() {

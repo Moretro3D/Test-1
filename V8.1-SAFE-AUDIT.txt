@@ -1,0 +1,25 @@
+TAMAPOKE MORETRO V8.1 - SAFE AUDIT
+
+Corrections de l'audit V8 :
+- Tous les affichages Pokedex /251 passent en /386.
+- Compteurs capturés / connus passent en /386 dans les 6 langues.
+- Log série Pokedex passe en /386.
+- Audio/chirps autorisés jusqu'au Dex #386.
+- Species chirp synthétique reste généré depuis les stats/types du Pokémon.
+- DEX_NAMES vérifié : 387 entrées par langue (? + #001..#386).
+- Bitmaps de sauvegarde vérifiés à 49 octets pour 386 Pokémon.
+- pack_pmd vérifié #001..#386.
+- thumbs.bin vérifié pour 386 Pokémon.
+- build_web.sh vérifié pour Johto + Hoenn #152..#386.
+- sprites lourds normal + shiny restent sur SD.
+
+Ce pack conserve :
+- V7.3 fluidité
+- mode sombre
+- cadres
+- retour Pokédex
+- Collection Active
+- restauration du starter
+- 1G + 2G + 3G
+
+Version : 1.33.1-moretro-hoenn-v8.1-safe

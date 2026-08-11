@@ -63,7 +63,7 @@ def shrink(w, h, pal, data):
 
 def main():
     blobs = []
-    for dex in range(1, 252):
+    for dex in range(1, 387):
         path = os.path.join(DIR, f'p{dex:03d}.bin')
         w, h, pal, data = read_pmd_idle_frame0(path)
         nw, nh, npal, ndata = shrink(w, h, pal, data)
@@ -74,7 +74,7 @@ def main():
         blob += ndata
         blobs.append(blob)
 
-    head = 4 + 2 + 4 * 251
+    head = 4 + 2 + 4 * 386
     offsets, pos = [], head
     for b in blobs:
         offsets.append(pos)
@@ -83,8 +83,8 @@ def main():
     out = os.path.join(DIR, 'thumbs.bin')
     with open(out, 'wb') as f:
         f.write(b'TPTH')
-        f.write(struct.pack('<H', 251))
-        f.write(struct.pack('<251I', *offsets))
+        f.write(struct.pack('<H', 386))
+        f.write(struct.pack('<386I', *offsets))
         for b in blobs:
             f.write(b)
     print(f"guardado {out}: {pos / 1024:.0f} KB, {len(blobs)} miniaturas")

@@ -51,7 +51,7 @@ bool speciesChirpProfile(int16_t dex, SpeciesChirpProfile *out) {
     (uint8_t)((seed >> 3) & 0x03),
   };
   // Die dritte Frequenz enthaelt bewusst die Dexnummer direkt. Dadurch hat
-  // jede der 251 Spezies ein eindeutig anderes, eigenes Klangprofil.
+  // jede der 386 Spezies ein eindeutig anderes, eigenes Klangprofil.
   out->notes[2] = {
     (uint16_t)(220 + dex * 11),
     (uint16_t)(48 + ((seed >> 4) & 0x1F)),

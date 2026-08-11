@@ -285,7 +285,7 @@ static void audioTask(void *) {
   for (;;) {
     if (!xQueueReceive(gQ, &event, portMAX_DELAY) || !gReady) continue;
     bool isSfx = event.kind == AUDIO_EVENT_SFX && event.value < SFX_COUNT;
-    bool isChirp = event.kind == AUDIO_EVENT_CHIRP && event.value >= 1 && event.value <= 251 && gMode >= SOUND_MED;
+    bool isChirp = event.kind == AUDIO_EVENT_CHIRP && event.value >= 1 && event.value <= 386 && gMode >= SOUND_MED;
     if (isSfx && gMode < SFX_MIN_MODE[event.value]) continue;
     if (isSfx || isChirp) {
       gBusy = true;
@@ -373,7 +373,7 @@ bool audioBusy() {
 }
 
 void speciesChirpPlay(int16_t dex) {
-  if (!gReady || !gQ || gMode < SOUND_MED || dex < 1 || dex > 251) return;
+  if (!gReady || !gQ || gMode < SOUND_MED || dex < 1 || dex > 386) return;
   uint32_t now = millis();
   if (now - gLastChirpAt < 800UL) return;
   gLastChirpAt = now;

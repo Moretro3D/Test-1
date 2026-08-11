@@ -1,0 +1,10 @@
+TamaPoke MoRetro V8 - HOENN
+- Pokédex étendu à #386 (Générations 1 + 2 + 3)
+- Hoenn #252 Treecko à #386 Deoxys
+- Sprites PMD normaux + shiny #252-386 préparés pour /mons sur SD
+- Miniatures Pokédex et bundle SD étendus à 386
+- Bitmap sauvegarde étendu de 32 à 49 octets avec migration compatible par copie
+- Starter existant, Collection Active et sauvegardes Gen1/Gen2 conservés
+- Évolutions Hoenn intégrées au modèle TamaPoke
+- V7.3 fluidité et interface conservées
+Version: 1.33.0-moretro-hoenn-v8
