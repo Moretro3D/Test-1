@@ -1,0 +1,34 @@
+TAMAPOKE MORETRO V7.2 - MODIFICATIONS VALIDÉES PAR RAPPORT AUX PHOTOS
+
+PHOTO ACCUEIL / CADRE :
+- ancien cercle violet simple remplacé
+- cadre CLASSIQUE segmenté violet/bleu
+- POKEBALL, OR, ARGENT, NEON retravaillés
+- détails lumineux/rivets/mini Pokéballs selon le template
+- rendu toujours vectoriel pour ne pas ralentir les animations
+
+PHOTO POKEDEX :
+- trait violet sous POKEDEX supprimé
+- bouton retour du haut supprimé sur la grille
+- toucher le titre ne quitte plus le Pokédex
+- pagination descendue proprement sous les Pokémon
+- bouton RETOUR ajouté tout en bas
+- grande zone tactile dédiée au bouton RETOUR
+- retour < de la fiche détail conservé pour revenir à la grille
+
+OPTIMISATION :
+- sprites/animations/thumbs lourds restent sur la SD
+- cadres restent vectoriels dans le firmware car plus légers et plus rapides
+- latence des pages statiques réduite
+- système Dirty conservé pour ne pas redessiner inutilement
+
+CONSERVÉ :
+- mode sombre
+- page Affichage
+- 251 Pokémon / Johto
+- Collection Active
+- restauration du starter
+- sprites 2G / shiny
+- Web Flasher
+
+Version : 1.32.2-moretro-photo-fix-v7.2

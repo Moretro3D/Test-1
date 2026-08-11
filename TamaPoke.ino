@@ -444,21 +444,18 @@ void maybePlayAmbientSound(uint32_t now) {
 
 uint16_t renderIntervalMs() {
   if (screenOff) return 5000;
+  if (battleOpen) return battleResolved ? 235 : 140;
+  if (gameOpen || sackOpen) return 88;
 
-  // Cadences légèrement accélérées, mais toujours au-dessus du temps de flush
-  // du framebuffer afin d'éviter les chevauchements DMA / scintillements.
-  if (battleOpen) return battleResolved ? 260 : 155;
-  if (gameOpen || sackOpen) return 95;
-
-  // Les écrans statiques utilisent les flags *Dirty : ce délai ne force pas
-  // un redraw permanent, il rend seulement les transitions plus réactives.
+  // Pages statiques : les flags Dirty empêchent les redraws inutiles.
+  // On réduit uniquement la latence de réaction tactile.
   if (galleryOpen || cardOpen || kbOpen || clockOpen || helpOpen || gameMenuOpen)
-    return powerSave ? 500 : 220;
+    return powerSave ? 440 : 170;
 
-  if (!powerSave) return 85;
+  if (!powerSave) return 78;
   if (dimStage >= 2) return 650;
-  if (dimStage >= 1) return 300;
-  return 150;
+  if (dimStage >= 1) return 270;
+  return 135;
 }
 
 bool lightSleepAllowed(uint32_t now) {
@@ -3533,68 +3530,100 @@ void drawCelebration() {
 uint16_t collectionFrameColor(uint8_t frame) {
   static const uint16_t COLORS[] = {
     UI_TRACK,
-    C565(0x8d,0x62,0xc4), // classique violet
-    C565(0xe8,0x50,0x3a), // pokeball rouge
-    C565(0xe8,0xb8,0x42), // or
-    C565(0xb6,0xc0,0xd0), // argent
-    C565(0x55,0xd7,0xff), // neon cyan
+    C565(0x8c,0x65,0xd9), // classique violet
+    C565(0xed,0x4b,0x42), // pokeball rouge
+    C565(0xf1,0xc2,0x45), // or
+    C565(0xc4,0xcc,0xda), // argent
+    C565(0x47,0xdc,0xff), // neon cyan
   };
   return COLORS[frame < 6 ? frame : 0];
 }
 
 void drawFrameMiniBall(int cx,int cy,int r) {
-  gfx->fillCircle(cx,cy,r,C565(0xe8,0x50,0x3a));
+  gfx->fillCircle(cx,cy,r,C565(0xed,0x4b,0x42));
   gfx->fillRect(cx-r,cy-1,r*2+1,3,uiInk());
   gfx->fillCircle(cx,cy,max(2,r/3),UI_WHITE);
   gfx->drawCircle(cx,cy,max(2,r/3),uiInk());
 }
 
+void drawFrameSpark(int x,int y,uint16_t c) {
+  gfx->drawFastHLine(x-4,y,9,c);
+  gfx->drawFastVLine(x,y-4,9,c);
+  gfx->fillCircle(x,y,1,UI_WHITE);
+}
+
+// Anneau segmenté : visuellement plus riche que le simple cercle violet,
+// tout en restant extrêmement léger pour l'ESP32.
+void drawSegmentedFrameRing(int cx,int cy,int radius,uint16_t c1,uint16_t c2) {
+  const int SEG=24;
+  for (int i=0;i<SEG;i++) {
+    float a0=(2.0f*PI*i)/SEG;
+    float a1=(2.0f*PI*(i+0.62f))/SEG;
+    int x0=cx+(int)(cosf(a0)*radius);
+    int y0=cy+(int)(sinf(a0)*radius);
+    int x1=cx+(int)(cosf(a1)*radius);
+    int y1=cy+(int)(sinf(a1)*radius);
+    gfx->drawLine(x0,y0,x1,y1,(i&1)?c2:c1);
+  }
+}
+
+// Cadres conçus pour la vraie zone du Pokémon visible sur l'écran rond.
 void drawCollectionFrame(int cx,int cy,int radius,uint8_t frame) {
   if (frame==0) return;
-  uint16_t color=collectionFrameColor(frame);
 
-  if (frame==1) { // CLASSIQUE
-    gfx->drawCircle(cx,cy,radius,color);
-    gfx->drawCircle(cx,cy,radius-5,color);
-    for (int a=0;a<4;a++) {
-      int dx=(a==1?radius:(a==3?-radius:0));
-      int dy=(a==0?-radius:(a==2?radius:0));
-      gfx->fillCircle(cx+dx,cy+dy,3,color);
+  if (frame==1) { // CLASSIQUE : segments violet/bleu + points lumineux
+    uint16_t violet=C565(0x8c,0x65,0xd9);
+    uint16_t blue=C565(0x5d,0x8f,0xff);
+    drawSegmentedFrameRing(cx,cy,radius,violet,blue);
+    gfx->drawCircle(cx,cy,radius-6,lerp565(violet,uiBg(),2,5));
+    for (int i=0;i<4;i++) {
+      float a=i*(PI/2.0f)+PI/4.0f;
+      int px=cx+(int)(cosf(a)*radius);
+      int py=cy+(int)(sinf(a)*radius);
+      gfx->fillCircle(px,py,4,violet);
+      gfx->fillCircle(px,py,2,UI_WHITE);
     }
   } else if (frame==2) { // POKEBALL
-    gfx->drawCircle(cx,cy,radius,color);
+    uint16_t red=C565(0xed,0x4b,0x42);
+    drawSegmentedFrameRing(cx,cy,radius,red,UI_WHITE);
     gfx->drawCircle(cx,cy,radius-6,uiInk());
-    drawFrameMiniBall(cx,cy-radius,8);
-    drawFrameMiniBall(cx+radius,cy,8);
-    drawFrameMiniBall(cx,cy+radius,8);
-    drawFrameMiniBall(cx-radius,cy,8);
+    drawFrameMiniBall(cx,cy-radius,7);
+    drawFrameMiniBall(cx+radius,cy,7);
+    drawFrameMiniBall(cx,cy+radius,7);
+    drawFrameMiniBall(cx-radius,cy,7);
   } else if (frame==3) { // OR
-    gfx->drawCircle(cx,cy,radius,color);
-    gfx->drawCircle(cx,cy,radius-8,color);
-    for (int a=0;a<8;a++) {
-      float ang=a*(PI/4.0f);
-      gfx->fillCircle(cx+(int)(cosf(ang)*radius),cy+(int)(sinf(ang)*radius),4,color);
+    uint16_t gold=C565(0xf1,0xc2,0x45);
+    uint16_t amber=C565(0xc7,0x80,0x18);
+    drawSegmentedFrameRing(cx,cy,radius,gold,amber);
+    gfx->drawCircle(cx,cy,radius-6,amber);
+    for (int i=0;i<8;i++) {
+      float a=i*(PI/4.0f);
+      drawFrameSpark(cx+(int)(cosf(a)*radius),
+                     cy+(int)(sinf(a)*radius),gold);
     }
   } else if (frame==4) { // ARGENT
-    gfx->drawCircle(cx,cy,radius,color);
-    gfx->drawCircle(cx,cy,radius-4,color);
-    gfx->drawCircle(cx,cy,radius-10,uiLine());
-    for (int a=0;a<4;a++) {
-      float ang=a*(PI/2.0f)+PI/4.0f;
-      int px=cx+(int)(cosf(ang)*radius);
-      int py=cy+(int)(sinf(ang)*radius);
-      gfx->fillCircle(px,py,5,color);
-      gfx->fillCircle(px,py,2,uiBg());
+    uint16_t silver=C565(0xc4,0xcc,0xda);
+    uint16_t steel=C565(0x68,0x76,0x8d);
+    drawSegmentedFrameRing(cx,cy,radius,silver,steel);
+    gfx->drawCircle(cx,cy,radius-5,steel);
+    gfx->drawCircle(cx,cy,radius-9,silver);
+    for (int i=0;i<4;i++) {
+      float a=i*(PI/2.0f)+PI/4.0f;
+      int px=cx+(int)(cosf(a)*(radius-2));
+      int py=cy+(int)(sinf(a)*(radius-2));
+      gfx->fillCircle(px,py,4,steel);
+      gfx->fillCircle(px,py,2,UI_WHITE);
     }
   } else { // NEON
-    uint16_t purple=C565(0xb0,0x62,0xff);
-    gfx->drawCircle(cx,cy,radius,color);
-    gfx->drawCircle(cx,cy,radius-3,purple);
-    gfx->drawCircle(cx,cy,radius+5,uiLine());
-    for (int a=0;a<12;a++) {
-      float ang=a*(PI/6.0f);
-      uint16_t c=(a&1)?purple:color;
-      gfx->fillCircle(cx+(int)(cosf(ang)*(radius+5)),cy+(int)(sinf(ang)*(radius+5)),2,c);
+    uint16_t cyan=C565(0x47,0xdc,0xff);
+    uint16_t purple=C565(0xb2,0x63,0xff);
+    drawSegmentedFrameRing(cx,cy,radius+2,cyan,purple);
+    gfx->drawCircle(cx,cy,radius-3,cyan);
+    gfx->drawCircle(cx,cy,radius-7,purple);
+    for (int i=0;i<8;i++) {
+      float a=i*(PI/4.0f);
+      gfx->fillCircle(cx+(int)(cosf(a)*(radius+2)),
+                      cy+(int)(sinf(a)*(radius+2)),2,(i&1)?purple:cyan);
     }
   }
 }
@@ -4688,19 +4717,10 @@ void renderGallery() {
   galleryDirty = false;
 
   gfx->fillScreen(uiBg());
-  // Bouton RETOUR : quitte le Pokédex.
-  gfx->fillRoundRect(22, 18, 54, 34, 10, uiPanel());
-  gfx->drawRoundRect(22, 18, 54, 34, 10, uiInk());
-  gfx->setTextColor(uiInk());
-  gfx->setTextSize(2);
-  gfx->setCursor(42, 26);
-  gfx->print("<");
-
   gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
   gfx->setCursor(CX - 7 * 9, 28);
   gfx->print("POKEDEX");
-  gfx->drawFastHLine(150,56,166,darkMode?C565(0x8f,0x62,0xff):UI_TRACK);
 
   char head[28];
   snprintf(head, sizeof(head), "R:%u C:%u", pet.registeredCount(), pet.caughtCount());
@@ -4753,13 +4773,23 @@ void renderGallery() {
       }
     }
   }
-  // puntos de pagina
+  // Pagination compacte juste sous la dernière rangée.
   int pages = galleryPageCount();
   int dotX = CX - (pages - 1) * 7;
   for (int i = 0; i < pages; i++) {
-    if (i == galleryPage) gfx->fillCircle(dotX + i * 14, 436, 4, UI_INK);
-    else gfx->drawCircle(dotX + i * 14, 436, 3, UI_INK);
+    if (i == galleryPage) gfx->fillCircle(dotX + i * 14, 402, 4, uiInk());
+    else gfx->drawCircle(dotX + i * 14, 402, 3, uiSub());
   }
+
+  // Vrai bouton RETOUR en bas, demandé sur le rendu réel.
+  gfx->fillRoundRect(142, 416, 182, 36, 12, uiPanel());
+  gfx->drawRoundRect(142, 416, 182, 36, 12, uiLine());
+  gfx->setTextColor(uiInk());
+  gfx->setTextSize(2);
+  const char *dexBack="RETOUR";
+  gfx->setCursor(CX-(int)strlen(dexBack)*6,427);
+  gfx->print(dexBack);
+
   gfx->flush();
 }
 
@@ -4801,20 +4831,16 @@ void galleryTap(int16_t x, int16_t y) {
     sfxPlay(SFX_TAP);
     return;
   }
-  if (x >= 12 && x <= 88 && y >= 8 && y <= 62) {
-    galleryOpen = false;
+  // RETOUR de la grille Pokédex : grande zone tactile en bas.
+  if (x >= 126 && x <= 340 && y >= 408 && y <= 462) {
+    galleryOpen=false;
     galleryPmd.unload();
     markUiDirty();
     lockTouchBrief();
     sfxPlay(SFX_TAP);
     return;
   }
-  if (y < 46) {  // tocar la cabecera = salir
-    galleryOpen = false;
-    galleryPmd.unload();
-    sfxPlay(SFX_TAP);
-    return;
-  }
+
   if (y >= 68 && y < GAL_Y) {
     int f = (x - 74) / 106;
     if (f >= 0 && f < 3 && x >= 74 + f * 106 && x <= 170 + f * 106) {

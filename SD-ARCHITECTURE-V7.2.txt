@@ -1,0 +1,18 @@
+TamaPoke V7.2 - Répartition mémoire
+
+SD (charges lourdes) :
+- sprites Pokémon #001-251
+- sprites shiny
+- animations PMD
+- miniatures Pokédex / thumbs
+- bundles sprites générés par le Web Flasher
+
+FLASH ESP32 (léger et rapide) :
+- logique du jeu
+- Pokédex/stats
+- UI
+- cadres vectoriels (quelques instructions seulement)
+
+Les cadres ne sont volontairement PAS stockés en images sur la SD :
+leur dessin vectoriel est beaucoup plus léger en mémoire, ne nécessite aucun
+accès SD à chaque animation et reste plus fluide.
