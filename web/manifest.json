@@ -1,25 +1,25 @@
 {
-  "name": "TamaPoke FR - MoRetro Hoenn V8.1 Safe",
-  "version": "1.33.1-moretro-hoenn-v8.1-safe",
+  "name": "TamaPoke FR - MoRetro V8.3 Traduction Audit",
+  "version": "1.33.3-moretro-fr-audit-v8.3",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/tamapoke-1.33.1-moretro-hoenn-v8.1-safe-bootloader.bin",
+          "path": "firmware/tamapoke-1.33.3-moretro-fr-audit-v8.3-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/tamapoke-1.33.1-moretro-hoenn-v8.1-safe-partitions.bin",
+          "path": "firmware/tamapoke-1.33.3-moretro-fr-audit-v8.3-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/tamapoke-1.33.1-moretro-hoenn-v8.1-safe-boot_app0.bin",
+          "path": "firmware/tamapoke-1.33.3-moretro-fr-audit-v8.3-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/tamapoke-1.33.1-moretro-hoenn-v8.1-safe-app.bin",
+          "path": "firmware/tamapoke-1.33.3-moretro-fr-audit-v8.3-app.bin",
           "offset": 65536
         }
       ]

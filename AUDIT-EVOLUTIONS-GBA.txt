@@ -1,0 +1,25 @@
+AUDIT EVOLUTIONS - V8.3
+
+Le moteur TamaPoke actuel stocke evolvesTo + evolveLevel.
+Les évolutions réellement basées sur un niveau utilisent leur niveau de la lignée GBA
+lorsque cette mécanique existe dans la table actuelle.
+
+IMPORTANT :
+Les évolutions GBA par pierre, échange, bonheur, beauté ou autre condition spéciale
+ne doivent PAS être présentées comme des niveaux officiels. Le moteur actuel contient
+encore des adaptations TamaPoke historiques pour certaines de ces espèces.
+Elles sont donc identifiées comme chantier séparé avant d'activer un mode
+"évolutions GBA 100 % authentiques".
+
+Cela évite de déclarer à tort qu'un faux niveau (ex. pierre/échange) est un niveau GBA.
+La V8.3 se concentre sur l'audit/traduction FR sans casser les sauvegardes ni
+les évolutions existantes.
+
+Prochaine évolution moteur prévue :
+- EV_LEVEL
+- EV_STONE
+- EV_TRADE
+- EV_FRIENDSHIP_DAY
+- EV_FRIENDSHIP_NIGHT
+- EV_BEAUTY / conditions spéciales
+afin de pouvoir connecter EV_TRADE au futur échange local.

@@ -69,7 +69,7 @@ def main():
         "};\n\n"
         "struct DexEntry {\n"
         "  const char *name;\n"
-        "  uint8_t evolvesTo;    // numero de dex, 0 = forma final\n"
+        "  uint16_t evolvesTo;   // numero de dex, 0 = forma final\n"
         "  uint8_t evolveLevel;\n"
         "  uint8_t rarity;       // sale de huevo si > 0\n"
         "  uint16_t accent;      // color RGB565 del tipo para la UI\n"
