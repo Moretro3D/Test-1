@@ -608,8 +608,11 @@ void Pet::hatch() {
 bool Pet::canEvolveNow() const {
   if (isEgg() || sleeping || ceremony != CER_NONE) return false;
   const DexEntry &d = DEX_TBL[speciesId];
-  if (d.evolvesTo == 0) return false;
-  return level() >= (uint8_t)(d.evolveLevel + careMistakes) && lowestStat() >= 40;
+
+  // V8.5 : une évolution par niveau a un seuil FIXE.
+  // Les erreurs de soin ne décalent plus jamais le niveau d'évolution.
+  if (d.evolvesTo == 0 || d.evolveLevel == 0) return false;
+  return level() >= d.evolveLevel;
 }
 
 void Pet::evolve() {
@@ -618,32 +621,13 @@ void Pet::evolve() {
   prevSpeciesId = speciesId;
   int16_t next = d.evolvesTo;
 
-  // Branches Kanto/Johto. TamaPoke converts stone/trade/friendship mechanics
-  // into simple care/level branches so they remain usable as a Tamagotchi.
-  if (speciesId == DEX_EEVEE) {
-    // Avec un lien élevé : Mentali le jour, Noctali la nuit.
-    // Sinon on garde les trois évolutions Kanto.
-    if (bond >= 70 && lastSeenEpoch) {
-      uint8_t hour = (uint8_t)((lastSeenEpoch / 3600UL) % 24UL);
-      next = (hour >= 18 || hour < 6) ? 197 : 196;
-    } else {
-      static const int16_t OLD_FORMS[] = { 134, 135, 136 };
-      int16_t missing[3];
-      int n = 0;
-      for (uint8_t i = 0; i < 3; i++)
-        if (!isRegistered(OLD_FORMS[i])) missing[n++] = OLD_FORMS[i];
-      next = n ? missing[random(n)] : OLD_FORMS[random(3)];
-    }
-  } else if (speciesId == 44) {       // Gloom -> Vileplume / Bellossom
-    next = !isRegistered(182) && random(2) ? 182 : 45;
-  } else if (speciesId == 61) {       // Poliwhirl -> Poliwrath / Politoed
-    next = !isRegistered(186) && random(2) ? 186 : 62;
-  } else if (speciesId == 79) {       // Slowpoke -> Slowbro / Slowking
-    next = !isRegistered(199) && random(2) ? 199 : 80;
-  } else if (speciesId == 236) {      // Tyrogue
+  // V8.5 : seules les branches réellement liées au niveau restent ici.
+  // Tyrogue évolue au niveau 20 selon Attaque / Défense.
+  if (speciesId == 236) {
     uint16_t a = atkStat(), df = defStat();
     next = (a > df) ? 106 : (df > a) ? 107 : 237;
   }
+
   speciesId = next;
   registerSpecies(speciesId);
   sfxPlay(SFX_EVOLVE);

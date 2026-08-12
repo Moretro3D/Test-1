@@ -4229,11 +4229,15 @@ void renderCardProgress() {
   uint16_t evoCol = UI_INK;
   if (d.evolvesTo == 0) {
     evo = T(S_FINAL_FORM);
+  } else if (d.evolveLevel == 0) {
+    // Pierre / échange / bonheur / beauté : aucun faux niveau.
+    evo = "EVOLUTION SPECIALE";
+    evoCol = UI_BAR_WARN;
   } else {
-    int needed = d.evolveLevel + pet.careMistakes;
+    int needed = d.evolveLevel;
     if (pet.level() >= needed) {
-      if (pet.lowestStat() >= 40) { evo = T(S_EVO_READY); evoCol = UI_BAR_OK; }
-      else { evo = T(S_EVO_BLOCKED); evoCol = UI_BAR_BAD; }
+      evo = T(S_EVO_READY);
+      evoCol = UI_BAR_OK;
     } else {
       snprintf(evoBuf, sizeof(evoBuf), T(S_EVO_IN_FMT), needed - pet.level());
       evo = evoBuf;

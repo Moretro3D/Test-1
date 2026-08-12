@@ -1,0 +1,25 @@
+TAMAPOKE MORETRO V8.5 - EVOLUTION CLEAN
+
+BUG CORRIGE :
+L'ancien moteur utilisait :
+  evolveLevel + careMistakes
+Chaque erreur de soin pouvait donc repousser le niveau d'évolution.
+
+NOUVEAU COMPORTEMENT :
+- Le niveau d'évolution est fixe.
+- Les erreurs de soin n'ont aucun effet sur le seuil.
+- Les statistiques de soin ne bloquent plus une évolution de niveau.
+- Une évolution spéciale n'est plus convertie en faux niveau.
+- Pierre / échange / bonheur / beauté = EVOLUTION SPECIALE.
+- Tyrogue conserve sa vraie logique niveau 20 avec comparaison Attaque/Défense.
+- Aucun double seuil identique/non croissant dans une chaîne de niveaux.
+- Aucun cycle d'évolution.
+- Aucun Pokémon ne s'évolue lui-même.
+- Audit automatique GitHub ajouté.
+
+IMPORTANT :
+Les évolutions spéciales seront raccordées plus tard à leurs vraies mécaniques.
+Les évolutions par échange sont ainsi prêtes à être raccordées au futur échange local,
+sans faux niveau intermédiaire.
+
+Version : 1.33.5-moretro-evolution-clean-v8.5

@@ -55,26 +55,26 @@ static const DexEntry DEX_TBL[DEX_COUNT + 1] = {
   { "FEAROW", 0, 0, R_EVO, 0x8C4D, 65, 90, 65, 100, TYPE_NORMAL, TYPE_FLYING, 0 },  // 22 normal/flying
   { "EKANS", 24, 22, R_COMUN, 0x8A73, 35, 60, 44, 55, TYPE_POISON, TYPE_NONE, 0 },  // 23 poison
   { "ARBOK", 0, 0, R_EVO, 0x8A73, 60, 95, 69, 80, TYPE_POISON, TYPE_NONE, 0 },  // 24 poison
-  { "PIKACHU", 26, 30, R_COMUN, 0xBCA1, 35, 55, 40, 90, TYPE_ELECTRIC, TYPE_NONE, 0 },  // 25 electric
+  { "PIKACHU", 26, 0, R_COMUN, 0xBCA1, 35, 55, 40, 90, TYPE_ELECTRIC, TYPE_NONE, 0 },  // 25 electric
   { "RAICHU", 0, 0, R_EVO, 0xBCA1, 60, 90, 55, 110, TYPE_ELECTRIC, TYPE_NONE, 0 },  // 26 electric
   { "SANDSHREW", 28, 22, R_COMUN, 0xB447, 50, 75, 85, 40, TYPE_GROUND, TYPE_NONE, 4 },  // 27 ground
   { "SANDSLASH", 0, 0, R_EVO, 0xB447, 75, 100, 110, 65, TYPE_GROUND, TYPE_NONE, 4 },  // 28 ground
   { "NIDORAN H", 30, 16, R_COMUN, 0x8A73, 55, 47, 52, 41, TYPE_POISON, TYPE_NONE, 0 },  // 29 poison
-  { "NIDORINA", 31, 30, R_EVO, 0x8A73, 70, 62, 67, 56, TYPE_POISON, TYPE_NONE, 0 },  // 30 poison
+  { "NIDORINA", 31, 0, R_EVO, 0x8A73, 70, 62, 67, 56, TYPE_POISON, TYPE_NONE, 0 },  // 30 poison
   { "NIDOQUEEN", 0, 0, R_EVO, 0x8A73, 90, 92, 87, 76, TYPE_POISON, TYPE_GROUND, 0 },  // 31 poison/ground
   { "NIDORAN M", 33, 16, R_COMUN, 0x8A73, 46, 57, 40, 50, TYPE_POISON, TYPE_NONE, 0 },  // 32 poison
-  { "NIDORINO", 34, 30, R_EVO, 0x8A73, 61, 72, 57, 65, TYPE_POISON, TYPE_NONE, 0 },  // 33 poison
+  { "NIDORINO", 34, 0, R_EVO, 0x8A73, 61, 72, 57, 65, TYPE_POISON, TYPE_NONE, 0 },  // 33 poison
   { "NIDOKING", 0, 0, R_EVO, 0x8A73, 81, 102, 77, 85, TYPE_POISON, TYPE_GROUND, 0 },  // 34 poison/ground
-  { "CLEFAIRY", 36, 30, R_COMUN, 0x8C4D, 70, 45, 48, 35, TYPE_FAIRY, TYPE_NONE, 0 },  // 35 fairy
+  { "CLEFAIRY", 36, 0, R_COMUN, 0x8C4D, 70, 45, 48, 35, TYPE_FAIRY, TYPE_NONE, 0 },  // 35 fairy
   { "CLEFABLE", 0, 0, R_EVO, 0x8C4D, 95, 70, 73, 60, TYPE_FAIRY, TYPE_NONE, 0 },  // 36 fairy
-  { "VULPIX", 38, 30, R_COMUN, 0xEA87, 38, 41, 40, 65, TYPE_FIRE, TYPE_NONE, 3 },  // 37 fire
+  { "VULPIX", 38, 0, R_COMUN, 0xEA87, 38, 41, 40, 65, TYPE_FIRE, TYPE_NONE, 3 },  // 37 fire
   { "NINETALES", 0, 0, R_EVO, 0xEA87, 73, 76, 75, 100, TYPE_FIRE, TYPE_NONE, 3 },  // 38 fire
-  { "JIGGLYPUFF", 40, 30, R_COMUN, 0x8C4D, 115, 45, 20, 20, TYPE_NORMAL, TYPE_FAIRY, 0 },  // 39 normal/fairy
+  { "JIGGLYPUFF", 40, 0, R_COMUN, 0x8C4D, 115, 45, 20, 20, TYPE_NORMAL, TYPE_FAIRY, 0 },  // 39 normal/fairy
   { "WIGGLYTUFF", 0, 0, R_EVO, 0x8C4D, 140, 70, 45, 45, TYPE_NORMAL, TYPE_FAIRY, 0 },  // 40 normal/fairy
   { "ZUBAT", 42, 22, R_COMUN, 0x8A73, 40, 45, 35, 55, TYPE_POISON, TYPE_FLYING, 0 },  // 41 poison/flying
-  { "GOLBAT", 169, 30, R_EVO, 0x8A73, 75, 80, 70, 90, TYPE_POISON, TYPE_FLYING, 0 },  // 42 poison/flying
+  { "GOLBAT", 169, 0, R_EVO, 0x8A73, 75, 80, 70, 90, TYPE_POISON, TYPE_FLYING, 0 },  // 42 poison/flying
   { "ODDISH", 44, 21, R_COMUN, 0x3C49, 45, 50, 55, 30, TYPE_GRASS, TYPE_POISON, 2 },  // 43 grass/poison
-  { "GLOOM", 45, 36, R_EVO, 0x3C49, 60, 65, 70, 40, TYPE_GRASS, TYPE_POISON, 2 },  // 44 grass/poison
+  { "GLOOM", 45, 0, R_EVO, 0x3C49, 60, 65, 70, 40, TYPE_GRASS, TYPE_POISON, 2 },  // 44 grass/poison
   { "VILEPLUME", 0, 0, R_EVO, 0x3C49, 75, 80, 85, 50, TYPE_GRASS, TYPE_POISON, 2 },  // 45 grass/poison
   { "PARAS", 47, 24, R_COMUN, 0x7CC4, 35, 70, 55, 25, TYPE_BUG, TYPE_GRASS, 2 },  // 46 bug/grass
   { "PARASECT", 0, 0, R_EVO, 0x7CC4, 60, 95, 80, 30, TYPE_BUG, TYPE_GRASS, 2 },  // 47 bug/grass
@@ -88,24 +88,24 @@ static const DexEntry DEX_TBL[DEX_COUNT + 1] = {
   { "GOLDUCK", 0, 0, R_EVO, 0x4C98, 80, 82, 78, 85, TYPE_WATER, TYPE_NONE, 1 },  // 55 water
   { "MANKEY", 57, 28, R_COMUN, 0xA2A5, 40, 80, 35, 70, TYPE_FIGHTING, TYPE_NONE, 0 },  // 56 fighting
   { "PRIMEAPE", 0, 0, R_EVO, 0xA2A5, 65, 105, 60, 95, TYPE_FIGHTING, TYPE_NONE, 0 },  // 57 fighting
-  { "GROWLITHE", 59, 30, R_RARO, 0xEA87, 55, 70, 45, 60, TYPE_FIRE, TYPE_NONE, 3 },  // 58 fire
+  { "GROWLITHE", 59, 0, R_RARO, 0xEA87, 55, 70, 45, 60, TYPE_FIRE, TYPE_NONE, 3 },  // 58 fire
   { "ARCANINE", 0, 0, R_EVO, 0xEA87, 90, 110, 80, 95, TYPE_FIRE, TYPE_NONE, 3 },  // 59 fire
   { "POLIWAG", 61, 25, R_COMUN, 0x4C98, 40, 50, 40, 90, TYPE_WATER, TYPE_NONE, 1 },  // 60 water
-  { "POLIWHIRL", 62, 36, R_EVO, 0x4C98, 65, 65, 65, 90, TYPE_WATER, TYPE_NONE, 1 },  // 61 water
+  { "POLIWHIRL", 62, 0, R_EVO, 0x4C98, 65, 65, 65, 90, TYPE_WATER, TYPE_NONE, 1 },  // 61 water
   { "POLIWRATH", 0, 0, R_EVO, 0x4C98, 90, 95, 95, 70, TYPE_WATER, TYPE_FIGHTING, 1 },  // 62 water/fighting
   { "ABRA", 64, 16, R_COMUN, 0xD28F, 25, 20, 15, 90, TYPE_PSYCHIC, TYPE_NONE, 0 },  // 63 psychic
-  { "KADABRA", 65, 40, R_EVO, 0xD28F, 40, 35, 30, 105, TYPE_PSYCHIC, TYPE_NONE, 0 },  // 64 psychic
+  { "KADABRA", 65, 0, R_EVO, 0xD28F, 40, 35, 30, 105, TYPE_PSYCHIC, TYPE_NONE, 0 },  // 64 psychic
   { "ALAKAZAM", 0, 0, R_EVO, 0xD28F, 55, 50, 45, 120, TYPE_PSYCHIC, TYPE_NONE, 0 },  // 65 psychic
   { "MACHOP", 67, 28, R_COMUN, 0xA2A5, 70, 80, 50, 35, TYPE_FIGHTING, TYPE_NONE, 0 },  // 66 fighting
-  { "MACHOKE", 68, 40, R_EVO, 0xA2A5, 80, 100, 70, 45, TYPE_FIGHTING, TYPE_NONE, 0 },  // 67 fighting
+  { "MACHOKE", 68, 0, R_EVO, 0xA2A5, 80, 100, 70, 45, TYPE_FIGHTING, TYPE_NONE, 0 },  // 67 fighting
   { "MACHAMP", 0, 0, R_EVO, 0xA2A5, 90, 130, 80, 55, TYPE_FIGHTING, TYPE_NONE, 0 },  // 68 fighting
   { "BELLSPROUT", 70, 21, R_COMUN, 0x3C49, 50, 75, 35, 40, TYPE_GRASS, TYPE_POISON, 2 },  // 69 grass/poison
-  { "WEEPINBELL", 71, 36, R_EVO, 0x3C49, 65, 90, 50, 55, TYPE_GRASS, TYPE_POISON, 2 },  // 70 grass/poison
+  { "WEEPINBELL", 71, 0, R_EVO, 0x3C49, 65, 90, 50, 55, TYPE_GRASS, TYPE_POISON, 2 },  // 70 grass/poison
   { "VICTREEBEL", 0, 0, R_EVO, 0x3C49, 80, 105, 65, 70, TYPE_GRASS, TYPE_POISON, 2 },  // 71 grass/poison
   { "TENTACOOL", 73, 30, R_COMUN, 0x4C98, 40, 40, 35, 70, TYPE_WATER, TYPE_POISON, 1 },  // 72 water/poison
   { "TENTACRUEL", 0, 0, R_EVO, 0x4C98, 80, 70, 65, 100, TYPE_WATER, TYPE_POISON, 1 },  // 73 water/poison
   { "GEODUDE", 75, 25, R_COMUN, 0x9407, 40, 80, 100, 20, TYPE_ROCK, TYPE_GROUND, 4 },  // 74 rock/ground
-  { "GRAVELER", 76, 40, R_EVO, 0x9407, 55, 95, 115, 35, TYPE_ROCK, TYPE_GROUND, 4 },  // 75 rock/ground
+  { "GRAVELER", 76, 0, R_EVO, 0x9407, 55, 95, 115, 35, TYPE_ROCK, TYPE_GROUND, 4 },  // 75 rock/ground
   { "GOLEM", 0, 0, R_EVO, 0x9407, 80, 120, 130, 45, TYPE_ROCK, TYPE_GROUND, 4 },  // 76 rock/ground
   { "PONYTA", 78, 40, R_RARO, 0xEA87, 50, 85, 55, 90, TYPE_FIRE, TYPE_NONE, 3 },  // 77 fire
   { "RAPIDASH", 0, 0, R_EVO, 0xEA87, 65, 100, 70, 105, TYPE_FIRE, TYPE_NONE, 3 },  // 78 fire
@@ -120,19 +120,19 @@ static const DexEntry DEX_TBL[DEX_COUNT + 1] = {
   { "DEWGONG", 0, 0, R_EVO, 0x4C98, 90, 70, 80, 70, TYPE_WATER, TYPE_ICE, 1 },  // 87 water/ice
   { "GRIMER", 89, 38, R_RARO, 0x8A73, 80, 80, 50, 25, TYPE_POISON, TYPE_NONE, 0 },  // 88 poison
   { "MUK", 0, 0, R_EVO, 0x8A73, 105, 105, 75, 50, TYPE_POISON, TYPE_NONE, 0 },  // 89 poison
-  { "SHELLDER", 91, 30, R_COMUN, 0x4C98, 30, 65, 100, 40, TYPE_WATER, TYPE_NONE, 1 },  // 90 water
+  { "SHELLDER", 91, 0, R_COMUN, 0x4C98, 30, 65, 100, 40, TYPE_WATER, TYPE_NONE, 1 },  // 90 water
   { "CLOYSTER", 0, 0, R_EVO, 0x4C98, 50, 95, 180, 70, TYPE_WATER, TYPE_ICE, 1 },  // 91 water/ice
   { "GASTLY", 93, 25, R_COMUN, 0x6AD3, 30, 35, 30, 80, TYPE_GHOST, TYPE_POISON, 0 },  // 92 ghost/poison
-  { "HAUNTER", 94, 40, R_EVO, 0x6AD3, 45, 50, 45, 95, TYPE_GHOST, TYPE_POISON, 0 },  // 93 ghost/poison
+  { "HAUNTER", 94, 0, R_EVO, 0x6AD3, 45, 50, 45, 95, TYPE_GHOST, TYPE_POISON, 0 },  // 93 ghost/poison
   { "GENGAR", 0, 0, R_EVO, 0x6AD3, 60, 65, 60, 110, TYPE_GHOST, TYPE_POISON, 0 },  // 94 ghost/poison
-  { "ONIX", 208, 40, R_RARO, 0x9407, 35, 45, 160, 70, TYPE_ROCK, TYPE_GROUND, 4 },  // 95 rock/ground
+  { "ONIX", 208, 0, R_RARO, 0x9407, 35, 45, 160, 70, TYPE_ROCK, TYPE_GROUND, 4 },  // 95 rock/ground
   { "DROWZEE", 97, 26, R_COMUN, 0xD28F, 60, 48, 45, 42, TYPE_PSYCHIC, TYPE_NONE, 0 },  // 96 psychic
   { "HYPNO", 0, 0, R_EVO, 0xD28F, 85, 73, 70, 67, TYPE_PSYCHIC, TYPE_NONE, 0 },  // 97 psychic
   { "KRABBY", 99, 28, R_COMUN, 0x4C98, 30, 105, 90, 50, TYPE_WATER, TYPE_NONE, 1 },  // 98 water
   { "KINGLER", 0, 0, R_EVO, 0x4C98, 55, 130, 115, 75, TYPE_WATER, TYPE_NONE, 1 },  // 99 water
   { "VOLTORB", 101, 30, R_COMUN, 0xBCA1, 40, 30, 50, 100, TYPE_ELECTRIC, TYPE_NONE, 0 },  // 100 electric
   { "ELECTRODE", 0, 0, R_EVO, 0xBCA1, 60, 50, 70, 150, TYPE_ELECTRIC, TYPE_NONE, 0 },  // 101 electric
-  { "EXEGGCUTE", 103, 30, R_COMUN, 0x3C49, 60, 40, 80, 40, TYPE_GRASS, TYPE_PSYCHIC, 2 },  // 102 grass/psychic
+  { "EXEGGCUTE", 103, 0, R_COMUN, 0x3C49, 60, 40, 80, 40, TYPE_GRASS, TYPE_PSYCHIC, 2 },  // 102 grass/psychic
   { "EXEGGUTOR", 0, 0, R_EVO, 0x3C49, 95, 95, 85, 55, TYPE_GRASS, TYPE_PSYCHIC, 2 },  // 103 grass/psychic
   { "CUBONE", 105, 28, R_COMUN, 0xB447, 50, 50, 95, 35, TYPE_GROUND, TYPE_NONE, 4 },  // 104 ground
   { "MAROWAK", 0, 0, R_EVO, 0xB447, 60, 80, 110, 45, TYPE_GROUND, TYPE_NONE, 4 },  // 105 ground
@@ -143,17 +143,17 @@ static const DexEntry DEX_TBL[DEX_COUNT + 1] = {
   { "WEEZING", 0, 0, R_EVO, 0x8A73, 65, 90, 120, 60, TYPE_POISON, TYPE_NONE, 0 },  // 110 poison
   { "RHYHORN", 112, 42, R_RARO, 0xB447, 80, 85, 95, 25, TYPE_GROUND, TYPE_ROCK, 4 },  // 111 ground/rock
   { "RHYDON", 0, 0, R_EVO, 0xB447, 105, 130, 120, 40, TYPE_GROUND, TYPE_ROCK, 4 },  // 112 ground/rock
-  { "CHANSEY", 242, 30, R_RARO, 0x8C4D, 250, 5, 5, 50, TYPE_NORMAL, TYPE_NONE, 0 },  // 113 normal
+  { "CHANSEY", 242, 0, R_RARO, 0x8C4D, 250, 5, 5, 50, TYPE_NORMAL, TYPE_NONE, 0 },  // 113 normal
   { "TANGELA", 0, 0, R_RARO, 0x3C49, 65, 55, 115, 60, TYPE_GRASS, TYPE_NONE, 2 },  // 114 grass
   { "KANGASKHAN", 0, 0, R_RARO, 0x8C4D, 105, 95, 80, 90, TYPE_NORMAL, TYPE_NONE, 0 },  // 115 normal
   { "HORSEA", 117, 32, R_COMUN, 0x4C98, 30, 40, 70, 60, TYPE_WATER, TYPE_NONE, 1 },  // 116 water
-  { "SEADRA", 230, 40, R_EVO, 0x4C98, 55, 65, 95, 85, TYPE_WATER, TYPE_NONE, 1 },  // 117 water
+  { "SEADRA", 230, 0, R_EVO, 0x4C98, 55, 65, 95, 85, TYPE_WATER, TYPE_NONE, 1 },  // 117 water
   { "GOLDEEN", 119, 33, R_COMUN, 0x4C98, 45, 67, 60, 63, TYPE_WATER, TYPE_NONE, 1 },  // 118 water
   { "SEAKING", 0, 0, R_EVO, 0x4C98, 80, 92, 65, 68, TYPE_WATER, TYPE_NONE, 1 },  // 119 water
-  { "STARYU", 121, 30, R_COMUN, 0x4C98, 30, 45, 55, 85, TYPE_WATER, TYPE_NONE, 1 },  // 120 water
+  { "STARYU", 121, 0, R_COMUN, 0x4C98, 30, 45, 55, 85, TYPE_WATER, TYPE_NONE, 1 },  // 120 water
   { "STARMIE", 0, 0, R_EVO, 0x4C98, 60, 75, 85, 115, TYPE_WATER, TYPE_PSYCHIC, 1 },  // 121 water/psychic
   { "MR. MIME", 0, 0, R_RARO, 0xD28F, 40, 45, 65, 90, TYPE_PSYCHIC, TYPE_FAIRY, 0 },  // 122 psychic/fairy
-  { "SCYTHER", 212, 40, R_RARO, 0x7CC4, 70, 110, 80, 105, TYPE_BUG, TYPE_FLYING, 2 },  // 123 bug/flying
+  { "SCYTHER", 212, 0, R_RARO, 0x7CC4, 70, 110, 80, 105, TYPE_BUG, TYPE_FLYING, 2 },  // 123 bug/flying
   { "JYNX", 0, 0, R_RARO, 0x4DB8, 65, 50, 35, 95, TYPE_ICE, TYPE_PSYCHIC, 5 },  // 124 ice/psychic
   { "ELECTABUZZ", 0, 0, R_RARO, 0xBCA1, 65, 83, 57, 105, TYPE_ELECTRIC, TYPE_NONE, 0 },  // 125 electric
   { "MAGMAR", 0, 0, R_RARO, 0xEA87, 65, 95, 57, 93, TYPE_FIRE, TYPE_NONE, 3 },  // 126 fire
@@ -163,11 +163,11 @@ static const DexEntry DEX_TBL[DEX_COUNT + 1] = {
   { "GYARADOS", 0, 0, R_EVO, 0x4C98, 95, 125, 79, 81, TYPE_WATER, TYPE_FLYING, 1 },  // 130 water/flying
   { "LAPRAS", 0, 0, R_RARO, 0x4C98, 130, 85, 80, 60, TYPE_WATER, TYPE_ICE, 1 },  // 131 water/ice
   { "DITTO", 0, 0, R_RARO, 0x8C4D, 48, 48, 48, 48, TYPE_NORMAL, TYPE_NONE, 0 },  // 132 normal
-  { "EEVEE", 134, 30, R_COMUN, 0x8C4D, 55, 55, 50, 55, TYPE_NORMAL, TYPE_NONE, 0 },  // 133 normal
+  { "EEVEE", 134, 0, R_COMUN, 0x8C4D, 55, 55, 50, 55, TYPE_NORMAL, TYPE_NONE, 0 },  // 133 normal
   { "VAPOREON", 0, 0, R_EVO, 0x4C98, 130, 65, 60, 65, TYPE_WATER, TYPE_NONE, 1 },  // 134 water
   { "JOLTEON", 0, 0, R_EVO, 0xBCA1, 65, 65, 60, 130, TYPE_ELECTRIC, TYPE_NONE, 0 },  // 135 electric
   { "FLAREON", 0, 0, R_EVO, 0xEA87, 65, 130, 60, 65, TYPE_FIRE, TYPE_NONE, 3 },  // 136 fire
-  { "PORYGON", 233, 40, R_RARO, 0x8C4D, 65, 60, 70, 40, TYPE_NORMAL, TYPE_NONE, 0 },  // 137 normal
+  { "PORYGON", 233, 0, R_RARO, 0x8C4D, 65, 60, 70, 40, TYPE_NORMAL, TYPE_NONE, 0 },  // 137 normal
   { "OMANYTE", 139, 40, R_RARO, 0x9407, 35, 40, 100, 35, TYPE_ROCK, TYPE_WATER, 1 },  // 138 rock/water
   { "OMASTAR", 0, 0, R_EVO, 0x9407, 70, 60, 125, 55, TYPE_ROCK, TYPE_WATER, 1 },  // 139 rock/water
   { "KABUTO", 141, 40, R_RARO, 0x9407, 30, 80, 90, 55, TYPE_ROCK, TYPE_WATER, 1 },  // 140 rock/water
@@ -202,10 +202,10 @@ static const DexEntry DEX_TBL[DEX_COUNT + 1] = {
   { "CROBAT", 0, 0, R_EVO, 0x8A73, 85, 90, 80, 130, TYPE_POISON, TYPE_FLYING, 0 },  // 169 poison/flying
   { "CHINCHOU", 171, 27, R_COMUN, 0x4C98, 75, 38, 38, 67, TYPE_WATER, TYPE_ELECTRIC, 1 },  // 170 water/electric
   { "LANTURN", 0, 0, R_EVO, 0x4C98, 125, 58, 58, 67, TYPE_WATER, TYPE_ELECTRIC, 1 },  // 171 water/electric
-  { "PICHU", 25, 20, R_COMUN, 0xBCA1, 20, 40, 15, 60, TYPE_ELECTRIC, TYPE_NONE, 0 },  // 172 electric
-  { "CLEFFA", 35, 20, R_COMUN, 0xDC55, 50, 25, 28, 15, TYPE_FAIRY, TYPE_NONE, 0 },  // 173 fairy
-  { "IGGLYBUFF", 39, 20, R_COMUN, 0x8C4D, 90, 30, 15, 15, TYPE_NORMAL, TYPE_FAIRY, 0 },  // 174 normal/fairy
-  { "TOGEPI", 176, 20, R_RARO, 0xDC55, 35, 20, 65, 20, TYPE_FAIRY, TYPE_NONE, 0 },  // 175 fairy
+  { "PICHU", 25, 0, R_COMUN, 0xBCA1, 20, 40, 15, 60, TYPE_ELECTRIC, TYPE_NONE, 0 },  // 172 electric
+  { "CLEFFA", 35, 0, R_COMUN, 0xDC55, 50, 25, 28, 15, TYPE_FAIRY, TYPE_NONE, 0 },  // 173 fairy
+  { "IGGLYBUFF", 39, 0, R_COMUN, 0x8C4D, 90, 30, 15, 15, TYPE_NORMAL, TYPE_FAIRY, 0 },  // 174 normal/fairy
+  { "TOGEPI", 176, 0, R_RARO, 0xDC55, 35, 20, 65, 20, TYPE_FAIRY, TYPE_NONE, 0 },  // 175 fairy
   { "TOGETIC", 0, 0, R_EVO, 0xDC55, 55, 40, 85, 40, TYPE_FAIRY, TYPE_FLYING, 0 },  // 176 fairy/flying
   { "NATU", 178, 25, R_COMUN, 0xD28F, 40, 50, 45, 70, TYPE_PSYCHIC, TYPE_FLYING, 0 },  // 177 psychic/flying
   { "XATU", 0, 0, R_EVO, 0xD28F, 65, 75, 70, 95, TYPE_PSYCHIC, TYPE_FLYING, 0 },  // 178 psychic/flying
@@ -221,7 +221,7 @@ static const DexEntry DEX_TBL[DEX_COUNT + 1] = {
   { "SKIPLOOM", 189, 27, R_EVO, 0x3C49, 55, 45, 50, 80, TYPE_GRASS, TYPE_FLYING, 2 },  // 188 grass/flying
   { "JUMPLUFF", 0, 0, R_EVO, 0x3C49, 75, 55, 70, 110, TYPE_GRASS, TYPE_FLYING, 2 },  // 189 grass/flying
   { "AIPOM", 0, 0, R_COMUN, 0x8C4D, 55, 70, 55, 85, TYPE_NORMAL, TYPE_NONE, 0 },  // 190 normal
-  { "SUNKERN", 192, 30, R_COMUN, 0x3C49, 30, 30, 30, 30, TYPE_GRASS, TYPE_NONE, 2 },  // 191 grass
+  { "SUNKERN", 192, 0, R_COMUN, 0x3C49, 30, 30, 30, 30, TYPE_GRASS, TYPE_NONE, 2 },  // 191 grass
   { "SUNFLORA", 0, 0, R_EVO, 0x3C49, 75, 75, 55, 30, TYPE_GRASS, TYPE_NONE, 2 },  // 192 grass
   { "YANMA", 0, 0, R_COMUN, 0x7CC4, 65, 65, 45, 95, TYPE_BUG, TYPE_FLYING, 2 },  // 193 bug/flying
   { "WOOPER", 195, 20, R_COMUN, 0x4C98, 55, 45, 45, 15, TYPE_WATER, TYPE_GROUND, 1 },  // 194 water/ground
@@ -301,10 +301,10 @@ static const DexEntry DEX_TBL[DEX_COUNT + 1] = {
   { "CASCOON", 269, 10, R_EVO, 0x7CC4, 50, 35, 55, 15, TYPE_BUG, TYPE_NONE, 2 },  // 268 bug
   { "DUSTOX", 0, 0, R_EVO, 0x7CC4, 60, 50, 70, 65, TYPE_BUG, TYPE_POISON, 2 },  // 269 bug/poison
   { "LOTAD", 271, 14, R_COMUN, 0x4C98, 40, 30, 30, 30, TYPE_WATER, TYPE_GRASS, 1 },  // 270 water/grass
-  { "LOMBRE", 272, 30, R_EVO, 0x4C98, 60, 50, 50, 50, TYPE_WATER, TYPE_GRASS, 1 },  // 271 water/grass
+  { "LOMBRE", 272, 0, R_EVO, 0x4C98, 60, 50, 50, 50, TYPE_WATER, TYPE_GRASS, 1 },  // 271 water/grass
   { "LUDICOLO", 0, 0, R_EVO, 0x4C98, 80, 70, 70, 70, TYPE_WATER, TYPE_GRASS, 1 },  // 272 water/grass
   { "SEEDOT", 274, 14, R_COMUN, 0x3C49, 40, 40, 50, 30, TYPE_GRASS, TYPE_NONE, 2 },  // 273 grass
-  { "NUZLEAF", 275, 30, R_EVO, 0x3C49, 70, 70, 40, 60, TYPE_GRASS, TYPE_DARK, 2 },  // 274 grass/dark
+  { "NUZLEAF", 275, 0, R_EVO, 0x3C49, 70, 70, 40, 60, TYPE_GRASS, TYPE_DARK, 2 },  // 274 grass/dark
   { "SHIFTRY", 0, 0, R_EVO, 0x3C49, 90, 100, 60, 80, TYPE_GRASS, TYPE_DARK, 2 },  // 275 grass/dark
   { "TAILLOW", 277, 22, R_COMUN, 0x8C4D, 40, 55, 30, 85, TYPE_NORMAL, TYPE_FLYING, 0 },  // 276 normal/flying
   { "SWELLOW", 0, 0, R_EVO, 0x8C4D, 60, 85, 60, 125, TYPE_NORMAL, TYPE_FLYING, 0 },  // 277 normal/flying
@@ -328,9 +328,9 @@ static const DexEntry DEX_TBL[DEX_COUNT + 1] = {
   { "EXPLOUD", 0, 0, R_EVO, 0x8C4D, 104, 91, 63, 68, TYPE_NORMAL, TYPE_NONE, 0 },  // 295 normal
   { "MAKUHITA", 297, 24, R_COMUN, 0xA2A5, 72, 60, 30, 25, TYPE_FIGHTING, TYPE_NONE, 0 },  // 296 fighting
   { "HARIYAMA", 0, 0, R_EVO, 0xA2A5, 144, 120, 60, 50, TYPE_FIGHTING, TYPE_NONE, 0 },  // 297 fighting
-  { "AZURILL", 183, 18, R_COMUN, 0x8C4D, 50, 20, 40, 20, TYPE_NORMAL, TYPE_FAIRY, 0 },  // 298 normal/fairy
+  { "AZURILL", 183, 0, R_COMUN, 0x8C4D, 50, 20, 40, 20, TYPE_NORMAL, TYPE_FAIRY, 0 },  // 298 normal/fairy
   { "NOSEPASS", 0, 0, R_COMUN, 0x9407, 30, 45, 135, 30, TYPE_ROCK, TYPE_NONE, 4 },  // 299 rock
-  { "SKITTY", 301, 30, R_COMUN, 0x8C4D, 50, 45, 45, 50, TYPE_NORMAL, TYPE_NONE, 0 },  // 300 normal
+  { "SKITTY", 301, 0, R_COMUN, 0x8C4D, 50, 45, 45, 50, TYPE_NORMAL, TYPE_NONE, 0 },  // 300 normal
   { "DELCATTY", 0, 0, R_EVO, 0x8C4D, 70, 65, 65, 70, TYPE_NORMAL, TYPE_NONE, 0 },  // 301 normal
   { "SABLEYE", 0, 0, R_RARO, 0x5249, 50, 75, 75, 50, TYPE_DARK, TYPE_GHOST, 0 },  // 302 dark/ghost
   { "MAWILE", 0, 0, R_RARO, 0x8CB4, 50, 85, 85, 50, TYPE_STEEL, TYPE_FAIRY, 0 },  // 303 steel/fairy
@@ -379,7 +379,7 @@ static const DexEntry DEX_TBL[DEX_COUNT + 1] = {
   { "CRADILY", 0, 0, R_EVO, 0x9407, 86, 81, 97, 43, TYPE_ROCK, TYPE_GRASS, 4 },  // 346 rock/grass
   { "ANORITH", 348, 40, R_COMUN, 0x9407, 45, 95, 50, 75, TYPE_ROCK, TYPE_BUG, 4 },  // 347 rock/bug
   { "ARMALDO", 0, 0, R_EVO, 0x9407, 75, 125, 100, 45, TYPE_ROCK, TYPE_BUG, 4 },  // 348 rock/bug
-  { "FEEBAS", 350, 30, R_COMUN, 0x4C98, 20, 15, 20, 80, TYPE_WATER, TYPE_NONE, 1 },  // 349 water
+  { "FEEBAS", 350, 0, R_COMUN, 0x4C98, 20, 15, 20, 80, TYPE_WATER, TYPE_NONE, 1 },  // 349 water
   { "MILOTIC", 0, 0, R_EVO, 0x4C98, 95, 60, 79, 81, TYPE_WATER, TYPE_NONE, 1 },  // 350 water
   { "CASTFORM", 0, 0, R_RARO, 0x8C4D, 70, 70, 70, 70, TYPE_NORMAL, TYPE_NONE, 0 },  // 351 normal
   { "KECLEON", 0, 0, R_RARO, 0x8C4D, 60, 90, 70, 40, TYPE_NORMAL, TYPE_NONE, 0 },  // 352 normal
@@ -396,7 +396,7 @@ static const DexEntry DEX_TBL[DEX_COUNT + 1] = {
   { "SPHEAL", 364, 32, R_COMUN, 0x4DB8, 70, 40, 50, 25, TYPE_ICE, TYPE_WATER, 5 },  // 363 ice/water
   { "SEALEO", 365, 44, R_EVO, 0x4DB8, 90, 60, 70, 45, TYPE_ICE, TYPE_WATER, 5 },  // 364 ice/water
   { "WALREIN", 0, 0, R_EVO, 0x4DB8, 110, 80, 90, 65, TYPE_ICE, TYPE_WATER, 5 },  // 365 ice/water
-  { "CLAMPERL", 367, 35, R_COMUN, 0x4C98, 35, 64, 85, 32, TYPE_WATER, TYPE_NONE, 1 },  // 366 water
+  { "CLAMPERL", 367, 0, R_COMUN, 0x4C98, 35, 64, 85, 32, TYPE_WATER, TYPE_NONE, 1 },  // 366 water
   { "HUNTAIL", 0, 0, R_EVO, 0x4C98, 55, 104, 105, 52, TYPE_WATER, TYPE_NONE, 1 },  // 367 water
   { "GOREBYSS", 0, 0, R_EVO, 0x4C98, 55, 84, 105, 52, TYPE_WATER, TYPE_NONE, 1 },  // 368 water
   { "RELICANTH", 0, 0, R_RARO, 0x4C98, 100, 90, 130, 55, TYPE_WATER, TYPE_ROCK, 1 },  // 369 water/rock
