@@ -231,6 +231,18 @@ uint16_t uiInk()   { return darkMode ? C565(0xee,0xf1,0xff) : UI_INK; }
 uint16_t uiSub()   { return darkMode ? C565(0x9f,0xaa,0xc6) : UI_TRACK; }
 uint16_t uiLine()  { return darkMode ? C565(0x44,0x50,0x70) : UI_TRACK; }
 
+// Choisit automatiquement un texte noir ou blanc selon la luminosité du fond.
+// Évite les textes blancs illisibles sur les cartes claires en mode sombre.
+uint16_t uiContrastText(uint16_t bg) {
+  uint8_t r = ((bg >> 11) & 0x1F) << 3;
+  uint8_t g = ((bg >> 5)  & 0x3F) << 2;
+  uint8_t b = ( bg        & 0x1F) << 3;
+  // Luminance perceptuelle entière ~ 0.299R + 0.587G + 0.114B
+  uint16_t lum = (uint16_t)(r * 3 + g * 6 + b) / 10;
+  return lum >= 145 ? C565(0x08,0x0a,0x0f) : C565(0xf4,0xf6,0xfb);
+}
+
+
 
 // botones de icono siguiendo el arco inferior de la pantalla redonda
 // (los exteriores van mas altos para no salirse del circulo)
@@ -1533,7 +1545,7 @@ void drawGameMenu() {
     const GameMenuTile &t = GAME_MENU_TILES[i];
     gfx->fillRoundRect(t.x, t.y, t.w, t.h, 14, cols[i]);
     gfx->drawRoundRect(t.x, t.y, t.w, t.h, 14, uiInk());
-    gfx->setTextColor(i == 1 ? UI_INK : UI_BG_DAY);
+    gfx->setTextColor(uiContrastText(cols[i]));
     gfx->setTextSize(2);
     gfx->setCursor(t.x + (t.w - (int)strlen(labels[i]) * 12) / 2, t.y + (t.h - 16) / 2);
     gfx->print(labels[i]);
@@ -2983,8 +2995,9 @@ void renderBattle() {
     if (battleCatchOffered && !battleCatchDone) {
       gfx->fillRoundRect(88, 394, 138, 44, 13, UI_BAR_OK);
       gfx->fillRoundRect(240, 394, 138, 44, 13, UI_TRACK);
-      gfx->setTextColor(UI_BG_DAY);
+      gfx->setTextColor(uiContrastText(UI_BAR_OK));
       drawBattleButtonLabel(88, 408, 138, T(S_CATCH_WILD));
+      gfx->setTextColor(uiContrastText(UI_TRACK));
       drawBattleButtonLabel(240, 408, 138, T(S_LEAVE_WILD));
     } else {
       if (battleCatchDone && battleCatchTried) {
@@ -2995,7 +3008,7 @@ void renderBattle() {
         gfx->print(catchMsg);
       }
       gfx->fillRoundRect(118, 398, 230, 42, 13, UI_BAR_OK);
-      gfx->setTextColor(UI_BG_DAY);
+      gfx->setTextColor(uiContrastText(UI_BAR_OK));
       gfx->setTextSize(2);
       gfx->setCursor(CX - (int)strlen(T(S_OK)) * 6, 411);
       gfx->print(T(S_OK));
@@ -3014,8 +3027,9 @@ void renderBattle() {
     if (battleAttackMenuUntil) {
       gfx->fillRoundRect(74, 306, 150, 42, 12, UI_BAR_BAD);
       gfx->fillRoundRect(242, 306, 150, 42, 12, UI_BAR_WARN);
-      gfx->setTextColor(UI_BG_DAY);
+      gfx->setTextColor(uiContrastText(UI_BAR_BAD));
       drawBattleButtonLabel(74, 318, 150, T(S_QUICK_ATTACK));
+      gfx->setTextColor(uiContrastText(UI_BAR_WARN));
       drawBattleButtonLabel(242, 318, 150, T(S_HEAVY_ATTACK));
     }
 
@@ -3023,11 +3037,13 @@ void renderBattle() {
     gfx->fillRoundRect(58, 358, 108, 58, 13, UI_BAR_BAD);
     gfx->fillRoundRect(179, 358, 108, 58, 13, 0x4C98);
     gfx->fillRoundRect(300, 358, 108, 58, 13, UI_BAR_OK);
-    gfx->setTextColor(UI_BG_DAY);
+    gfx->setTextColor(uiContrastText(UI_BAR_BAD));
     drawBattleButtonLabel(58, 380, 108, T(S_ATTACK));
+    gfx->setTextColor(uiContrastText(0x4C98));
     drawBattleButtonLabel(179, 380, 108, T(S_DODGE));
     char restLabel[18];
     snprintf(restLabel, sizeof(restLabel), "%s %u", T(S_REST), battleRun.restUsesLeft);
+    gfx->setTextColor(uiContrastText(UI_BAR_OK));
     drawBattleButtonLabel(300, 380, 108, restLabel);
   }
 
@@ -3243,7 +3259,7 @@ void renderHelp() {
     gfx->print("<<");
   }
   gfx->fillRoundRect(154, 398, 158, 42, 12, UI_BAR_OK);
-  gfx->setTextColor(UI_BG_DAY);
+  gfx->setTextColor(uiContrastText(UI_BAR_OK));
   gfx->setTextSize(2);
   const char *ok = HELP_OK[lang];
   gfx->setCursor(154 + (158 - (int)strlen(ok) * 12) / 2, 412);
@@ -4193,12 +4209,15 @@ void renderCardBox() {
       gfx->print(T(S_RAISED_MARK));
     }
   }
-  gfx->fillRoundRect(76, 348, 94, 38, 11, boxPage > 0 ? UI_TRACK : C565(0xe4, 0xe8, 0xee));
-  gfx->fillRoundRect(296, 348, 94, 38, 11, boxPage + 1 < pages ? UI_TRACK : C565(0xe4, 0xe8, 0xee));
-  gfx->setTextColor(UI_BG_DAY);
+  uint16_t prevBg = boxPage > 0 ? UI_TRACK : C565(0xe4, 0xe8, 0xee);
+  uint16_t nextBg = boxPage + 1 < pages ? UI_TRACK : C565(0xe4, 0xe8, 0xee);
+  gfx->fillRoundRect(76, 348, 94, 38, 11, prevBg);
+  gfx->fillRoundRect(296, 348, 94, 38, 11, nextBg);
   gfx->setTextSize(3);
+  gfx->setTextColor(uiContrastText(prevBg));
   gfx->setCursor(111, 357);
   gfx->print("<");
+  gfx->setTextColor(uiContrastText(nextBg));
   gfx->setCursor(331, 357);
   gfx->print(">");
   char pg[12];
@@ -4235,14 +4254,14 @@ void renderCardStats() {
   gfx->print(bb);
 
   gfx->fillRoundRect(96, 294, 274, 36, 11, 0x4C98);
-  gfx->setTextColor(UI_BG_DAY);
+  gfx->setTextColor(uiContrastText(0x4C98));
   gfx->setTextSize(2);
   gfx->setCursor(CX - strlen(T(S_WILD_BATTLE)) * 6, 305);
   gfx->print(T(S_WILD_BATTLE));
 
   // boton: saco de entrenamiento de fuerza
   gfx->fillRoundRect(96, 338, 274, 36, 11, UI_BAR_BAD);
-  gfx->setTextColor(UI_BG_DAY);
+  gfx->setTextColor(uiContrastText(UI_BAR_BAD));
   gfx->setTextSize(2);
   gfx->setCursor(CX - strlen(T(S_TRAIN_STR)) * 6, 349);
   gfx->print(T(S_TRAIN_STR));
@@ -4371,7 +4390,9 @@ void drawExpeditionItem(int x, int y, ExpeditionItem item) {
   const int w = 172, h = 54;
   uint8_t count = pet.itemCounts[item];
   uint16_t col = expeditionItemColor(item);
-  gfx->fillRoundRect(x, y, w, h, 9, count ? uiPanel() : C565(0xe4, 0xe8, 0xee));
+  uint16_t cardBg = count ? uiPanel() : C565(0xe4, 0xe8, 0xee);
+  uint16_t itemInk = uiContrastText(cardBg);
+  gfx->fillRoundRect(x, y, w, h, 9, cardBg);
   gfx->drawRoundRect(x, y, w, h, 9, count ? col : UI_TRACK);
   gfx->fillCircle(x + 22, y + 27, 12, count ? col : UI_TRACK);
   if (item == EXP_ITEM_ENERGY) gfx->fillRect(x + 20, y + 17, 5, 20, UI_WHITE);
@@ -4380,7 +4401,7 @@ void drawExpeditionItem(int x, int y, ExpeditionItem item) {
 
   const char *label = T(expeditionItemText(item));
   gfx->setTextSize(1);
-  gfx->setTextColor(count ? UI_INK : UI_TRACK);
+  gfx->setTextColor(itemInk);
   gfx->setCursor(x + 42, y + 16);
   gfx->print(label);
   char amount[6];
@@ -4405,8 +4426,9 @@ void renderExpeditionTrainChoice() {
   for (uint8_t i = 0; i < 3; i++) {
     int x = 74 + i * 108;
     bool usable = values[i] < 100;
-    gfx->fillRoundRect(x, 172, 102, 66, 9, usable ? cols[i] : UI_TRACK);
-    gfx->setTextColor(UI_BG_DAY);
+    uint16_t trainBg = usable ? cols[i] : UI_TRACK;
+    gfx->fillRoundRect(x, 172, 102, 66, 9, trainBg);
+    gfx->setTextColor(uiContrastText(trainBg));
     gfx->setTextSize(2);
     const char *label = T(labels[i]);
     gfx->setCursor(x + (102 - (int)strlen(label) * 12) / 2, 184);
@@ -4443,7 +4465,7 @@ void renderCardExpedition() {
     gfx->setCursor(CX - strlen(found) * 6, 78);
     gfx->print(found);
     gfx->fillRoundRect(98, 98, 270, 48, 11, UI_BAR_OK);
-    gfx->setTextColor(UI_BG_DAY);
+    gfx->setTextColor(uiContrastText(UI_BAR_OK));
     gfx->setTextSize(2);
     gfx->setCursor(CX - strlen(T(S_EXP_CLAIM)) * 6, 111);
     gfx->print(T(S_EXP_CLAIM));
@@ -4467,8 +4489,9 @@ void renderCardExpedition() {
       uint8_t cost = Pet::expeditionEnergyCost(minutes[i]);
       bool available = pet.canStartExpedition(minutes[i], nowEpoch);
       uint16_t col = i == 0 ? UI_BAR_OK : i == 1 ? 0x4C98 : UI_BAR_BAD;
-      gfx->fillRoundRect(xs[i], 94, 106, 54, 9, available ? col : UI_TRACK);
-      gfx->setTextColor(UI_BG_DAY);
+      uint16_t expBg = available ? col : UI_TRACK;
+      gfx->fillRoundRect(xs[i], 94, 106, 54, 9, expBg);
+      gfx->setTextColor(uiContrastText(expBg));
       gfx->setTextSize(2);
       const char *label = T(labels[i]);
       gfx->setCursor(xs[i] + (106 - (int)strlen(label) * 12) / 2, 104);

@@ -1,0 +1,17 @@
+TamaPoke V8.6.1 - Auto Contrast
+
+- Ajout uiContrastText(bg) : choix automatique noir/blanc selon la luminosité.
+- Cartes claires du SAC/EXPEDITION : texte noir.
+- Cartes sombres : texte blanc.
+- Cartes désactivées gris clair : texte sombre.
+- Bouton PRENDRE turquoise : contraste automatique.
+- Choix 15/30/60 min : contraste automatique.
+- Jeton entraînement : contraste automatique.
+- Menu mini-jeux : contraste automatique.
+- Boutons combat colorés : contraste individuel par bouton.
+- Boutons aide / combat / entraînement corrigés.
+- Navigation de boîte claire corrigée.
+
+Le thème sombre et le rendu Poké Ball V8.6 restent inchangés.
+
+Version : 1.34.1-moretro-auto-contrast-v8.6.1

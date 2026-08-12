@@ -1,25 +1,25 @@
 {
-  "name": "TamaPoke FR - MoRetro V8.6 Dark Pokeball Clean",
-  "version": "1.34.0-moretro-dark-pokeball-clean-v8.6",
+  "name": "TamaPoke FR - MoRetro V8.6.1 Auto Contrast",
+  "version": "1.34.1-moretro-auto-contrast-v8.6.1",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/tamapoke-1.34.0-moretro-dark-pokeball-clean-v8.6-bootloader.bin",
+          "path": "firmware/tamapoke-1.34.1-moretro-auto-contrast-v8.6.1-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/tamapoke-1.34.0-moretro-dark-pokeball-clean-v8.6-partitions.bin",
+          "path": "firmware/tamapoke-1.34.1-moretro-auto-contrast-v8.6.1-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/tamapoke-1.34.0-moretro-dark-pokeball-clean-v8.6-boot_app0.bin",
+          "path": "firmware/tamapoke-1.34.1-moretro-auto-contrast-v8.6.1-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/tamapoke-1.34.0-moretro-dark-pokeball-clean-v8.6-app.bin",
+          "path": "firmware/tamapoke-1.34.1-moretro-auto-contrast-v8.6.1-app.bin",
           "offset": 65536
         }
       ]
