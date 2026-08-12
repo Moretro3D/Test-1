@@ -28,12 +28,41 @@ jobs:
         with:
           version: "1.x"
 
-      - name: Installer ESP32
+      - name: Cache Arduino ESP32
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.arduino15
+            ~/Arduino/libraries
+          key: arduino-esp32-3.3.11-${{ runner.os }}-v2
+          restore-keys: |
+            arduino-esp32-3.3.11-${{ runner.os }}-
+
+      - name: Installer ESP32 avec retry
+        shell: bash
         run: |
-          arduino-cli config init
+          set -e
+          arduino-cli config init || true
           arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
-          arduino-cli core update-index
-          arduino-cli core install esp32:esp32
+
+          for attempt in 1 2 3 4; do
+            echo "Installation ESP32 3.3.11 - tentative ${attempt}/4"
+            if arduino-cli core update-index && arduino-cli core install esp32:esp32@3.3.11; then
+              echo "ESP32 core installe."
+              break
+            fi
+
+            if [ "$attempt" -eq 4 ]; then
+              echo "Echec apres 4 tentatives."
+              exit 1
+            fi
+
+            wait_seconds=$((attempt * 15))
+            echo "Nouvelle tentative dans ${wait_seconds}s..."
+            sleep "$wait_seconds"
+          done
+
+          arduino-cli core list
 
       - name: Installer les bibliotheques TamaPoke
         run: |
@@ -54,7 +83,7 @@ jobs:
           path: |
             tools/pmd_cache
             tools/sdcard/mons
-          key: tamapoke-pmd-251-v1
+          key: tamapoke-pmd-386-v2
 
       - name: Compiler le firmware
         run: |

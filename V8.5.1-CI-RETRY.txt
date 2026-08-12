@@ -1,0 +1,15 @@
+TamaPoke V8.5.1 - CI Retry
+
+Le firmware V8.5 Evolution Clean reste fonctionnellement identique.
+
+CI renforcée :
+- ESP32 Arduino Core figé sur 3.3.11
+- cache ~/.arduino15 et ~/Arduino/libraries
+- 4 tentatives d'installation du core
+- attente progressive 15 / 30 / 45 secondes
+- core update-index relancé à chaque tentative
+- cache sprites PMD mis à jour pour 386 Pokémon
+- affichage arduino-cli core list avant compilation
+
+Le log précédent était un timeout réseau pendant le téléchargement
+de xtensa-esp-elf, avant toute compilation du firmware.
