@@ -3342,11 +3342,18 @@ void renderDisplaySettings() {
   gfx->drawRoundRect(76,154,314,196,20,uiLine());
   drawCollectionFrame(CX,244,76,pet.collectionFrame);
 
-  // Poké Ball centrale légère pour visualiser les templates même sans sprite.
-  gfx->fillCircle(CX,244,24,C565(0xe8,0x50,0x3a));
-  gfx->fillRect(CX-24,242,48,5,uiInk());
-  gfx->fillCircle(CX,244,8,UI_WHITE);
-  gfx->drawCircle(CX,244,8,uiInk());
+  // Poké Ball classique : vrai rouge / blanc / noir.
+  uint16_t pbRed = C565(0xff,0x1e,0x2d);
+  uint16_t pbBlack = C565(0x0d,0x0d,0x12);
+  uint16_t pbWhite = C565(0xf7,0xf7,0xf7);
+
+  gfx->fillCircle(CX,244,26,pbRed);
+  gfx->fillRect(CX-26,244,53,27,pbWhite);
+  gfx->fillRect(CX-26,241,53,6,pbBlack);
+  gfx->fillCircle(CX,244,9,pbBlack);
+  gfx->fillCircle(CX,244,6,pbWhite);
+  gfx->fillCircle(CX,244,3,C565(0xd9,0xdd,0xe5));
+  gfx->drawCircle(CX,244,26,pbBlack);
 
   uint8_t unlocked=pet.unlockedCollectionFrameCount();
   const char *fn=frameTemplateName(pet.collectionFrame);
@@ -3531,7 +3538,7 @@ uint16_t collectionFrameColor(uint8_t frame) {
   static const uint16_t COLORS[] = {
     UI_TRACK,
     C565(0x8c,0x65,0xd9), // classique violet
-    C565(0xed,0x4b,0x42), // pokeball rouge
+    C565(0xff,0x1e,0x2d), // pokeball rouge vif
     C565(0xf1,0xc2,0x45), // or
     C565(0xc4,0xcc,0xda), // argent
     C565(0x47,0xdc,0xff), // neon cyan
@@ -3540,10 +3547,27 @@ uint16_t collectionFrameColor(uint8_t frame) {
 }
 
 void drawFrameMiniBall(int cx,int cy,int r) {
-  gfx->fillCircle(cx,cy,r,C565(0xed,0x4b,0x42));
-  gfx->fillRect(cx-r,cy-1,r*2+1,3,uiInk());
-  gfx->fillCircle(cx,cy,max(2,r/3),UI_WHITE);
-  gfx->drawCircle(cx,cy,max(2,r/3),uiInk());
+  uint16_t red = C565(0xff,0x1e,0x2d);
+  uint16_t black = C565(0x0d,0x0d,0x12);
+  uint16_t white = C565(0xf7,0xf7,0xf7);
+
+  // moitié haute rouge
+  gfx->fillCircle(cx,cy,r,red);
+  // moitié basse blanche
+  gfx->fillRect(cx-r,cy,r*2+1,r+1,white);
+
+  // ceinture noire
+  int band = max(2, r/4);
+  gfx->fillRect(cx-r,cy-band/2,r*2+1,band,black);
+
+  // bouton central
+  int outer = max(3, r/3);
+  gfx->fillCircle(cx,cy,outer,black);
+  gfx->fillCircle(cx,cy,max(2,outer-2),white);
+  gfx->fillCircle(cx,cy,max(1,r/6),C565(0xd9,0xdd,0xe5));
+
+  // contour
+  gfx->drawCircle(cx,cy,r,black);
 }
 
 void drawFrameSpark(int x,int y,uint16_t c) {
@@ -3583,14 +3607,22 @@ void drawCollectionFrame(int cx,int cy,int radius,uint8_t frame) {
       gfx->fillCircle(px,py,4,violet);
       gfx->fillCircle(px,py,2,UI_WHITE);
     }
-  } else if (frame==2) { // POKEBALL
-    uint16_t red=C565(0xed,0x4b,0x42);
-    drawSegmentedFrameRing(cx,cy,radius,red,UI_WHITE);
-    gfx->drawCircle(cx,cy,radius-6,uiInk());
-    drawFrameMiniBall(cx,cy-radius,7);
-    drawFrameMiniBall(cx+radius,cy,7);
-    drawFrameMiniBall(cx,cy+radius,7);
-    drawFrameMiniBall(cx-radius,cy,7);
+  } else if (frame==2) { // POKEBALL : rouge / blanc / noir
+    uint16_t red=C565(0xff,0x1e,0x2d);
+    uint16_t white=C565(0xf7,0xf7,0xf7);
+    uint16_t black=C565(0x0d,0x0d,0x12);
+
+    // Anneau Poké Ball : alternance rouge / blanc
+    drawSegmentedFrameRing(cx,cy,radius,red,white);
+    // Liseré noir propre
+    gfx->drawCircle(cx,cy,radius-5,black);
+    gfx->drawCircle(cx,cy,radius-8,red);
+
+    // 4 mini Poké Balls rouges autour du cadre
+    drawFrameMiniBall(cx,cy-radius,8);
+    drawFrameMiniBall(cx+radius,cy,8);
+    drawFrameMiniBall(cx,cy+radius,8);
+    drawFrameMiniBall(cx-radius,cy,8);
   } else if (frame==3) { // OR
     uint16_t gold=C565(0xf1,0xc2,0x45);
     uint16_t amber=C565(0xc7,0x80,0x18);
