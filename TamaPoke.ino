@@ -3335,25 +3335,27 @@ void renderDisplaySettings() {
   gfx->setCursor(49,38);
   gfx->print("<");
 
-  drawSettingsRow(64,88,338,48,"MODE",darkMode ? "SOMBRE" : "CLAIR", darkMode);
+  // MODE : rouge coordonné à la Poké Ball en thème sombre.
+  uint16_t modeFill = darkMode ? C565(0x8f,0x0f,0x19) : uiPanel();
+  uint16_t modeLine = darkMode ? C565(0xff,0x28,0x38) : uiLine();
+  gfx->fillRoundRect(64,88,338,48,12,modeFill);
+  gfx->drawRoundRect(64,88,338,48,12,modeLine);
+  gfx->setTextColor(darkMode ? UI_WHITE : uiInk());
+  gfx->setTextSize(2);
+  gfx->setCursor(78,100);
+  gfx->print("MODE");
+  const char *modeTxt = darkMode ? "SOMBRE" : "CLAIR";
+  gfx->setCursor(388-(int)strlen(modeTxt)*12,100);
+  gfx->print(modeTxt);
 
   // Grande prévisualisation réelle du cadre.
   gfx->fillRoundRect(76,154,314,196,20,uiPanel2());
-  gfx->drawRoundRect(76,154,314,196,20,uiLine());
+  gfx->drawRoundRect(76,154,314,196,20,
+                     darkMode ? C565(0xff,0x28,0x38) : uiLine());
   drawCollectionFrame(CX,244,76,pet.collectionFrame);
 
-  // Poké Ball classique : vrai rouge / blanc / noir.
-  uint16_t pbRed = C565(0xff,0x1e,0x2d);
-  uint16_t pbBlack = C565(0x0d,0x0d,0x12);
-  uint16_t pbWhite = C565(0xf7,0xf7,0xf7);
-
-  gfx->fillCircle(CX,244,26,pbRed);
-  gfx->fillRect(CX-26,244,53,27,pbWhite);
-  gfx->fillRect(CX-26,241,53,6,pbBlack);
-  gfx->fillCircle(CX,244,9,pbBlack);
-  gfx->fillCircle(CX,244,6,pbWhite);
-  gfx->fillCircle(CX,244,3,C565(0xd9,0xdd,0xe5));
-  gfx->drawCircle(CX,244,26,pbBlack);
+  // Poké Ball propre, sans débordement du blanc.
+  drawCleanPokeball(CX,244,30);
 
   uint8_t unlocked=pet.unlockedCollectionFrameCount();
   const char *fn=frameTemplateName(pet.collectionFrame);
@@ -3371,9 +3373,11 @@ void renderDisplaySettings() {
 
   // Flèches de choix.
   gfx->fillRoundRect(82,218,52,52,14,uiPanel());
-  gfx->drawRoundRect(82,218,52,52,14,uiLine());
+  gfx->drawRoundRect(82,218,52,52,14,
+                     darkMode ? C565(0xff,0x28,0x38) : uiLine());
   gfx->fillRoundRect(332,218,52,52,14,uiPanel());
-  gfx->drawRoundRect(332,218,52,52,14,uiLine());
+  gfx->drawRoundRect(332,218,52,52,14,
+                     darkMode ? C565(0xff,0x28,0x38) : uiLine());
   gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
   gfx->setCursor(98,229); gfx->print("<");
@@ -3547,28 +3551,80 @@ uint16_t collectionFrameColor(uint8_t frame) {
 }
 
 void drawFrameMiniBall(int cx,int cy,int r) {
-  uint16_t red = C565(0xff,0x1e,0x2d);
-  uint16_t black = C565(0x0d,0x0d,0x12);
-  uint16_t white = C565(0xf7,0xf7,0xf7);
+  uint16_t red   = C565(0xff,0x1e,0x2d);
+  uint16_t black = C565(0x0b,0x0c,0x10);
+  uint16_t white = C565(0xf8,0xf8,0xf6);
+  uint16_t grey  = C565(0xd4,0xd8,0xe0);
 
-  // moitié haute rouge
+  // Disque rouge complet.
   gfx->fillCircle(cx,cy,r,red);
-  // moitié basse blanche
-  gfx->fillRect(cx-r,cy,r*2+1,r+1,white);
 
-  // ceinture noire
-  int band = max(2, r/4);
-  gfx->fillRect(cx-r,cy-band/2,r*2+1,band,black);
+  // Demi-disque blanc réellement contenu dans le cercle.
+  // Pour chaque ligne Y du bas, on calcule la demi-largeur du cercle.
+  for (int dy=0; dy<=r; dy++) {
+    int yy = cy + dy;
+    int xx = (int)sqrtf((float)(r*r - dy*dy));
+    gfx->drawFastHLine(cx-xx, yy, xx*2+1, white);
+  }
 
-  // bouton central
-  int outer = max(3, r/3);
+  // Ceinture noire parfaitement contenue entre les bords du cercle.
+  int band = max(3, r/5);
+  for (int dy=-band/2; dy<=band/2; dy++) {
+    int yy = cy + dy;
+    int rr = r*r - dy*dy;
+    if (rr < 0) continue;
+    int xx = (int)sqrtf((float)rr);
+    gfx->drawFastHLine(cx-xx, yy, xx*2+1, black);
+  }
+
+  // Bouton central.
+  int outer = max(4, r/3);
+  int mid   = max(3, outer-2);
+  int inner = max(1, r/7);
   gfx->fillCircle(cx,cy,outer,black);
-  gfx->fillCircle(cx,cy,max(2,outer-2),white);
-  gfx->fillCircle(cx,cy,max(1,r/6),C565(0xd9,0xdd,0xe5));
+  gfx->fillCircle(cx,cy,mid,white);
+  gfx->fillCircle(cx,cy,inner,grey);
 
-  // contour
+  // Contour final.
   gfx->drawCircle(cx,cy,r,black);
 }
+
+void drawCleanPokeball(int cx,int cy,int r) {
+  uint16_t red   = C565(0xff,0x1e,0x2d);
+  uint16_t black = C565(0x0b,0x0c,0x10);
+  uint16_t white = C565(0xf8,0xf8,0xf6);
+  uint16_t grey  = C565(0xd4,0xd8,0xe0);
+
+  gfx->fillCircle(cx,cy,r,red);
+
+  // Bas blanc sans aucun débordement hors du cercle.
+  for (int dy=0; dy<=r; dy++) {
+    int yy = cy + dy;
+    int xx = (int)sqrtf((float)(r*r - dy*dy));
+    gfx->drawFastHLine(cx-xx, yy, xx*2+1, white);
+  }
+
+  // Ceinture centrale noire contenue.
+  int band = max(5, r/7);
+  for (int dy=-band/2; dy<=band/2; dy++) {
+    int yy = cy + dy;
+    int rr = r*r - dy*dy;
+    if (rr < 0) continue;
+    int xx = (int)sqrtf((float)rr);
+    gfx->drawFastHLine(cx-xx, yy, xx*2+1, black);
+  }
+
+  // Bouton central en trois niveaux.
+  int outer = max(8, r/4);
+  gfx->fillCircle(cx,cy,outer,black);
+  gfx->fillCircle(cx,cy,max(5,outer-3),white);
+  gfx->fillCircle(cx,cy,max(2,r/10),grey);
+
+  // Contour externe noir.
+  gfx->drawCircle(cx,cy,r,black);
+  gfx->drawCircle(cx,cy,r-1,black);
+}
+
 
 void drawFrameSpark(int x,int y,uint16_t c) {
   gfx->drawFastHLine(x-4,y,9,c);
@@ -3607,18 +3663,17 @@ void drawCollectionFrame(int cx,int cy,int radius,uint8_t frame) {
       gfx->fillCircle(px,py,4,violet);
       gfx->fillCircle(px,py,2,UI_WHITE);
     }
-  } else if (frame==2) { // POKEBALL : rouge / blanc / noir
-    uint16_t red=C565(0xff,0x1e,0x2d);
-    uint16_t white=C565(0xf7,0xf7,0xf7);
-    uint16_t black=C565(0x0d,0x0d,0x12);
+  } else if (frame==2) { // POKEBALL : rouge / blanc / noir propre
+    uint16_t red   = C565(0xff,0x1e,0x2d);
+    uint16_t white = C565(0xf8,0xf8,0xf6);
+    uint16_t black = C565(0x0b,0x0c,0x10);
 
-    // Anneau Poké Ball : alternance rouge / blanc
+    // Anneau rouge principal avec segments blancs contrôlés.
     drawSegmentedFrameRing(cx,cy,radius,red,white);
-    // Liseré noir propre
-    gfx->drawCircle(cx,cy,radius-5,black);
+    gfx->drawCircle(cx,cy,radius-4,black);
     gfx->drawCircle(cx,cy,radius-8,red);
 
-    // 4 mini Poké Balls rouges autour du cadre
+    // 4 Poké Balls propres autour de l'anneau.
     drawFrameMiniBall(cx,cy-radius,8);
     drawFrameMiniBall(cx+radius,cy,8);
     drawFrameMiniBall(cx,cy+radius,8);
