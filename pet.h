@@ -246,7 +246,7 @@ public:
   bool setCollectionFrame(uint8_t frame);
   void registerCaught(int16_t dex);
   uint16_t nextDexGoal() const;
-  uint8_t applyDexRewards();
+  uint16_t applyDexRewards();
   uint8_t catchChanceForWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, bool closeWin) const;
   uint8_t respectCatchChanceForWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel) const;
   bool tryCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, bool closeWin, uint8_t luckRoll);
@@ -270,7 +270,7 @@ public:
   bool showMedal() const { return millis() < medalUntil; }
   bool showMilestone() const { return millis() < milestoneUntil; }
   bool showDexReward() const { return millis() < dexRewardUntil; }
-  uint8_t lastDexRewardGoal() const { return lastDexReward; }
+  uint16_t lastDexRewardGoal() const { return lastDexReward; }
   int careBonus() const;  // mejora del huevo por racha + vinculo
 
   // guardado periodico diferido: tick() marca pendiente y el loop lo vuelca
@@ -307,7 +307,7 @@ private:
   uint32_t medalUntil = 0;     // celebracion de medalla en pantalla
   uint32_t milestoneUntil = 0; // celebracion de hito de racha
   uint32_t dexRewardUntil = 0;
-  uint8_t lastDexReward = 0;
+  uint16_t lastDexReward = 0;
 
   uint32_t today() const { return lastSeenEpoch ? lastSeenEpoch / 86400 : 0; }
   void registerCare();   // primer cuidado del dia: racha + vinculo

@@ -28,7 +28,7 @@ static uint32_t gLastChirpAt = 0;
 enum AudioEventKind : uint8_t { AUDIO_EVENT_SFX = 0, AUDIO_EVENT_CHIRP };
 struct AudioEvent {
   uint8_t kind;
-  uint8_t value;
+  uint16_t value;  // SFX 0.., ou numéro Pokédex 1..386
 };
 
 // ---- I2C del códec ----
@@ -270,7 +270,7 @@ static void playTone(const Note &note) {
   }
 }
 
-static void playSpeciesChirp(uint8_t dex) {
+static void playSpeciesChirp(uint16_t dex) {
   SpeciesChirpProfile profile{};
   if (!speciesChirpProfile(dex, &profile)) return;
   for (uint8_t i = 0; i < profile.count; i++) {
@@ -377,6 +377,6 @@ void speciesChirpPlay(int16_t dex) {
   uint32_t now = millis();
   if (now - gLastChirpAt < 800UL) return;
   gLastChirpAt = now;
-  AudioEvent event = { AUDIO_EVENT_CHIRP, (uint8_t)dex };
+  AudioEvent event = { AUDIO_EVENT_CHIRP, (uint16_t)dex };
   xQueueSend(gQ, &event, gMode == SOUND_FULL ? pdMS_TO_TICKS(28) : 0);
 }

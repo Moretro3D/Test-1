@@ -439,17 +439,17 @@ bool Pet::setCollectionFrame(uint8_t frame) {
 uint16_t Pet::nextDexGoal() const {
   static const uint16_t GOALS[] = { 10, 25, 50, 100, 151, 251, 386 };
   uint16_t known = knownDexCount();
-  for (uint8_t i = 0; i < sizeof(GOALS); i++)
+  for (uint8_t i = 0; i < sizeof(GOALS) / sizeof(GOALS[0]); i++)
     if (known < GOALS[i]) return GOALS[i];
   return 386;
 }
 
-uint8_t Pet::applyDexRewards() {
+uint16_t Pet::applyDexRewards() {
   if (ceremony != CER_NONE || isEgg()) return 0;
-  static const uint8_t GOALS[] = { 10, 25, 50, 100, 151 };
+  static const uint16_t GOALS[] = { 10, 25, 50, 100, 151, 251, 386 };
   uint16_t known = knownDexCount();
-  uint8_t reached = 0;
-  for (uint8_t i = 0; i < sizeof(GOALS); i++) {
+  uint16_t reached = 0;
+  for (uint8_t i = 0; i < sizeof(GOALS) / sizeof(GOALS[0]); i++) {
     uint8_t bit = 1 << i;
     if (known < GOALS[i] || (dexRewardMask & bit)) continue;
     dexRewardMask |= bit;
@@ -462,7 +462,13 @@ uint8_t Pet::applyDexRewards() {
       else trSpe = clamp100((int)trSpe + 1);
     } else if (GOALS[i] == 100) {
       addBond(4);
-    } else {
+    } else if (GOALS[i] == 151) {
+      heartUntil = millis() + HEART_MS;
+    } else if (GOALS[i] == 251) {
+      addBond(5);
+      heartUntil = millis() + HEART_MS;
+    } else if (GOALS[i] == 386) {
+      addBond(8);
       heartUntil = millis() + HEART_MS;
     }
   }

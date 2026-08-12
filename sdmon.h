@@ -12,7 +12,7 @@ struct SdMon {
   uint16_t pal[256];
   uint8_t *data = nullptr;  // frames * w * h indices (0xFF = transparente)
 
-  bool load(uint8_t dexNum, bool shiny = false);  // 1..251 (uint8_t suffit)
+  bool load(uint16_t dexNum, bool shiny = false);  // 1..386
   void unload();
 };
 
@@ -38,7 +38,7 @@ struct PmdMon {
   uint8_t *blob = nullptr;
   PmdAct acts[PMD_NACTS];
 
-  bool load(uint8_t dexNum, bool shiny = false);
+  bool load(uint16_t dexNum, bool shiny = false);
   void unload();
   bool has(uint8_t a) const { return loaded && a < PMD_NACTS && acts[a].frames > 0; }
 };

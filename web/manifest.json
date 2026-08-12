@@ -1,25 +1,25 @@
 {
-  "name": "TamaPoke FR - MoRetro V8.3 Traduction Audit",
-  "version": "1.33.3-moretro-fr-audit-v8.3",
+  "name": "TamaPoke FR - MoRetro V8.4 Sprite ID Safe",
+  "version": "1.33.4-moretro-sprite-safe-v8.4",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/tamapoke-1.33.3-moretro-fr-audit-v8.3-bootloader.bin",
+          "path": "firmware/tamapoke-1.33.4-moretro-sprite-safe-v8.4-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/tamapoke-1.33.3-moretro-fr-audit-v8.3-partitions.bin",
+          "path": "firmware/tamapoke-1.33.4-moretro-sprite-safe-v8.4-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/tamapoke-1.33.3-moretro-fr-audit-v8.3-boot_app0.bin",
+          "path": "firmware/tamapoke-1.33.4-moretro-sprite-safe-v8.4-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/tamapoke-1.33.3-moretro-fr-audit-v8.3-app.bin",
+          "path": "firmware/tamapoke-1.33.4-moretro-sprite-safe-v8.4-app.bin",
           "offset": 65536
         }
       ]

@@ -9,7 +9,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 FQBN="esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
-VERSION="1.33.3-moretro-fr-audit-v8.3"
+VERSION="1.33.4-moretro-sprite-safe-v8.4"
 
 echo "Préparation du sketch TamaPoke..."
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/tamapoke-ci.XXXXXX")"
@@ -69,5 +69,8 @@ python3 "$ROOT/tools/make_thumbs.py"
 
 echo "Empaquetage des sprites Kanto + Johto + Hoenn..."
 python3 "$ROOT/tools/pack_bundle.py"
+
+echo "Audit intégral des assets #001-386..."
+python3 "$ROOT/tools/audit_386_assets.py"
 
 echo "BUILD TERMINE"

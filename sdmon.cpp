@@ -7,9 +7,9 @@ bool sdReady = false;
 bool sdDirty = false;
 SdThumbs thumbs;
 
-bool PmdMon::load(uint8_t dexNum, bool shiny) {
+bool PmdMon::load(uint16_t dexNum, bool shiny) {
   unload();
-  if (!sdReady) return false;
+  if (!sdReady || dexNum < 1 || dexNum > 386) return false;
 
   char path[28];
   snprintf(path, sizeof(path), "/mons/p%s%03u.bin", shiny ? "s" : "", dexNum);
@@ -125,9 +125,9 @@ bool sdBegin() {
   return sdReady;
 }
 
-bool SdMon::load(uint8_t dexNum, bool shiny) {
+bool SdMon::load(uint16_t dexNum, bool shiny) {
   unload();
-  if (!sdReady) return false;
+  if (!sdReady || dexNum < 1 || dexNum > 386) return false;
 
   char path[24];
   snprintf(path, sizeof(path), "/mons/%s%03u.bin", shiny ? "s" : "", dexNum);
