@@ -1026,19 +1026,14 @@ void onTap(int16_t x, int16_t y) {
   }
   if (pet.ceremony) return;  // durante la despedida no hay botones
   if (cardOpen) {
-    if (cardPage == 0 && y < 84) openKeyboard();  // tocar el nombre = renombrar
-    else if (cardPage == 0 && y >= 366 && y <= 398) {
-      uint8_t count = pet.unlockedCollectionFrameCount();
-      uint8_t next = pet.collectionFrame;
-      if (x >= 62 && x <= 146) next = pet.collectionFrame == 0 ? count - 1 : pet.collectionFrame - 1;
-      else if (x >= 320 && x <= 404) next = (uint8_t)((pet.collectionFrame + 1) % count);
-      else return;
-      if (pet.setCollectionFrame(next)) {
-        cardDirty = true;
-        sfxPlay(SFX_MENU);
-        lockTouchBrief();
-      }
+    if (x >= 120 && x <= 346 && y >= 388 && y <= 446) {
+      cardOpen=false;
+      markUiDirty();
+      lockTouchBrief();
+      sfxPlay(SFX_TAP);
+      return;
     }
+    if (cardPage == 0 && y < 84) openKeyboard();  // tocar el nombre = renombrar
     else if (cardPage == 3) {
       if (x >= 302 && x <= 408 && y >= 62 && y <= 92) {
         boxSort = (boxSort + 1) % 3;
@@ -1273,74 +1268,91 @@ void drawClouds(uint32_t now, uint16_t col) {
 }
 
 void drawScene(uint8_t biome, uint32_t now, bool night) {
-  int h = sceneHour();
-  uint16_t top, bot;
-  if (night)            { top = C565(0x0c, 0x12, 0x24); bot = C565(0x1e, 0x26, 0x46); }
-  else if (h < 8)       { top = C565(0xd1, 0x6a, 0x86); bot = C565(0xf3, 0xb8, 0x7c); }  // amanecer
-  else if (h < 18)      { top = C565(0x8f, 0xc8, 0xea); bot = C565(0xdc, 0xee, 0xe6); }  // dia
-  else                  { top = C565(0xc7, 0x5a, 0x4a); bot = C565(0xf0, 0xae, 0x64); }  // atardecer
+  int h=sceneHour();
+  // 4 phases explicites sur 24 h :
+  // 06-07 lever, 08-17 jour, 18-19 coucher, 20-05 nuit.
+  uint8_t phase = (h>=6 && h<8) ? 0 : (h>=8 && h<18) ? 1 : (h>=18 && h<20) ? 2 : 3;
+  if (night) phase=3;
 
-  // cielo en bandas
-  for (int y = 0; y < HORIZON; y += 8)
-    gfx->fillRect(0, y, 466, 8, lerp565(top, bot, y, HORIZON));
+  uint16_t top,mid,bot;
+  if (phase==0) {       // lever du soleil
+    top=C565(0x3b,0x32,0x8f); mid=C565(0xb8,0x55,0x9b); bot=C565(0xff,0xb0,0x58);
+  } else if (phase==1) {// jour
+    top=C565(0x0d,0x68,0xb8); mid=C565(0x39,0xa7,0xe3); bot=C565(0xa8,0xdf,0xee);
+  } else if (phase==2) {// coucher
+    top=C565(0x52,0x20,0x72); mid=C565(0xd2,0x43,0x62); bot=C565(0xff,0x9a,0x38);
+  } else {              // nuit
+    top=C565(0x07,0x10,0x31); mid=C565(0x0e,0x25,0x5a); bot=C565(0x18,0x39,0x78);
+  }
 
-  // sol o luna
-  if (night) {
-    gfx->fillCircle(360, 78, 24, C565(0xe8, 0xee, 0xf5));
-    gfx->fillCircle(370, 72, 22, lerp565(top, bot, 78, HORIZON));  // creciente
-    for (auto &st : STARS) gfx->fillRect(st[0], st[1], 4, 4, UI_WHITE);
-  } else if (h < 18) {
-    gfx->fillCircle(360, 84, 26, h < 8 ? C565(0xff, 0xd9, 0x8a) : C565(0xff, 0xe7, 0x9f));
-    drawClouds(now, C565(0xff, 0xff, 0xff));
+  // Bandes pixel-art douces, proches du rendu validé.
+  for (int y=0;y<HORIZON;y+=8) {
+    uint16_t c = y < HORIZON/2
+      ? lerp565(top,mid,y,HORIZON/2)
+      : lerp565(mid,bot,y-HORIZON/2,HORIZON/2);
+    gfx->fillRect(0,y,466,8,c);
+  }
+
+  // Astres et ciel.
+  if (phase==3) {
+    gfx->fillCircle(366,76,25,C565(0xf5,0xef,0xc8));
+    gfx->fillCircle(376,68,23,lerp565(top,mid,1,3)); // croissant
+    for (auto &st:STARS) gfx->fillRect(st[0],st[1],3,3,UI_WHITE);
+  } else if (phase==0) {
+    gfx->fillCircle(358,HORIZON-18,32,C565(0xff,0xd0,0x58));
+    drawClouds(now,C565(0xff,0xc0,0xb8));
+  } else if (phase==1) {
+    gfx->fillCircle(370,78,25,C565(0xff,0xe2,0x58));
+    drawClouds(now,C565(0xf7,0xfb,0xff));
   } else {
-    gfx->fillCircle(233, HORIZON - 6, 34, C565(0xff, 0xf1, 0xc8));  // sol poniente
+    gfx->fillCircle(360,HORIZON-14,34,C565(0xff,0xc1,0x45));
+    drawClouds(now,C565(0xeb,0x7b,0x76));
   }
 
-  // mar de la playa: una franja de agua sobre la arena
-  uint16_t soil = BIOME_SOIL[biome < 6 ? biome : 0];
-  if (night) soil = lerp565(soil, C565(0x16, 0x1c, 0x30), 9, 16);
-  if (biome == 1) {
-    uint16_t sea = night ? C565(0x1c, 0x34, 0x52) : C565(0x4f, 0x96, 0xc4);
-    gfx->fillRect(0, HORIZON - 26, 466, 26, sea);
-    for (int i = 0; i < 3; i++) {
-      int wy = HORIZON - 22 + i * 7;
-      uint16_t fc = night ? C565(0x3a, 0x58, 0x78) : C565(0xbf, 0xe6, 0xf5);
-      gfx->fillRect(60 + ((now / 60 + i * 30) % 60), wy, 26, 2, fc);
-      gfx->fillRect(300 - ((now / 60 + i * 20) % 60), wy, 26, 2, fc);
+  uint8_t b=biome<6?biome:0;
+  uint16_t soil=BIOME_SOIL[b];
+  if (phase==3) soil=lerp565(soil,C565(0x0b,0x16,0x34),10,16);
+  else if (phase==2) soil=lerp565(soil,C565(0x72,0x3c,0x58),4,16);
+  else if (phase==0) soil=lerp565(soil,C565(0x78,0x5c,0x80),3,16);
+
+  // Habitat principal de l'espèce.
+  if (b==1) { // eau/plage
+    uint16_t sea=(phase==3)?C565(0x13,0x3d,0x68):C565(0x2e,0x83,0xb9);
+    gfx->fillRect(0,HORIZON-38,466,38,sea);
+    for(int i=0;i<4;i++){
+      int yy=HORIZON-32+i*8;
+      uint16_t wc=(phase==3)?C565(0x6b,0x8f,0xb8):C565(0xc8,0xf0,0xf8);
+      gfx->fillRect((45+i*107+(now/80)%42)%430,yy,36,2,wc);
     }
   }
 
-  // suelo
-  gfx->fillRect(0, HORIZON, 466, 466 - HORIZON, soil);
-  uint16_t hill = lerp565(soil, night ? C565(0x0c, 0x12, 0x24) : C565(0xff, 0xff, 0xff), 3, 16);
-  gfx->fillRoundRect(-60, HORIZON - 14, 586, 60, 30, hill);
+  gfx->fillRect(0,HORIZON,466,466-HORIZON,soil);
+  uint16_t dk=lerp565(soil,C565(0x08,0x0e,0x1c),phase==3?11:7,16);
 
-  // detalles del bioma
-  uint16_t dk = lerp565(soil, C565(0x10, 0x18, 0x20), night ? 11 : 7, 16);
-  if (biome == 2) {  // bosque: coniferas en silueta
-    for (int tx : { 60, 150, 360, 416 }) {
-      gfx->fillTriangle(tx, HORIZON - 46, tx - 16, HORIZON, tx + 16, HORIZON, dk);
-      gfx->fillTriangle(tx, HORIZON - 60, tx - 12, HORIZON - 28, tx + 12, HORIZON - 28, dk);
+  if (b==2) { // forêt
+    for(int tx: {42,92,362,418}) {
+      gfx->fillTriangle(tx,HORIZON-62,tx-20,HORIZON,tx+20,HORIZON,dk);
+      gfx->fillTriangle(tx,HORIZON-82,tx-15,HORIZON-35,tx+15,HORIZON-35,dk);
     }
-  } else if (biome == 3) {  // volcan: rocas y brasas
-    gfx->fillTriangle(70, HORIZON, 40, HORIZON + 30, 100, HORIZON + 30, dk);
-    gfx->fillTriangle(400, HORIZON + 4, 372, HORIZON + 30, 430, HORIZON + 30, dk);
-    if (!night)
-      for (int e = 0; e < 4; e++)
-        gfx->fillRect(120 + e * 70, HORIZON + 8 + (e % 2) * 6, 4, 4, C565(0xff, 0x9b, 0x3a));
-  } else if (biome == 4) {  // montana: cumbres al fondo
-    gfx->fillTriangle(140, HORIZON - 50, 60, HORIZON, 220, HORIZON, dk);
-    gfx->fillTriangle(330, HORIZON - 38, 250, HORIZON, 410, HORIZON, dk);
-  } else if (biome == 5 && !night) {  // nieve: copos cayendo
-    for (int f = 0; f < 10; f++) {
-      int fx = (f * 53 + now / 40) % 466;
-      int fy = (f * 90 + now / 18) % HORIZON;
-      gfx->fillRect(fx, fy, 3, 3, UI_WHITE);
+  } else if (b==3) { // volcan
+    gfx->fillTriangle(78,HORIZON,36,HORIZON+42,120,HORIZON+42,dk);
+    gfx->fillTriangle(390,HORIZON,346,HORIZON+42,434,HORIZON+42,dk);
+    for(int e=0;e<5;e++)
+      gfx->fillRect(105+e*64,HORIZON+12+(e&1)*7,4,4,C565(0xff,0x75,0x25));
+  } else if (b==4) { // montagne
+    gfx->fillTriangle(120,HORIZON-54,34,HORIZON,206,HORIZON,dk);
+    gfx->fillTriangle(330,HORIZON-48,235,HORIZON,430,HORIZON,dk);
+  } else if (b==5) { // neige
+    uint16_t snow=(phase==3)?C565(0xa8,0xbb,0xd8):C565(0xf0,0xf6,0xff);
+    gfx->fillRect(0,HORIZON,466,466-HORIZON,snow);
+    for(int f=0;f<12;f++){
+      int fx=(f*43+now/55)%466;
+      int fy=(f*71+now/26)%HORIZON;
+      gfx->fillRect(fx,fy,3,3,snow);
     }
-  } else if (biome == 0) {  // pradera: matas de hierba
-    for (int gx : { 80, 175, 300, 395 })
-      for (int b = -1; b <= 1; b++)
-        gfx->fillRect(gx + b * 5, HORIZON + 6, 2, 8 + (b == 0 ? 4 : 0), dk);
+  } else if (b==0) { // prairie
+    for(int gx: {70,156,306,398})
+      gfx->fillTriangle(gx,HORIZON+4,gx-7,HORIZON+22,gx+7,HORIZON+22,dk);
   }
 }
 
@@ -1409,7 +1421,7 @@ void render() {
     return;
   }
   int h = sceneHour();
-  gNight = darkMode || pet.sleeping || h < 6 || h >= 20;
+  gNight = pet.sleeping || h < 6 || h >= 20;
   // drawScene cubre los 466x466 completos: sin fillScreen(NEGRO) previo para
   // que un flush DMA solapado nunca capture negro a medias (anti-parpadeo)
   drawScene(pet.isEgg() ? 0 : DEX_TBL[pet.speciesId].biome, millis(), gNight);
@@ -1451,10 +1463,10 @@ void render() {
     const DexEntry &d = DEX_TBL[pet.speciesId];
     char name[28];
     const char *base = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
-    snprintf(name, sizeof(name), T(S_NAME_FMT), pet.shiny ? "*" : "", base, pet.level());
-    drawHeader(name, gNight ? UI_INK_NIGHT : d.accent, statusMsg());
-    drawStreakBadge();
-    drawCollectionFrame(CX, PET_GROUND - 96, 106, pet.collectionFrame);
+    snprintf(name, sizeof(name), "%s%s", pet.shiny ? "*" : "", base);
+    drawHomeIdentity(name, pet.level(), gNight ? UI_INK_NIGHT : d.accent, statusMsg());
+    // L'identité en haut remplace l'ancien badge qui encombrait le petit écran.
+
     drawPet();
     drawBath();
     drawPoops();
@@ -1959,7 +1971,7 @@ uint16_t battleTypeColor(uint8_t type);
 void renderSack() {
   uint32_t now = millis();
   drawGameScene();  // fondo del habitat
-  bool night = darkMode || sceneHour() < 6 || sceneHour() >= 20;
+  bool night = sceneHour() < 6 || sceneHour() >= 20;
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
 
   // pantalla de resultado
@@ -2061,7 +2073,7 @@ void drawGameResult(const char *recordFmt, uint16_t record, StrId gainFmt) {
     gameOpen = false;
     return;
   }
-  bool night = darkMode || sceneHour() < 6 || sceneHour() >= 20;
+  bool night = sceneHour() < 6 || sceneHour() >= 20;
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
   char buf[22];
   snprintf(buf, sizeof(buf), T(S_SCORE_FMT), gameScore);
@@ -2108,7 +2120,7 @@ void renderCatchGame() {
     spawnCatchTarget();
   }
   drawGameScene();
-  bool night = darkMode || sceneHour() < 6 || sceneHour() >= 20;
+  bool night = sceneHour() < 6 || sceneHour() >= 20;
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
   gfx->setTextColor(ink);
   gfx->setTextSize(3);
@@ -2175,7 +2187,7 @@ void renderMemoGame() {
   }
   stepMemoGame();
   drawGameScene();
-  bool night = darkMode || sceneHour() < 6 || sceneHour() >= 20;
+  bool night = sceneHour() < 6 || sceneHour() >= 20;
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
   char roundBuf[18], rec[16];
   snprintf(roundBuf, sizeof(roundBuf), T(S_ROUND_FMT), memoRounds + 1);
@@ -2232,7 +2244,7 @@ void renderCleanGame() {
     cleanSpawnAt = now + 720 - (gameScore > 12 ? 260 : gameScore * 20);
   }
   drawGameScene();
-  bool night = darkMode || sceneHour() < 6 || sceneHour() >= 20;
+  bool night = sceneHour() < 6 || sceneHour() >= 20;
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
   gfx->setTextColor(ink);
   gfx->setTextSize(3);
@@ -2282,7 +2294,7 @@ void renderTypeGame() {
     nextTypeQuestion();
   }
   drawGameScene();
-  bool night = darkMode || sceneHour() < 6 || sceneHour() >= 20;
+  bool night = sceneHour() < 6 || sceneHour() >= 20;
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
   gfx->setTextColor(ink);
   gfx->setTextSize(3);
@@ -2332,7 +2344,7 @@ void renderGame() {
   // sin fillScreen(NEGRO): drawGameScene cubre los 466x466 completos. Si el
   // DMA del flush anterior aun lee el buffer, vera contenido valido (no negro
   // a medio pintar), que era el parpadeo a 25 fps.
-  bool night = darkMode || sceneHour() < 6 || sceneHour() >= 20;
+  bool night = sceneHour() < 6 || sceneHour() >= 20;
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
 
   if (gameMode == 1) {
@@ -2704,16 +2716,13 @@ void battleTap(int16_t x, int16_t y) {
     return;
   }
   if (battleAttackMenuUntil) {
-    if (x >= 66 && x <= 232 && y >= 292 && y <= 352) {
-      performBattleAction(BATTLE_ATTACK_QUICK);
-      return;
+    if (y >= 344 && y <= 410) {
+      if (x >= 62 && x <= 174) { performBattleAction(BATTLE_ATTACK_QUICK); return; }
+      if (x >= 174 && x <= 292) { performBattleAction(BATTLE_ATTACK); return; }
+      if (x >= 292 && x <= 410) { performBattleAction(BATTLE_ATTACK_HEAVY); return; }
     }
-    if (x >= 234 && x <= 400 && y >= 292 && y <= 352) {
-      performBattleAction(BATTLE_ATTACK_HEAVY);
-      return;
-    }
-    battleAttackMenuUntil = 0;
-    battleDirty = true;
+    battleAttackMenuUntil=0;
+    battleDirty=true;
     sfxPlay(SFX_TAP);
     return;
   }
@@ -2722,12 +2731,13 @@ void battleTap(int16_t x, int16_t y) {
     sfxPlay(SFX_TAP);
     return;
   }
-  if (x >= 46 && x <= 174 && y >= 344 && y <= 428) {
+  if (x >= 62 && x <= 174 && y >= 344 && y <= 410) {
     battleAttackMenuUntil = 1;
+    battleDirty=true;
     sfxPlay(SFX_TAP);
-  } else if (x >= 169 && x <= 297 && y >= 344 && y <= 428) {
+  } else if (x >= 174 && x <= 292 && y >= 344 && y <= 410) {
     performBattleAction(BATTLE_DODGE);
-  } else if (x >= 292 && x <= 420 && y >= 344 && y <= 428) {
+  } else if (x >= 292 && x <= 410 && y >= 344 && y <= 410) {
     performBattleAction(BATTLE_REST);
   }
 }
@@ -2903,10 +2913,62 @@ void drawPetEvent() {
   }
 }
 
+
+void drawBattlePmd(PmdMon &m, int cx, int groundY, bool sil=false) {
+  const PmdAct &a=m.acts[PMD_IDLE];
+  if (!a.frames) return;
+  // Bounding box visuel cible ~80px sur l'écran 466px.
+  const int TARGET=82;
+  int maxDim=max((int)a.w,(int)a.h);
+  uint8_t s=maxDim>0 ? (uint8_t)(TARGET/maxDim) : 2;
+  if (s<1) s=1;
+  if (s>4) s=4;
+  while (s>1 && (a.w*s>TARGET || a.h*s>TARGET)) s--;
+
+  uint8_t fi=pmdFrameAt(a,millis(),true);
+  const uint8_t *fr=a.data+(uint32_t)fi*a.w*a.h;
+  int base=a.base?a.base:a.h;
+  int x0=cx-a.w*s/2;
+  int y0=groundY-base*s;
+  for (int r=0;r<a.h;r++) {
+    const uint8_t *row=fr+r*a.w;
+    for (int c=0;c<a.w;c++) {
+      uint8_t pi=row[c];
+      if (pi==0xFF) continue;
+      gfx->fillRect(x0+c*s,y0+r*s,s,s,sil?INK_K:m.pal[pi]);
+    }
+  }
+}
+
+void drawBattleName(const char *name, uint8_t level, int x, int y, int maxW) {
+  char line[28];
+  snprintf(line,sizeof(line),"%s Lv.%u",name,(unsigned)level);
+  int len=(int)strlen(line);
+  uint8_t ts=(len*12<=maxW)?2:1;
+  gfx->setTextColor(UI_WHITE);
+  gfx->setTextSize(ts);
+  gfx->setCursor(x,y+(ts==1?3:0));
+  gfx->print(line);
+}
+
+void drawBattleHpInfo(int x,int y,uint16_t cur,uint16_t maxHp,uint16_t color) {
+  if (maxHp==0) maxHp=1;
+  if (cur>maxHp) cur=maxHp;
+  gfx->setTextColor(UI_WHITE);
+  gfx->setTextSize(1);
+  gfx->setCursor(x,y);
+  gfx->print("PV");
+  drawBattleHpBar(x+22,y-1,cur,maxHp,color);
+  char hp[18];
+  snprintf(hp,sizeof(hp),"%u/%u",(unsigned)cur,(unsigned)maxHp);
+  gfx->setCursor(x+176,y);
+  gfx->print(hp);
+}
+
 void renderBattle() {
   if (battleResolved) battleDirty = false;
   drawGameScene();
-  bool night = darkMode || sceneHour() < 6 || sceneHour() >= 20;
+  bool night = sceneHour() < 6 || sceneHour() >= 20;
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
   const DexEntry &mine = DEX_TBL[pet.speciesId];
   const DexEntry &wild = DEX_TBL[battleDex];
@@ -2924,43 +2986,27 @@ void renderBattle() {
   gfx->setCursor(CX - (int)strlen(T(S_WILD_BATTLE)) * 3, 26);
   gfx->print(T(S_WILD_BATTLE));
 
-  // ----- Infos du Pokémon sauvage, sans cadre -----
-  gfx->setTextColor(UI_WHITE);
-  int wrLen = strlen(wildName);
-  int wrSize = wrLen <= 14 ? 2 : 1;
-  gfx->setTextSize(wrSize);
-  gfx->setCursor(250, wrSize == 2 ? 72 : 77);
-  gfx->print(wildName);
-  gfx->setTextSize(1);
-  gfx->setCursor(250, 96);
-  gfx->print("PV");
-  drawBattleHpBar(272, 93, battleRun.enemyHp, battleRun.enemyMaxHp, UI_BAR_BAD);
+  // ----- Infos adversaire : nom, niveau, PV, types -----
+  drawBattleName(dexName(battleDex), battleLevel, 250, 68, 184);
+  drawBattleHpInfo(250, 94, battleRun.enemyHp, battleRun.enemyMaxHp, UI_BAR_BAD);
   drawTypeChips(250, 116, wild, false);
 
-  // ----- Infos de notre Pokémon, sans cadre -----
-  gfx->setTextColor(UI_WHITE);
-  int mnLen = strlen(mineName);
-  int mnSize = mnLen <= 14 ? 2 : 1;
-  gfx->setTextSize(mnSize);
-  gfx->setCursor(50, mnSize == 2 ? 258 : 263);
-  gfx->print(mineName);
-  gfx->setTextSize(1);
-  gfx->setCursor(50, 282);
-  gfx->print("PV");
-  drawBattleHpBar(72, 279, battleRun.playerHp, battleRun.playerMaxHp, UI_BAR_OK);
-  drawTypeChips(50, 302, mine, false);
+  // ----- Infos compagnon -----
+  drawBattleName(pet.nick[0] ? pet.nick : dexName(pet.speciesId),
+                 battlePlayer.level, 44, 258, 196);
+  drawBattleHpInfo(44, 284, battleRun.playerHp, battleRun.playerMaxHp, UI_BAR_OK);
+  drawTypeChips(44, 306, mine, false);
 
-  // Sprites : sauvage plus haut/droite, compagnon plus bas/gauche.
-  if (wildPmd.loaded) drawPmdActM(wildPmd, PMD_IDLE, 334, 224, millis(), true, false, 3);
+  // Sprites standardisés dans une boîte visuelle ~82 px, quelle que soit l'espèce.
+  if (wildPmd.loaded) drawBattlePmd(wildPmd, 334, 244, false);
   else {
-    const uint8_t *th = thumbs.get(battleDex);
-    if (th) drawThumb(th, 286, 104, 3, false);
+    const uint8_t *th=thumbs.get(battleDex);
+    if (th) drawThumb(th, 294, 132, 2, false);
   }
-
-  if (pmd.loaded) drawPmdAct(PMD_IDLE, 138, 246, millis(), true, false, 3);
+  if (pmd.loaded) drawBattlePmd(pmd, 136, 250, false);
   else {
-    const uint8_t *th = thumbs.get(pet.speciesId);
-    if (th) drawThumb(th, 90, 126, 3, false);
+    const uint8_t *th=thumbs.get(pet.speciesId);
+    if (th) drawThumb(th, 96, 138, 2, false);
   }
 
   if (battleResolved) {
@@ -3014,37 +3060,50 @@ void renderBattle() {
       gfx->print(T(S_OK));
     }
   } else {
-    // Message de tour très discret entre les deux zones.
+    // Bandeau d'action sombre intégré au décor : aucun grand fond gris.
+    gfx->fillRoundRect(62, 326, 342, 88, 18, C565(0x0c,0x16,0x2c));
+    gfx->drawRoundRect(62, 326, 342, 88, 18, C565(0x50,0x64,0x8c));
+
     if (battleMsg[0]) {
-      gfx->fillRoundRect(154, 330, 158, 24, 9, lerp565(UI_TRACK, uiPanel(), 2, 5));
-      gfx->setTextColor(ink);
+      gfx->setTextColor(UI_WHITE);
       gfx->setTextSize(1);
-      int msgW = (int)strlen(battleMsg) * 6;
-      gfx->setCursor(CX - msgW / 2, 338);
+      int msgW=(int)strlen(battleMsg)*6;
+      gfx->setCursor(CX-msgW/2,338);
       gfx->print(battleMsg);
     }
 
     if (battleAttackMenuUntil) {
-      gfx->fillRoundRect(74, 306, 150, 42, 12, UI_BAR_BAD);
-      gfx->fillRoundRect(242, 306, 150, 42, 12, UI_BAR_WARN);
-      gfx->setTextColor(uiContrastText(UI_BAR_BAD));
-      drawBattleButtonLabel(74, 318, 150, T(S_QUICK_ATTACK));
-      gfx->setTextColor(uiContrastText(UI_BAR_WARN));
-      drawBattleButtonLabel(242, 318, 150, T(S_HEAVY_ATTACK));
-    }
+      // Trois attaques fiables directement reliées au moteur existant.
+      gfx->fillRoundRect(70, 350, 96, 52, 12, C565(0x1a,0x54,0x9a));
+      gfx->fillRoundRect(185, 350, 96, 52, 12, UI_BAR_BAD);
+      gfx->fillRoundRect(300, 350, 96, 52, 12, UI_BAR_WARN);
 
-    // Les trois commandes restent dans la zone tactile d'origine.
-    gfx->fillRoundRect(58, 358, 108, 58, 13, UI_BAR_BAD);
-    gfx->fillRoundRect(179, 358, 108, 58, 13, 0x4C98);
-    gfx->fillRoundRect(300, 358, 108, 58, 13, UI_BAR_OK);
-    gfx->setTextColor(uiContrastText(UI_BAR_BAD));
-    drawBattleButtonLabel(58, 380, 108, T(S_ATTACK));
-    gfx->setTextColor(uiContrastText(0x4C98));
-    drawBattleButtonLabel(179, 380, 108, T(S_DODGE));
-    char restLabel[18];
-    snprintf(restLabel, sizeof(restLabel), "%s %u", T(S_REST), battleRun.restUsesLeft);
-    gfx->setTextColor(uiContrastText(UI_BAR_OK));
-    drawBattleButtonLabel(300, 380, 108, restLabel);
+      gfx->setTextColor(uiContrastText(C565(0x1a,0x54,0x9a)));
+      drawBattleButtonLabel(70,363,96,"RAPIDE");
+      gfx->setTextColor(uiContrastText(UI_BAR_BAD));
+      drawBattleButtonLabel(185,363,96,"NORMALE");
+      gfx->setTextColor(uiContrastText(UI_BAR_WARN));
+      drawBattleButtonLabel(300,363,96,"PUISSANTE");
+
+      gfx->setTextSize(1);
+      gfx->setTextColor(UI_WHITE);
+      gfx->setCursor(105,387); gfx->print("85%");
+      gfx->setCursor(218,387); gfx->print("100%");
+      gfx->setCursor(330,387); gfx->print("125%");
+    } else {
+      gfx->fillRoundRect(70, 350, 96, 52, 12, UI_BAR_BAD);
+      gfx->fillRoundRect(185, 350, 96, 52, 12, C565(0x2d,0x73,0xb9));
+      gfx->fillRoundRect(300, 350, 96, 52, 12, UI_BAR_OK);
+
+      gfx->setTextColor(uiContrastText(UI_BAR_BAD));
+      drawBattleButtonLabel(70,367,96,T(S_ATTACK));
+      gfx->setTextColor(uiContrastText(C565(0x2d,0x73,0xb9)));
+      drawBattleButtonLabel(185,367,96,T(S_DODGE));
+      char restLabel[18];
+      snprintf(restLabel,sizeof(restLabel),"%s %u",T(S_REST),battleRun.restUsesLeft);
+      gfx->setTextColor(uiContrastText(UI_BAR_OK));
+      drawBattleButtonLabel(300,367,96,restLabel);
+    }
   }
 
   gfx->flush();
@@ -4615,16 +4674,20 @@ void renderCard() {
   else if (cardPage == 6) renderCardProgress();
   else renderCardExpedition();
 
-  // indicador de paginas + ayuda
-  int dotsX = CX - ((CARD_COUNT - 1) * 24) / 2;
+  // Pages remontées + vrai bouton RETOUR.
+  int dotsX = CX - ((CARD_COUNT - 1) * 20) / 2;
   for (int i = 0; i < CARD_COUNT; i++) {
-    if (i == cardPage) gfx->fillCircle(dotsX + i * 24, 400, 5, UI_INK);
-    else gfx->drawCircle(dotsX + i * 24, 400, 4, UI_INK);
+    if (i == cardPage) gfx->fillCircle(dotsX + i * 20, 374, 4, uiInk());
+    else gfx->drawCircle(dotsX + i * 20, 374, 3, uiSub());
   }
-  gfx->setTextColor(UI_TRACK);
+
+  gfx->fillRoundRect(136, 394, 194, 42, 12, uiPanel());
+  gfx->drawRoundRect(136, 394, 194, 42, 12, uiLine());
+  gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(T(S_BACK)) * 6, 420);
-  gfx->print(T(S_BACK));
+  const char *cardBack="RETOUR";
+  gfx->setCursor(CX-(int)strlen(cardBack)*6,408);
+  gfx->print(cardBack);
   gfx->flush();
 }
 
@@ -4703,9 +4766,9 @@ void keyboardTap(int16_t x, int16_t y) {
 
 // ---------- galeria pokedex ----------
 
-#define GAL_X 73
-#define GAL_Y 92
-#define GAL_CELL 80
+#define GAL_X 89
+#define GAL_Y 94
+#define GAL_CELL 72
 
 bool galleryDexVisible(int16_t dex) {
   if (dex < 1 || dex > DEX_COUNT) return false;
@@ -4887,21 +4950,32 @@ void renderGallery() {
       }
     }
   }
-  // Pagination compacte juste sous la dernière rangée.
+  // Navigation latérale : aucune rangée de petites billes.
   int pages = galleryPageCount();
-  int dotX = CX - (pages - 1) * 7;
-  for (int i = 0; i < pages; i++) {
-    if (i == galleryPage) gfx->fillCircle(dotX + i * 14, 402, 4, uiInk());
-    else gfx->drawCircle(dotX + i * 14, 402, 3, uiSub());
+  if (galleryPage > 0) {
+    gfx->fillRoundRect(18, 214, 48, 52, 12, uiPanel());
+    gfx->drawRoundRect(18, 214, 48, 52, 12, uiLine());
+    gfx->setTextColor(uiInk());
+    gfx->setTextSize(3);
+    gfx->setCursor(34, 228);
+    gfx->print("<");
+  }
+  if (galleryPage + 1 < pages) {
+    gfx->fillRoundRect(400, 214, 48, 52, 12, uiPanel());
+    gfx->drawRoundRect(400, 214, 48, 52, 12, uiLine());
+    gfx->setTextColor(uiInk());
+    gfx->setTextSize(3);
+    gfx->setCursor(416, 228);
+    gfx->print(">");
   }
 
-  // Vrai bouton RETOUR en bas, demandé sur le rendu réel.
-  gfx->fillRoundRect(142, 416, 182, 36, 12, uiPanel());
-  gfx->drawRoundRect(142, 416, 182, 36, 12, uiLine());
+  // Retour remonté pour rester dans la zone utile du rond 1,75".
+  gfx->fillRoundRect(136, 398, 194, 40, 12, uiPanel());
+  gfx->drawRoundRect(136, 398, 194, 40, 12, uiLine());
   gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
   const char *dexBack="RETOUR";
-  gfx->setCursor(CX-(int)strlen(dexBack)*6,427);
+  gfx->setCursor(CX-(int)strlen(dexBack)*6,411);
   gfx->print(dexBack);
 
   gfx->flush();
@@ -4946,13 +5020,32 @@ void galleryTap(int16_t x, int16_t y) {
     return;
   }
   // RETOUR de la grille Pokédex : grande zone tactile en bas.
-  if (x >= 126 && x <= 340 && y >= 408 && y <= 462) {
+  if (x >= 120 && x <= 346 && y >= 390 && y <= 448) {
     galleryOpen=false;
     galleryPmd.unload();
     markUiDirty();
     lockTouchBrief();
     sfxPlay(SFX_TAP);
     return;
+  }
+
+  // Flèches latérales centrées dans le rond.
+  if (y >= 202 && y <= 278) {
+    int pages = galleryPageCount();
+    if (x <= 76 && galleryPage > 0) {
+      galleryPage--;
+      galleryDirty=true;
+      sfxPlay(SFX_MENU);
+      lockTouchBrief();
+      return;
+    }
+    if (x >= 390 && galleryPage + 1 < pages) {
+      galleryPage++;
+      galleryDirty=true;
+      sfxPlay(SFX_MENU);
+      lockTouchBrief();
+      return;
+    }
   }
 
   if (y >= 68 && y < GAL_Y) {
@@ -5001,14 +5094,49 @@ void drawBattery() {
 
 void drawHeader(const char *name, uint16_t nameColor, const char *msg) {
   drawBattery();
+
+  // Nom seul en haut, centré. Réduction automatique pour les noms longs.
+  int nlen = (int)strlen(name);
+  uint8_t ns = (nlen <= 12) ? 3 : 2;
   gfx->setTextColor(nameColor);
-  gfx->setTextSize(3);
-  gfx->setCursor(CX - strlen(name) * 9, 52);
+  gfx->setTextSize(ns);
+  gfx->setCursor(CX - nlen * (ns == 3 ? 9 : 6), 40);
   gfx->print(name);
-  gfx->setTextColor(inkColor());
+
+  // État simple du Pokémon, sans commentaire ambigu sur le poids.
+  if (msg && msg[0]) {
+    int mlen=(int)strlen(msg);
+    uint8_t ms = mlen <= 18 ? 2 : 1;
+    gfx->setTextColor(inkColor());
+    gfx->setTextSize(ms);
+    gfx->setCursor(CX - mlen * (ms == 2 ? 6 : 3), 94);
+    gfx->print(msg);
+  }
+}
+
+void drawHomeIdentity(const char *name, uint8_t level, uint16_t nameColor, const char *msg) {
+  drawBattery();
+  int nlen=(int)strlen(name);
+  uint8_t ns=(nlen<=12)?3:2;
+  gfx->setTextColor(nameColor);
+  gfx->setTextSize(ns);
+  gfx->setCursor(CX-nlen*(ns==3?9:6),36);
+  gfx->print(name);
+
+  char lv[16];
+  snprintf(lv,sizeof(lv),"Niv.%u",(unsigned)level);
+  gfx->setTextColor(C565(0xff,0xd7,0x48));
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(msg) * 6, 90);
-  gfx->print(msg);
+  gfx->setCursor(CX-(int)strlen(lv)*6,70);
+  gfx->print(lv);
+
+  if (msg && msg[0]) {
+    int mlen=(int)strlen(msg);
+    gfx->setTextColor(inkColor());
+    gfx->setTextSize(1);
+    gfx->setCursor(CX-mlen*3,100);
+    gfx->print(msg);
+  }
 }
 
 // animacion de la ceremonia (10s): despedida = reverencia con corazones y se
@@ -5526,7 +5654,6 @@ const char *statusMsg() {
   if (pet.hygiene < 25) return T(S_NEEDS_BATH);
   if (pet.energy < 25) return T(S_EXHAUSTED);
   if (pet.joy < 25) return T(S_SAD);
-  if (pet.weight > 60) return T(S_CHUBBY);
   if (pet.shiny && pet.ageMinutes < 15) return T(S_IS_SHINY);
   return T(S_HAPPY);
 }

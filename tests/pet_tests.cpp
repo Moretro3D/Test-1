@@ -61,14 +61,14 @@ static void testBattleStatsUseBaseGenesLevelAndTraining() {
   EXPECT_EQ(pet.speStat(), 65 + 16 + 11);
 }
 
-static void testEvolutionRequiresLevelAndHealthyStats() {
+static void testEvolutionRequiresOnlyFixedLevel() {
   Pet pet = hatchedPet(4);
   pet.ageMinutes = 15 * MINUTES_PER_LEVEL;
-  pet.fullness = 39;
+  pet.fullness = 1;
+  pet.hygiene = 1;
+  pet.joy = 1;
 
-  EXPECT_TRUE(!pet.canEvolveNow());
-
-  pet.fullness = 40;
+  // V8.5+ : les besoins ne repoussent plus le niveau officiel.
   EXPECT_TRUE(pet.canEvolveNow());
 
   pet.evolve();
@@ -77,14 +77,11 @@ static void testEvolutionRequiresLevelAndHealthyStats() {
   EXPECT_TRUE(pet.isRegistered(5));
 }
 
-static void testCareMistakeDelaysEvolution() {
+static void testCareMistakeNeverDelaysEvolution() {
   Pet pet = hatchedPet(4);
   pet.ageMinutes = 15 * MINUTES_PER_LEVEL;
-  pet.careMistakes = 1;
+  pet.careMistakes = 99;
 
-  EXPECT_TRUE(!pet.canEvolveNow());
-
-  pet.ageMinutes = 16 * MINUTES_PER_LEVEL;
   EXPECT_TRUE(pet.canEvolveNow());
 }
 
@@ -371,7 +368,7 @@ static void testCollectionRanksAndFrameSelection() {
 
 static void testSpeciesChirpProfilesAreValidAndIndividual() {
   uint16_t previousSignature = 0;
-  for (int16_t dex = 1; dex <= 151; dex++) {
+  for (int16_t dex = 1; dex <= 386; dex++) {
     SpeciesChirpProfile profile{};
     EXPECT_TRUE(speciesChirpProfile(dex, &profile));
     EXPECT_EQ(profile.count, 3);
@@ -387,7 +384,7 @@ static void testSpeciesChirpProfilesAreValidAndIndividual() {
   }
   SpeciesChirpProfile invalid{};
   EXPECT_TRUE(!speciesChirpProfile(0, &invalid));
-  EXPECT_TRUE(!speciesChirpProfile(152, &invalid));
+  EXPECT_TRUE(!speciesChirpProfile(387, &invalid));
   EXPECT_TRUE(!speciesChirpProfile(25, nullptr));
 }
 
@@ -628,8 +625,8 @@ static void testExpeditionItemsCapAndConsumeSafely() {
 int main() {
   testEggHatchesChosenStarter();
   testBattleStatsUseBaseGenesLevelAndTraining();
-  testEvolutionRequiresLevelAndHealthyStats();
-  testCareMistakeDelaysEvolution();
+  testEvolutionRequiresOnlyFixedLevel();
+  testCareMistakeNeverDelaysEvolution();
   testTrainingRewardsClampAndAffectNeeds();
   testCatchRewardTrainsSpeedAndRecord();
   testMemoRewardTrainsDefenseAndRecord();

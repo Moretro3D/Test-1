@@ -52,6 +52,11 @@ BATTLE_TYPE_IDS = {
 
 
 def main():
+    if len(DEX) < 386:
+        raise SystemExit(
+            "SECURITE V9: tools/dex_data.py est un ancien jeu Kanto (151). "
+            "dex.h #001-386 est la source active et ne doit pas etre ecrase."
+        )
     out = []
     out.append("#pragma once\n#include <stdint.h>\n\n")
     out.append("// GENERADO por tools/gen_dex.py desde tools/dex_data.py - no editar\n\n")

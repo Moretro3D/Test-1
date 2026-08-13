@@ -1,0 +1,35 @@
+TAMAPOKE MORETRO V9 FINAL - RAPPORT DE VALIDATION
+
+VALIDATIONS LOCALES AUTOMATISEES
+- Compilation/tests C++ du moteur Pet : PASS
+- Compilation/tests C++ du moteur Combat : PASS
+- Stress combat multi-especes / niveaux / actions : PASS
+- PV toujours bornes a 0..PV max : PASS
+- Degats affiches = PV reellement retires : PASS
+- Soin borne au maximum : PASS
+- Evolution #001-386 : audit PASS
+- Aucun cycle d'evolution : PASS
+- Aucun faux niveau pour evolution speciale : PASS
+- careMistakes ne repousse plus le niveau : PASS
+- Noms FR #001-386 presents : PASS
+- Layout logique 466x466 / ecran rond 1,75 : audit PASS
+- Pokedex : billes supprimees, fleches laterales, RETOUR remonte : PASS
+- Fiche : vrai bouton RETOUR : PASS
+- Accueil : nom + niveau separes, statut simple : PASS
+- Cycle horaire lever / jour / coucher / nuit : PASS
+- Habitat par Pokemon via champ biome : PASS
+- Fonds SD : 6 habitats x 4 phases = 24 references 466x466 : PASS
+- Cris synthetiques #001-386 dans plage audio sure : PASS
+
+VALIDATIONS EXECUTEES PAR GITHUB ACTIONS APRES UPLOAD
+- Compilation reelle Arduino ESP32-S3 avec core 3.3.11
+- Generation sprites #152-386 manquants
+- Audit 386 sprites normaux + 386 shiny
+- thumbs.bin = 386
+- Web Flasher + binaires
+- Audit V9 final rejoue apres generation des assets
+
+REMARQUE
+Les PNG de fonds sont fournis sur la SD comme assets/reference. Pour la fluidite du
+petit AMOLED, le firmware dessine le meme systeme habitat + heure de facon procedurale,
+sans decoder un PNG complet a chaque frame.

@@ -23,6 +23,15 @@ jobs:
       - name: Recuperer le projet
         uses: actions/checkout@v6
 
+      - name: Tests moteur hors matériel
+        run: |
+          make -C tests clean
+          make -C tests test
+
+      - name: Audit final V9
+        run: |
+          python3 tools/audit_final_v9.py
+
       - name: Installer Arduino CLI
         uses: arduino/setup-arduino-cli@v2
         with:
@@ -83,7 +92,7 @@ jobs:
           path: |
             tools/pmd_cache
             tools/sdcard/mons
-          key: tamapoke-pmd-386-v2
+          key: tamapoke-pmd-386-v9
 
       - name: Compiler le firmware
         run: |

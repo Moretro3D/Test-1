@@ -211,7 +211,7 @@ bool Pet::lineHasUnregistered(int16_t base) const {
 }
 
 uint8_t Pet::eggRarity() const {
-  return (eggTarget >= 1 && eggTarget <= DEX_COUNT) ? DEX_TBL[eggTarget].rarity : R_COMUN;
+  return (eggTarget >= 1 && eggTarget <= DEX_COUNT) ? (uint8_t)DEX_TBL[eggTarget].rarity : (uint8_t)R_COMUN;
 }
 
 // elige la especie del huevo: tirada de rareza (mejorada por una despedida

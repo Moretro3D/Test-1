@@ -293,6 +293,8 @@ BattleTurnResult stepBattle(BattleRuntime &battle, BattleAction action, uint8_t 
       turn.counterUsed = battle.counterReady;
       turn.playerDamage = cappedTurnDamage(battle.player, battle.enemy, battle.enemyMaxHp,
                                            luck, battle.counterReady, attackPowerPct(action));
+      // Le nombre affiché doit être exactement le nombre de PV réellement retirés.
+      if (turn.playerDamage > battle.enemyHp) turn.playerDamage = battle.enemyHp;
       battle.counterReady = false;
       applyHit(battle.enemyHp, turn.playerDamage, battle.playerDamageTotal);
     }
@@ -324,7 +326,7 @@ BattleTurnResult stepBattle(BattleRuntime &battle, BattleAction action, uint8_t 
       if (enemyHit == 0) enemyHit = 1;
     }
     if (enemyHit > 0) {
-      turn.enemyDamage = enemyHit;
+      turn.enemyDamage = enemyHit > battle.playerHp ? battle.playerHp : enemyHit;
       applyHit(battle.playerHp, turn.enemyDamage, battle.enemyDamageTotal);
     }
   }

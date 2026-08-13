@@ -357,6 +357,42 @@ static void testTurnBattleEndsAtRoundLimitByRemainingHp() {
   EXPECT_EQ(battle.round, 20);
 }
 
+
+static void testStressHpAndDamageInvariants() {
+  for (int dexA = 1; dexA <= DEX_COUNT; dexA += 7) {
+    for (int dexB = 1; dexB <= DEX_COUNT; dexB += 11) {
+      for (uint8_t level = 1; level <= 100; level += 11) {
+        BattleStats a = wildBattleStats(dexA, level);
+        BattleStats d = wildBattleStats(dexB, level);
+        BattleRuntime battle = beginBattleRuntime(a, d);
+        EXPECT_TRUE(battle.playerHp <= battle.playerMaxHp);
+        EXPECT_TRUE(battle.enemyHp <= battle.enemyMaxHp);
+
+        const BattleAction actions[] = {
+          BATTLE_ATTACK, BATTLE_ATTACK_QUICK, BATTLE_ATTACK_HEAVY,
+          BATTLE_DODGE, BATTLE_REST
+        };
+        for (uint8_t turn = 0; turn < 20 && battle.playerHp && battle.enemyHp; turn++) {
+          BattleAction action = actions[(dexA + dexB + level + turn) % 5];
+          uint16_t prevP = battle.playerHp;
+          uint16_t prevE = battle.enemyHp;
+          BattleTurnResult r = stepBattle(battle, action, (uint8_t)((dexA * 3 + dexB + turn * 17) % 100));
+
+          EXPECT_TRUE(battle.playerHp <= battle.playerMaxHp);
+          EXPECT_TRUE(battle.enemyHp <= battle.enemyMaxHp);
+          EXPECT_TRUE(r.playerDamage <= prevE);
+          uint16_t hpAfterHeal = prevP + r.playerHeal;
+          if (hpAfterHeal > battle.playerMaxHp) hpAfterHeal = battle.playerMaxHp;
+          EXPECT_TRUE(r.enemyDamage <= hpAfterHeal);
+          EXPECT_EQ(battle.playerHp, (uint16_t)(hpAfterHeal - r.enemyDamage));
+          EXPECT_TRUE(r.playerHeal <= battle.playerMaxHp);
+          if (r.battleEnded) break;
+        }
+      }
+    }
+  }
+}
+
 int main() {
   testStrongerPlayerWins();
   testStrongerEnemyWins();
@@ -384,6 +420,7 @@ int main() {
   testTypeEffectHelperHandlesDualTypes();
   testCounterDamageStillUsesTurnCap();
   testTurnBattleEndsAtRoundLimitByRemainingHp();
+  testStressHpAndDamageInvariants();
 
   if (failures) {
     std::cerr << failures << " Testfehler\n";
