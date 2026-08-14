@@ -42,7 +42,19 @@ static void testEggHatchesChosenStarter() {
   EXPECT_TRUE(!pet.isEgg());
   EXPECT_EQ(pet.speciesId, 4);
   EXPECT_TRUE(pet.isRegistered(4));
+  EXPECT_TRUE(pet.isCaught(4));
+  EXPECT_EQ(pet.caughtCount(), 1);
   EXPECT_EQ(pet.registeredCount(), 1);
+}
+
+static void testAllNineFirstBootStartersHatch() {
+  static const int16_t starters[] = { 1, 4, 7, 152, 155, 158, 252, 255, 258 };
+  for (int16_t dex : starters) {
+    Pet pet = hatchedPet(dex);
+    EXPECT_EQ(pet.speciesId, dex);
+    EXPECT_TRUE(pet.isRegistered(dex));
+    EXPECT_TRUE(pet.isCaught(dex));
+  }
 }
 
 static void testBattleStatsUseBaseGenesLevelAndTraining() {
@@ -75,6 +87,26 @@ static void testEvolutionRequiresOnlyFixedLevel() {
   EXPECT_EQ(pet.prevSpeciesId, 4);
   EXPECT_EQ(pet.speciesId, 5);
   EXPECT_TRUE(pet.isRegistered(5));
+  EXPECT_TRUE(!pet.isCaught(4));
+  EXPECT_TRUE(pet.isCaught(5));
+  EXPECT_EQ(pet.caughtCount(), 1);
+}
+
+static void testEvolutionAlwaysReplacesTheBoxForm() {
+  Pet pet = hatchedPet(255);  // Poussifeu
+  pet.ageMinutes = 16 * MINUTES_PER_LEVEL;
+  pet.evolve();
+  EXPECT_EQ(pet.speciesId, 256);  // Galifeu
+  EXPECT_TRUE(!pet.isCaught(255));
+  EXPECT_TRUE(pet.isCaught(256));
+
+  pet.ageMinutes = 36 * MINUTES_PER_LEVEL;
+  pet.evolve();
+  EXPECT_EQ(pet.speciesId, 257);  // Brasegali
+  EXPECT_TRUE(!pet.isCaught(255));
+  EXPECT_TRUE(!pet.isCaught(256));
+  EXPECT_TRUE(pet.isCaught(257));
+  EXPECT_EQ(pet.caughtCount(), 1);
 }
 
 static void testCareMistakeNeverDelaysEvolution() {
@@ -287,18 +319,18 @@ static void testDailyBattleGoalCompletesOnWinOnly() {
 static void testCaughtDexIsSeparateFromRaisedDex() {
   Pet pet = hatchedPet(4);
 
-  EXPECT_EQ(pet.caughtCount(), 0);
+  EXPECT_EQ(pet.caughtCount(), 1);
   EXPECT_EQ(pet.knownDexCount(), 1);
   EXPECT_TRUE(!pet.isRegistered(66));
 
   pet.registerCaught(66);
   EXPECT_TRUE(pet.isCaught(66));
   EXPECT_TRUE(!pet.isRegistered(66));
-  EXPECT_EQ(pet.caughtCount(), 1);
+  EXPECT_EQ(pet.caughtCount(), 2);
   EXPECT_EQ(pet.knownDexCount(), 2);
 
   pet.registerCaught(66);
-  EXPECT_EQ(pet.caughtCount(), 1);
+  EXPECT_EQ(pet.caughtCount(), 2);
   EXPECT_EQ(pet.knownDexCount(), 2);
 }
 
@@ -624,8 +656,10 @@ static void testExpeditionItemsCapAndConsumeSafely() {
 
 int main() {
   testEggHatchesChosenStarter();
+  testAllNineFirstBootStartersHatch();
   testBattleStatsUseBaseGenesLevelAndTraining();
   testEvolutionRequiresOnlyFixedLevel();
+  testEvolutionAlwaysReplacesTheBoxForm();
   testCareMistakeNeverDelaysEvolution();
   testTrainingRewardsClampAndAffectNeeds();
   testCatchRewardTrainsSpeedAndRecord();

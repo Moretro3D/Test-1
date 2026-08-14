@@ -266,11 +266,18 @@ static const uint8_t CRACK2[][2] = { {11,13},{12,14},{11,15},{20,12},{19,13},{20
 static const uint16_t STARS[][2] = { {120,140},{330,120},{370,210},{95,230},{280,90},{160,95} };
 
 bool wasPressed = false;
-// eleccion de inicial (primera partida): Bulbasaur / Charmander / Squirtle, 3 filas
-static const int16_t STARTER_DEX[3] = { 1, 4, 7 };
-#define STARTER_ROW_Y 110
-#define STARTER_ROW_H 70
-#define STARTER_ROW_GAP 8
+// Premier demarrage : choix de generation, puis starter via trois Pokeballs.
+static const int16_t STARTER_DEX[3][3] = {
+  { 1, 4, 7 },       // Kanto : Bulbizarre, Salameche, Carapuce
+  { 152, 155, 158 }, // Johto : Germignon, Hericendre, Kaiminus
+  { 252, 255, 258 }  // Hoenn : Arcko, Poussifeu, Gobou
+};
+uint8_t starterGeneration = 0; // 0 = choix 1G/2G/3G, sinon 1..3
+int16_t starterPreviewDex = 0; // popup de confirmation
+#define STARTER_GEN_Y 128
+#define STARTER_GEN_H 64
+#define STARTER_BALL_Y 226
+#define STARTER_BALL_R 42
 // boton-CTA de evolucion (centrado, mitad de pantalla)
 #define EVO_BTN_W 256
 #define EVO_BTN_H 64
@@ -995,16 +1002,51 @@ void startGameMenuChoice(uint8_t idx) {
 
 void onTap(int16_t x, int16_t y) {
   // Serial.printf("TOUCH %d %d\n", x, y);  // diagnostico (silenciado: satura el log)
-  if (pet.awaitingStarter()) {  // primera partida: elegir inicial
-    for (int i = 0; i < 3; i++) {
-      int ry = STARTER_ROW_Y + i * (STARTER_ROW_H + STARTER_ROW_GAP);
-      if (x >= 70 && x <= 396 && y >= ry && y <= ry + STARTER_ROW_H) {
-        pet.chooseStarter(STARTER_DEX[i]);
-        markUiDirty();
-        lockTouchBrief();
-        sfxPlay(SFX_TAP);
-        break;
+  if (pet.awaitingStarter()) {
+    if (starterPreviewDex > 0) {
+      // Popup : confirmer en bas a droite, revenir en bas a gauche.
+      if (x >= 238 && x <= 374 && y >= 348 && y <= 400) {
+        pet.chooseStarter(starterPreviewDex);
+        starterPreviewDex = 0;
+      } else if (x >= 92 && x <= 228 && y >= 348 && y <= 400) {
+        starterPreviewDex = 0;
       }
+      starterDirty = true;
+      markUiDirty();
+      lockTouchBrief();
+      sfxPlay(SFX_TAP);
+      return;
+    }
+    if (starterGeneration == 0) {
+      for (uint8_t i = 0; i < 3; i++) {
+        int gy = STARTER_GEN_Y + i * 82;
+        if (x >= 82 && x <= 384 && y >= gy && y <= gy + STARTER_GEN_H) {
+          starterGeneration = i + 1;
+          starterDirty = true;
+          markUiDirty();
+          lockTouchBrief();
+          sfxPlay(SFX_TAP);
+          break;
+        }
+      }
+    } else {
+      if (x >= 28 && x <= 126 && y >= 52 && y <= 96) {
+        starterGeneration = 0;
+      } else {
+        static const int BALL_X[3] = { 104, 233, 362 };
+        for (uint8_t i = 0; i < 3; i++) {
+          int dx = x - BALL_X[i], dy = y - STARTER_BALL_Y;
+          if (dx * dx + dy * dy <= (STARTER_BALL_R + 12) * (STARTER_BALL_R + 12)) {
+            starterPreviewDex = STARTER_DEX[starterGeneration - 1][i];
+            speciesChirpPlay(starterPreviewDex);
+            break;
+          }
+        }
+      }
+      starterDirty = true;
+      markUiDirty();
+      lockTouchBrief();
+      sfxPlay(SFX_TAP);
     }
     return;
   }
@@ -1356,28 +1398,68 @@ void drawScene(uint8_t biome, uint32_t now, bool night) {
   }
 }
 
-// primera partida: elige inicial entre Bulbasaur / Charmander / Squirtle
+void drawStarterPokeball(int cx, int cy, int r) {
+  gfx->fillCircle(cx, cy, r, UI_WHITE);
+  gfx->fillRect(cx - r + 3, cy - r + 3, r * 2 - 6, r - 3, C565(0xed, 0x2f, 0x3f));
+  gfx->drawCircle(cx, cy, r, UI_INK);
+  gfx->drawFastHLine(cx - r + 2, cy, r * 2 - 3, UI_INK);
+  gfx->fillCircle(cx, cy, r / 3, UI_WHITE);
+  gfx->drawCircle(cx, cy, r / 3, UI_INK);
+  gfx->fillCircle(cx, cy, r / 7, uiPanel());
+}
+
+void drawStarterCentered(const char *text, int y, uint8_t size, uint16_t color) {
+  gfx->setTextColor(color);
+  gfx->setTextSize(size);
+  gfx->setCursor(CX - (int)strlen(text) * 3 * size, y);
+  gfx->print(text);
+}
+
+// Premier demarrage : generation -> Pokeball -> popup du starter -> confirmation.
 void renderStarterSelect() {
   if (!starterDirty) { perfRenderSkipCount++; return; }
   starterDirty = false;
   gfx->fillScreen(uiBg());
-  const char *t = T(S_CHOOSE_STARTER);
-  gfx->setTextColor(uiInk());
-  gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(t) * 6, 68);
-  gfx->print(t);
-  for (int i = 0; i < 3; i++) {
-    int16_t d = STARTER_DEX[i];
-    const DexEntry &de = DEX_TBL[d];
-    int ry = STARTER_ROW_Y + i * (STARTER_ROW_H + STARTER_ROW_GAP);
-    gfx->fillRoundRect(70, ry, 326, STARTER_ROW_H, 14, lerp565(de.accent, uiPanel(), 6, 8));
-    gfx->drawRoundRect(70, ry, 326, STARTER_ROW_H, 14, de.accent);
-    const uint8_t *th = thumbs.get(d);     // miniatura del inicial (si la SD esta lista)
-    if (th) drawThumb(th, 76, ry - 5, 3, false);
-    gfx->setTextColor(uiInk());
-    gfx->setTextSize(3);
-    gfx->setCursor(178, ry + 24);
-    gfx->print(dexName(d));
+  drawStarterCentered(T(S_CHOOSE_STARTER), 60, 2, uiInk());
+
+  if (starterGeneration == 0) {
+    drawStarterCentered("CHOISIS TA GENERATION", 92, 1, UI_TRACK);
+    static const char *GEN_LABELS[3] = { "1re GENERATION", "2e GENERATION", "3e GENERATION" };
+    static const uint16_t GEN_COLORS[3] = { 0xF800, 0xFD20, 0x07E0 };
+    for (uint8_t i = 0; i < 3; i++) {
+      int gy = STARTER_GEN_Y + i * 82;
+      gfx->fillRoundRect(82, gy, 302, STARTER_GEN_H, 18, lerp565(GEN_COLORS[i], uiPanel(), 3, 8));
+      gfx->drawRoundRect(82, gy, 302, STARTER_GEN_H, 18, GEN_COLORS[i]);
+      drawStarterCentered(GEN_LABELS[i], gy + 22, 2, uiInk());
+    }
+  } else {
+    gfx->fillRoundRect(28, 52, 98, 44, 12, uiPanel());
+    gfx->drawRoundRect(28, 52, 98, 44, 12, UI_TRACK);
+    gfx->setTextColor(uiInk()); gfx->setTextSize(1); gfx->setCursor(49, 70); gfx->print("< RETOUR");
+    char generation[20];
+    snprintf(generation, sizeof(generation), "GENERATION %u", starterGeneration);
+    drawStarterCentered(generation, 112, 2, UI_TRACK);
+    static const int BALL_X[3] = { 104, 233, 362 };
+    for (uint8_t i = 0; i < 3; i++) {
+      drawStarterPokeball(BALL_X[i], STARTER_BALL_Y, STARTER_BALL_R);
+      gfx->setTextColor(UI_TRACK); gfx->setTextSize(1);
+      gfx->setCursor(BALL_X[i] - 21, 287); gfx->print("CHOISIR");
+    }
+    drawStarterCentered("TOUCHE UNE POKEBALL", 330, 1, uiInk());
+  }
+
+  if (starterPreviewDex > 0) {
+    const DexEntry &de = DEX_TBL[starterPreviewDex];
+    gfx->fillRoundRect(58, 86, 350, 330, 22, uiPanel());
+    gfx->drawRoundRect(58, 86, 350, 330, 22, de.accent);
+    drawStarterCentered("TON STARTER", 108, 2, de.accent);
+    const uint8_t *th = thumbs.get(starterPreviewDex);
+    if (th) drawThumb(th, CX - 80, 130, 5, false);
+    drawStarterCentered(dexName(starterPreviewDex), 286, 3, uiInk());
+    gfx->fillRoundRect(92, 348, 136, 52, 14, UI_TRACK);
+    gfx->fillRoundRect(238, 348, 136, 52, 14, UI_BAR_OK);
+    gfx->setTextColor(uiContrastText(UI_TRACK)); gfx->setTextSize(2); gfx->setCursor(122, 366); gfx->print("RETOUR");
+    gfx->setTextColor(uiContrastText(UI_BAR_OK)); gfx->setCursor(258, 366); gfx->print("VALIDER");
   }
   gfx->flush();
 }
@@ -2917,12 +2999,12 @@ void drawPetEvent() {
 void drawBattlePmd(PmdMon &m, int cx, int groundY, bool sil=false) {
   const PmdAct &a=m.acts[PMD_IDLE];
   if (!a.frames) return;
-  // Bounding box visuel cible ~80px sur l'écran 466px.
-  const int TARGET=82;
+  // Bounding box visuel cible ~128px sur l'écran 466px.
+  const int TARGET=128;
   int maxDim=max((int)a.w,(int)a.h);
   uint8_t s=maxDim>0 ? (uint8_t)(TARGET/maxDim) : 2;
   if (s<1) s=1;
-  if (s>4) s=4;
+  if (s>6) s=6;
   while (s>1 && (a.w*s>TARGET || a.h*s>TARGET)) s--;
 
   uint8_t fi=pmdFrameAt(a,millis(),true);
@@ -2949,6 +3031,15 @@ void drawBattleName(const char *name, uint8_t level, int x, int y, int maxW) {
   gfx->setTextSize(ts);
   gfx->setCursor(x,y+(ts==1?3:0));
   gfx->print(line);
+}
+
+void drawBattleCaughtBall(int cx, int cy) {
+  gfx->fillCircle(cx, cy, 10, UI_WHITE);
+  gfx->fillRect(cx - 9, cy - 9, 18, 9, C565(0xef, 0x2b, 0x3a));
+  gfx->drawCircle(cx, cy, 10, UI_INK);
+  gfx->drawFastHLine(cx - 9, cy, 19, UI_INK);
+  gfx->fillCircle(cx, cy, 4, UI_WHITE);
+  gfx->drawCircle(cx, cy, 4, UI_INK);
 }
 
 void drawBattleHpInfo(int x,int y,uint16_t cur,uint16_t maxHp,uint16_t color) {
@@ -2988,6 +3079,7 @@ void renderBattle() {
 
   // ----- Infos adversaire : nom, niveau, PV, types -----
   drawBattleName(dexName(battleDex), battleLevel, 250, 68, 184);
+  if (pet.isCaught(battleDex)) drawBattleCaughtBall(232, 78);
   drawBattleHpInfo(250, 94, battleRun.enemyHp, battleRun.enemyMaxHp, UI_BAR_BAD);
   drawTypeChips(250, 116, wild, false);
 
@@ -2998,12 +3090,12 @@ void renderBattle() {
   drawTypeChips(44, 306, mine, false);
 
   // Sprites standardisés dans une boîte visuelle ~82 px, quelle que soit l'espèce.
-  if (wildPmd.loaded) drawBattlePmd(wildPmd, 334, 244, false);
+  if (wildPmd.loaded) drawBattlePmd(wildPmd, 334, 252, false);
   else {
     const uint8_t *th=thumbs.get(battleDex);
     if (th) drawThumb(th, 294, 132, 2, false);
   }
-  if (pmd.loaded) drawBattlePmd(pmd, 136, 250, false);
+  if (pmd.loaded) drawBattlePmd(pmd, 136, 306, false);
   else {
     const uint8_t *th=thumbs.get(pet.speciesId);
     if (th) drawThumb(th, 96, 138, 2, false);

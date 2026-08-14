@@ -1,0 +1,28 @@
+TAMAPOKE V9.1 - COMBAT ET BOITE
+
+CHOIX DU STARTER AU PREMIER DEMARRAGE
+- Choix initial entre 1re, 2e et 3e generation.
+- Trois Pokeballs tactiles sont affichees apres le choix de generation.
+- Un clic ouvre une popup avec le sprite et le nom francais du starter.
+- La popup demande RETOUR ou VALIDER pour eviter les choix accidentels.
+- 1G : Bulbizarre, Salameche, Carapuce.
+- 2G : Germignon, Hericendre, Kaiminus.
+- 3G : Arcko, Poussifeu, Gobou.
+
+COMBAT
+- Sprites PMD agrandis : cible visuelle 128 px au lieu de 82 px.
+- Position du compagnon ajustee au premier plan.
+- Pokeball affichee pres du nom d'un Pokemon sauvage deja obtenu.
+
+BOITE
+- Le starter apparait dans la Boite des son eclosion.
+- Tous les Pokemon nes d'un oeuf apparaissent aussi dans la Boite.
+- Une evolution remplace l'ancienne forme au lieu de la dupliquer.
+- Exemple : Poussifeu -> Galifeu -> Brasegali conserve une seule place,
+  correspondant toujours a la forme actuelle.
+- Le Pokedex garde les anciennes formes comme especes connues.
+- Migration automatique des sauvegardes V9 deja existantes au demarrage.
+
+VALIDATION
+- Test ajoute pour Poussifeu, Galifeu et Brasegali.
+- Audit des 386 entrees et des chaines d'evolution : OK.

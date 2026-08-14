@@ -596,6 +596,9 @@ void Pet::hatch() {
   newMedal = 0;
   nick[0] = 0;
   registerSpecies(speciesId);  // criado = registrado en la pokedex
+  // La boite represente les individus obtenus, y compris le starter et les
+  // Pokemon nes d'un oeuf. Le Pokedex conserve separement les especes vues.
+  dexCaught[(speciesId - 1) >> 3] |= (1 << ((speciesId - 1) & 7));
   checkMedals();     // por si nace ya en forma final (legendario)
   sfxPlay(SFX_HATCH);
   save();
@@ -628,6 +631,10 @@ void Pet::evolve() {
     next = (a > df) ? 106 : (df > a) ? 107 : 237;
   }
 
+  // L'individu change de forme : sa place dans la boite doit etre remplacee,
+  // pas dupliquee. L'ancienne forme reste connue dans le Pokedex (dexReg).
+  dexCaught[(prevSpeciesId - 1) >> 3] &= ~(1 << ((prevSpeciesId - 1) & 7));
+  dexCaught[(next - 1) >> 3] |= (1 << ((next - 1) & 7));
   speciesId = next;
   registerSpecies(speciesId);
   sfxPlay(SFX_EVOLVE);
@@ -1215,6 +1222,28 @@ void Pet::load() {
   lastEnd = prefs.getUChar("lend", CER_NONE);
   loadCompatBitmap(prefs, "dexreg", dexReg, sizeof(dexReg));
   loadCompatBitmap(prefs, "dexcgt", dexCaught, sizeof(dexCaught));
+  // Migration V9 : le Pokemon actif est toujours un individu obtenu. Si une
+  // ancienne version a laisse ses pre-evolutions dans la boite, les remplacer
+  // par la forme actuellement active, quelle que soit la chaine d'evolution.
+  bool caughtMigrated = false;
+  if (speciesId >= 1 && speciesId <= DEX_COUNT) {
+    if (!isCaught(speciesId)) caughtMigrated = true;
+    dexCaught[(speciesId - 1) >> 3] |= (1 << ((speciesId - 1) & 7));
+    for (int16_t candidate = 1; candidate <= DEX_COUNT; candidate++) {
+      if (candidate == speciesId) continue;
+      int16_t form = candidate;
+      for (uint8_t guard = 0; form >= 1 && form <= DEX_COUNT && guard < 6; guard++) {
+        form = DEX_TBL[form].evolvesTo;
+        if (form == speciesId) {
+          if (isCaught(candidate)) caughtMigrated = true;
+          dexCaught[(candidate - 1) >> 3] &= ~(1 << ((candidate - 1) & 7));
+          break;
+        }
+        if (form == 0) break;
+      }
+    }
+    if (caughtMigrated) prefs.putBytes("dexcgt", dexCaught, sizeof(dexCaught));
+  }
   streak = prefs.getUShort("strk", 0);
   bestStreak = prefs.getUShort("bstrk", 0);
   lastCareDay = prefs.getUInt("cday", 0);

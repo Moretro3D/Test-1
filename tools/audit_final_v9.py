@@ -49,7 +49,11 @@ fr=re.findall(r'"([^"]*)"',m.group(1))
 ok(len(fr)==387 and all(fr[i] for i in range(1,387)), "386 noms français non vides")
 
 # Battle UI
-ok("void drawBattlePmd" in ino and "const int TARGET=82" in ino, "sprites combat standardisés")
+ok("void drawBattlePmd" in ino and "const int TARGET=128" in ino, "sprites combat agrandis et standardisés")
+ok("STARTER_DEX[3][3]" in ino and "{ 252, 255, 258 }" in ino,
+   "starters 1G, 2G et 3G presents")
+ok("drawStarterPokeball" in ino and "starterPreviewDex" in ino,
+   "Pokeballs et popup de confirmation starter presentes")
 ok("void drawBattleName" in ino, "noms combat auto-ajustés")
 ok("drawBattleHpInfo" in ino, "PV courant/max affichés")
 ok("Bandeau d'action sombre intégré" in ino, "boutons combat intégrés sans fond gris")
