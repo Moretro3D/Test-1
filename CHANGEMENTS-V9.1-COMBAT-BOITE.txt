@@ -18,6 +18,10 @@ COMBAT
 - Correctif V9.5 : taille calculee sur les pixels visibles du Pokemon et non
   sur les grandes marges transparentes des cadres PMD.
 - Le nom adverse est decale vers le centre pour ne plus etre coupe par le bord rond.
+- Correctif V9.6 : bounding box calculee sur toutes les frames de l'animation.
+- Le sprite du compagnon ne change plus de taille en bougeant.
+- Taille maximale distincte : joueur 112 px, adversaire 84 px pour eviter les
+  adversaires compacts demesures comme Voltorbe.
 - Pokeball affichee pres du nom d'un Pokemon sauvage deja obtenu.
 
 BOITE

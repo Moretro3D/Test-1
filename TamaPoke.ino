@@ -2996,30 +2996,34 @@ void drawPetEvent() {
 }
 
 
-void drawBattlePmd(PmdMon &m, int cx, int groundY, bool sil=false) {
+void drawBattlePmd(PmdMon &m, int cx, int groundY, int target, bool sil=false) {
   const PmdAct &a=m.acts[PMD_IDLE];
   if (!a.frames) return;
   // Bounding box visuel cible ~128px sur l'écran 466px.
   uint8_t fi=pmdFrameAt(a,millis(),true);
   const uint8_t *fr=a.data+(uint32_t)fi*a.w*a.h;
   int minC=a.w, maxC=-1, minR=a.h, maxR=-1;
-  for (int r=0;r<a.h;r++) {
-    for (int c=0;c<a.w;c++) {
-      if (fr[r*a.w+c]==0xFF) continue;
-      if (c<minC) minC=c;
-      if (c>maxC) maxC=c;
-      if (r<minR) minR=r;
-      if (r>maxR) maxR=r;
+  // Une seule bounding box pour toutes les frames : l'echelle ne change plus
+  // lorsque le Pokemon bouge pendant le combat.
+  for (int f=0;f<a.frames;f++) {
+    const uint8_t *animFrame=a.data+(uint32_t)f*a.w*a.h;
+    for (int r=0;r<a.h;r++) {
+      for (int c=0;c<a.w;c++) {
+        if (animFrame[r*a.w+c]==0xFF) continue;
+        if (c<minC) minC=c;
+        if (c>maxC) maxC=c;
+        if (r<minR) minR=r;
+        if (r>maxR) maxR=r;
+      }
     }
   }
   if (maxC<minC || maxR<minR) return;
-  const int TARGET=112;
   int visibleW=maxC-minC+1, visibleH=maxR-minR+1;
   int maxDim=max(visibleW,visibleH);
-  uint8_t s=maxDim>0 ? (uint8_t)(TARGET/maxDim) : 2;
+  uint8_t s=maxDim>0 ? (uint8_t)(target/maxDim) : 2;
   if (s<1) s=1;
   if (s>8) s=8;
-  while (s>1 && (visibleW*s>TARGET || visibleH*s>TARGET)) s--;
+  while (s>1 && (visibleW*s>target || visibleH*s>target)) s--;
 
   int x0=cx-visibleW*s/2-minC*s;
   int y0=groundY-(maxR+1)*s;
@@ -3101,12 +3105,12 @@ void renderBattle() {
   drawTypeChips(236, 284, mine, false);
 
   // Sprites standardisés dans une boîte visuelle ~82 px, quelle que soit l'espèce.
-  if (wildPmd.loaded) drawBattlePmd(wildPmd, 350, 232, false);
+  if (wildPmd.loaded) drawBattlePmd(wildPmd, 350, 232, 84, false);
   else {
     const uint8_t *th=thumbs.get(battleDex);
     if (th) drawThumb(th, 282, 118, 3, false);
   }
-  if (pmd.loaded) drawBattlePmd(pmd, 118, 316, false);
+  if (pmd.loaded) drawBattlePmd(pmd, 118, 316, 112, false);
   else {
     const uint8_t *th=thumbs.get(pet.speciesId);
     if (th) drawThumb(th, 54, 190, 3, false);
