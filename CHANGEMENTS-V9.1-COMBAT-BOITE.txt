@@ -15,6 +15,9 @@ COMBAT
 - Adversaire a droite avec nom, PV et types a gauche.
 - Compagnon a gauche avec nom, PV et types a droite.
 - Les sprites ne recouvrent plus les noms, les PV ni les types.
+- Correctif V9.5 : taille calculee sur les pixels visibles du Pokemon et non
+  sur les grandes marges transparentes des cadres PMD.
+- Le nom adverse est decale vers le centre pour ne plus etre coupe par le bord rond.
 - Pokeball affichee pres du nom d'un Pokemon sauvage deja obtenu.
 
 BOITE

@@ -50,8 +50,9 @@ fr=re.findall(r'"([^"]*)"',m.group(1))
 ok(len(fr)==387 and all(fr[i] for i in range(1,387)), "386 noms français non vides")
 
 # Battle UI
-ok("void drawBattlePmd" in ino and "const int TARGET=128" in ino, "sprites combat agrandis et standardisés")
-ok("drawBattleName(dexName(battleDex), battleLevel, 44, 68, 190)" in ino and
+ok("void drawBattlePmd" in ino and "const int TARGET=112" in ino and "visibleW" in ino,
+   "sprites combat agrandis selon leurs pixels visibles")
+ok("drawBattleName(dexName(battleDex), battleLevel, 78, 72, 190)" in ino and
    "battlePlayer.level, 236, 236, 190" in ino,
    "informations combat opposees aux sprites")
 ok("STARTER_DEX[3][3]" in ino and "{ 252, 255, 258 }" in ino,

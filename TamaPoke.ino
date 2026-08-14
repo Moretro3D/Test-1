@@ -3000,18 +3000,29 @@ void drawBattlePmd(PmdMon &m, int cx, int groundY, bool sil=false) {
   const PmdAct &a=m.acts[PMD_IDLE];
   if (!a.frames) return;
   // Bounding box visuel cible ~128px sur l'écran 466px.
-  const int TARGET=128;
-  int maxDim=max((int)a.w,(int)a.h);
-  uint8_t s=maxDim>0 ? (uint8_t)(TARGET/maxDim) : 2;
-  if (s<1) s=1;
-  if (s>6) s=6;
-  while (s>1 && (a.w*s>TARGET || a.h*s>TARGET)) s--;
-
   uint8_t fi=pmdFrameAt(a,millis(),true);
   const uint8_t *fr=a.data+(uint32_t)fi*a.w*a.h;
-  int base=a.base?a.base:a.h;
-  int x0=cx-a.w*s/2;
-  int y0=groundY-base*s;
+  int minC=a.w, maxC=-1, minR=a.h, maxR=-1;
+  for (int r=0;r<a.h;r++) {
+    for (int c=0;c<a.w;c++) {
+      if (fr[r*a.w+c]==0xFF) continue;
+      if (c<minC) minC=c;
+      if (c>maxC) maxC=c;
+      if (r<minR) minR=r;
+      if (r>maxR) maxR=r;
+    }
+  }
+  if (maxC<minC || maxR<minR) return;
+  const int TARGET=112;
+  int visibleW=maxC-minC+1, visibleH=maxR-minR+1;
+  int maxDim=max(visibleW,visibleH);
+  uint8_t s=maxDim>0 ? (uint8_t)(TARGET/maxDim) : 2;
+  if (s<1) s=1;
+  if (s>8) s=8;
+  while (s>1 && (visibleW*s>TARGET || visibleH*s>TARGET)) s--;
+
+  int x0=cx-visibleW*s/2-minC*s;
+  int y0=groundY-(maxR+1)*s;
   for (int r=0;r<a.h;r++) {
     const uint8_t *row=fr+r*a.w;
     for (int c=0;c<a.w;c++) {
@@ -3078,10 +3089,10 @@ void renderBattle() {
   gfx->print(T(S_WILD_BATTLE));
 
   // ----- Infos adversaire : nom, niveau, PV, types -----
-  drawBattleName(dexName(battleDex), battleLevel, 44, 68, 190);
-  if (pet.isCaught(battleDex)) drawBattleCaughtBall(26, 78);
-  drawBattleHpInfo(44, 94, battleRun.enemyHp, battleRun.enemyMaxHp, UI_BAR_BAD);
-  drawTypeChips(44, 116, wild, false);
+  drawBattleName(dexName(battleDex), battleLevel, 78, 72, 190);
+  if (pet.isCaught(battleDex)) drawBattleCaughtBall(60, 82);
+  drawBattleHpInfo(78, 98, battleRun.enemyHp, battleRun.enemyMaxHp, UI_BAR_BAD);
+  drawTypeChips(78, 120, wild, false);
 
   // ----- Infos compagnon -----
   drawBattleName(pet.nick[0] ? pet.nick : dexName(pet.speciesId),
@@ -3090,12 +3101,12 @@ void renderBattle() {
   drawTypeChips(236, 284, mine, false);
 
   // Sprites standardisés dans une boîte visuelle ~82 px, quelle que soit l'espèce.
-  if (wildPmd.loaded) drawBattlePmd(wildPmd, 346, 238, false);
+  if (wildPmd.loaded) drawBattlePmd(wildPmd, 350, 232, false);
   else {
     const uint8_t *th=thumbs.get(battleDex);
     if (th) drawThumb(th, 282, 118, 3, false);
   }
-  if (pmd.loaded) drawBattlePmd(pmd, 118, 310, false);
+  if (pmd.loaded) drawBattlePmd(pmd, 118, 316, false);
   else {
     const uint8_t *th=thumbs.get(pet.speciesId);
     if (th) drawThumb(th, 54, 190, 3, false);
