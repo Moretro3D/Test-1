@@ -109,6 +109,30 @@ static void testEvolutionAlwaysReplacesTheBoxForm() {
   EXPECT_EQ(pet.caughtCount(), 1);
 }
 
+static void testStoredCharizardReturnsWhenNoLongerActive() {
+  Pet pet = hatchedPet(4);
+  pet.ageMinutes = 16 * MINUTES_PER_LEVEL;
+  pet.evolve();
+  pet.ageMinutes = 36 * MINUTES_PER_LEVEL;
+  pet.evolve();
+  EXPECT_EQ(pet.speciesId, 6);
+
+  // Simule une ancienne sauvegarde : Dracaufeu possede bien un profil, mais
+  // aucun membre de sa chaine n'est marque dans la Boite et un autre Pokemon
+  // est devenu le compagnon actif.
+  pet.dexCaught[(4 - 1) >> 3] &= ~(1 << ((4 - 1) & 7));
+  pet.dexCaught[(5 - 1) >> 3] &= ~(1 << ((5 - 1) & 7));
+  pet.dexCaught[(6 - 1) >> 3] &= ~(1 << ((6 - 1) & 7));
+  pet.speciesId = 25;
+  pet.saveActiveProfile();
+  pet.repairCaughtProfiles();
+
+  EXPECT_TRUE(!pet.isCaught(4));
+  EXPECT_TRUE(!pet.isCaught(5));
+  EXPECT_TRUE(pet.isCaught(6));
+  EXPECT_TRUE(pet.isCaught(25));
+}
+
 static void testCareMistakeNeverDelaysEvolution() {
   Pet pet = hatchedPet(4);
   pet.ageMinutes = 15 * MINUTES_PER_LEVEL;
@@ -660,6 +684,7 @@ int main() {
   testBattleStatsUseBaseGenesLevelAndTraining();
   testEvolutionRequiresOnlyFixedLevel();
   testEvolutionAlwaysReplacesTheBoxForm();
+  testStoredCharizardReturnsWhenNoLongerActive();
   testCareMistakeNeverDelaysEvolution();
   testTrainingRewardsClampAndAffectNeeds();
   testCatchRewardTrainsSpeedAndRecord();

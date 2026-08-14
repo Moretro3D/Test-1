@@ -1051,6 +1051,39 @@ bool Pet::hasStoredProfile(int16_t dex) {
   return prefs.getBytesLength(key) == sizeof(StoredPetProfile);
 }
 
+void Pet::repairCaughtProfiles() {
+  bool changed = false;
+
+  // Chaque profil sauvegarde correspond a un individu deja obtenu. Quand
+  // plusieurs profils appartiennent a la meme chaine, seule la forme la plus
+  // recente doit rester dans la Boite (les autres restent dans le Pokedex).
+  for (int16_t candidate = 1; candidate <= DEX_COUNT; candidate++) {
+    if (!hasStoredProfile(candidate)) continue;
+    bool hasNewerForm = false;
+    int16_t form = candidate;
+    for (uint8_t guard = 0; guard < 6; guard++) {
+      form = (form >= 1 && form <= DEX_COUNT) ? DEX_TBL[form].evolvesTo : 0;
+      if (form == 0) break;
+      if (hasStoredProfile(form)) hasNewerForm = true;
+    }
+    uint8_t &slot = dexCaught[(candidate - 1) >> 3];
+    uint8_t mask = (1 << ((candidate - 1) & 7));
+    bool shouldBeInBox = !hasNewerForm;
+    if (((slot & mask) != 0) != shouldBeInBox) {
+      if (shouldBeInBox) slot |= mask;
+      else slot &= ~mask;
+      changed = true;
+    }
+  }
+
+  // Securite pour les sauvegardes tres anciennes sans profil individuel.
+  if (speciesId >= 1 && speciesId <= DEX_COUNT && !isCaught(speciesId)) {
+    dexCaught[(speciesId - 1) >> 3] |= (1 << ((speciesId - 1) & 7));
+    changed = true;
+  }
+  if (changed) prefs.putBytes("dexcgt", dexCaught, sizeof(dexCaught));
+}
+
 void Pet::saveActiveProfile() {
   if (speciesId < 1 || speciesId > DEX_COUNT) return;
   StoredPetProfile p;
@@ -1222,28 +1255,9 @@ void Pet::load() {
   lastEnd = prefs.getUChar("lend", CER_NONE);
   loadCompatBitmap(prefs, "dexreg", dexReg, sizeof(dexReg));
   loadCompatBitmap(prefs, "dexcgt", dexCaught, sizeof(dexCaught));
-  // Migration V9 : le Pokemon actif est toujours un individu obtenu. Si une
-  // ancienne version a laisse ses pre-evolutions dans la boite, les remplacer
-  // par la forme actuellement active, quelle que soit la chaine d'evolution.
-  bool caughtMigrated = false;
-  if (speciesId >= 1 && speciesId <= DEX_COUNT) {
-    if (!isCaught(speciesId)) caughtMigrated = true;
-    dexCaught[(speciesId - 1) >> 3] |= (1 << ((speciesId - 1) & 7));
-    for (int16_t candidate = 1; candidate <= DEX_COUNT; candidate++) {
-      if (candidate == speciesId) continue;
-      int16_t form = candidate;
-      for (uint8_t guard = 0; form >= 1 && form <= DEX_COUNT && guard < 6; guard++) {
-        form = DEX_TBL[form].evolvesTo;
-        if (form == speciesId) {
-          if (isCaught(candidate)) caughtMigrated = true;
-          dexCaught[(candidate - 1) >> 3] &= ~(1 << ((candidate - 1) & 7));
-          break;
-        }
-        if (form == 0) break;
-      }
-    }
-    if (caughtMigrated) prefs.putBytes("dexcgt", dexCaught, sizeof(dexCaught));
-  }
+  // Migration de toutes les anciennes creatures elevees, meme si elles ne
+  // sont plus le compagnon actif au moment de la mise a jour.
+  repairCaughtProfiles();
   streak = prefs.getUShort("strk", 0);
   bestStreak = prefs.getUShort("bstrk", 0);
   lastCareDay = prefs.getUInt("cday", 0);

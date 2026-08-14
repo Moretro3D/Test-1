@@ -11,7 +11,10 @@ CHOIX DU STARTER AU PREMIER DEMARRAGE
 
 COMBAT
 - Sprites PMD agrandis : cible visuelle 128 px au lieu de 82 px.
-- Position du compagnon ajustee au premier plan.
+- Mise en page corrigee apres verification sur une photo du vrai ecran 1,75.
+- Adversaire a droite avec nom, PV et types a gauche.
+- Compagnon a gauche avec nom, PV et types a droite.
+- Les sprites ne recouvrent plus les noms, les PV ni les types.
 - Pokeball affichee pres du nom d'un Pokemon sauvage deja obtenu.
 
 BOITE
@@ -22,6 +25,9 @@ BOITE
   correspondant toujours a la forme actuelle.
 - Le Pokedex garde les anciennes formes comme especes connues.
 - Migration automatique des sauvegardes V9 deja existantes au demarrage.
+- Correctif V9.4 : la migration analyse aussi les anciens profils qui ne sont
+  plus actifs. Un Salamèche devenu Dracaufeu reapparait donc comme Dracaufeu
+  dans la Boite, meme si un autre Pokemon est actuellement affiche a l'accueil.
 
 VALIDATION
 - Test ajoute pour Poussifeu, Galifeu et Brasegali.

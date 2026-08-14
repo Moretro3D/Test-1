@@ -3078,27 +3078,27 @@ void renderBattle() {
   gfx->print(T(S_WILD_BATTLE));
 
   // ----- Infos adversaire : nom, niveau, PV, types -----
-  drawBattleName(dexName(battleDex), battleLevel, 250, 68, 184);
-  if (pet.isCaught(battleDex)) drawBattleCaughtBall(232, 78);
-  drawBattleHpInfo(250, 94, battleRun.enemyHp, battleRun.enemyMaxHp, UI_BAR_BAD);
-  drawTypeChips(250, 116, wild, false);
+  drawBattleName(dexName(battleDex), battleLevel, 44, 68, 190);
+  if (pet.isCaught(battleDex)) drawBattleCaughtBall(26, 78);
+  drawBattleHpInfo(44, 94, battleRun.enemyHp, battleRun.enemyMaxHp, UI_BAR_BAD);
+  drawTypeChips(44, 116, wild, false);
 
   // ----- Infos compagnon -----
   drawBattleName(pet.nick[0] ? pet.nick : dexName(pet.speciesId),
-                 battlePlayer.level, 44, 258, 196);
-  drawBattleHpInfo(44, 284, battleRun.playerHp, battleRun.playerMaxHp, UI_BAR_OK);
-  drawTypeChips(44, 306, mine, false);
+                 battlePlayer.level, 236, 236, 190);
+  drawBattleHpInfo(236, 262, battleRun.playerHp, battleRun.playerMaxHp, UI_BAR_OK);
+  drawTypeChips(236, 284, mine, false);
 
   // Sprites standardisés dans une boîte visuelle ~82 px, quelle que soit l'espèce.
-  if (wildPmd.loaded) drawBattlePmd(wildPmd, 334, 252, false);
+  if (wildPmd.loaded) drawBattlePmd(wildPmd, 346, 238, false);
   else {
     const uint8_t *th=thumbs.get(battleDex);
-    if (th) drawThumb(th, 294, 132, 2, false);
+    if (th) drawThumb(th, 282, 118, 3, false);
   }
-  if (pmd.loaded) drawBattlePmd(pmd, 136, 306, false);
+  if (pmd.loaded) drawBattlePmd(pmd, 118, 310, false);
   else {
     const uint8_t *th=thumbs.get(pet.speciesId);
-    if (th) drawThumb(th, 96, 138, 2, false);
+    if (th) drawThumb(th, 54, 190, 3, false);
   }
 
   if (battleResolved) {

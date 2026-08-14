@@ -284,6 +284,7 @@ public:
   bool switchToCaught(int16_t dex);
   bool hasStoredProfile(int16_t dex);
   void saveActiveProfile();
+  void repairCaughtProfiles(); // migration des anciens Pokemon eleves vers la Boite
 
 private:
   Preferences prefs;

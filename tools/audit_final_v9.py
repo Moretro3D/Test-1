@@ -6,6 +6,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ino=(ROOT/"TamaPoke.ino").read_text(encoding="utf-8")
 dex=(ROOT/"dex.h").read_text(encoding="utf-8")
 battle=(ROOT/"battle.cpp").read_text(encoding="utf-8")
+pet=(ROOT/"pet.cpp").read_text(encoding="utf-8")
 chirp=(ROOT/"species_chirp.cpp").read_text(encoding="utf-8")
 
 def ok(cond,msg):
@@ -50,10 +51,15 @@ ok(len(fr)==387 and all(fr[i] for i in range(1,387)), "386 noms français non vi
 
 # Battle UI
 ok("void drawBattlePmd" in ino and "const int TARGET=128" in ino, "sprites combat agrandis et standardisés")
+ok("drawBattleName(dexName(battleDex), battleLevel, 44, 68, 190)" in ino and
+   "battlePlayer.level, 236, 236, 190" in ino,
+   "informations combat opposees aux sprites")
 ok("STARTER_DEX[3][3]" in ino and "{ 252, 255, 258 }" in ino,
    "starters 1G, 2G et 3G presents")
 ok("drawStarterPokeball" in ino and "starterPreviewDex" in ino,
    "Pokeballs et popup de confirmation starter presentes")
+ok("repairCaughtProfiles" in pet and "hasStoredProfile(candidate)" in pet,
+   "anciens profils evolues restaures dans la Boite")
 ok("void drawBattleName" in ino, "noms combat auto-ajustés")
 ok("drawBattleHpInfo" in ino, "PV courant/max affichés")
 ok("Bandeau d'action sombre intégré" in ino, "boutons combat intégrés sans fond gris")
