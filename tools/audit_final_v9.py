@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import re, subprocess, sys, csv
+import re, subprocess, sys, csv, wave, shutil
 
 ROOT=Path(__file__).resolve().parents[1]
 ino=(ROOT/"TamaPoke.ino").read_text(encoding="utf-8")
@@ -70,6 +70,15 @@ ok(all(name in audio for name in ("OST_MORNING", "OST_LOFI", "OST_NIGHT")) and
    "trois OST originales et lecture ambiante non bloquante")
 ok("hour>=7 && hour<13" in ino and "hour>=13 && hour<20" in ino,
    "selection OST automatique matin, lo-fi et nuit")
+music=ROOT/"tools/sdcard/music"
+for filename in ("morning.wav", "lofi.wav", "night.wav"):
+    with wave.open(str(music/filename), "rb") as wav:
+        ok(wav.getnchannels()==1 and wav.getsampwidth()==2 and
+           wav.getframerate()==16000 and wav.getnframes()==384000,
+           f"{filename} PCM mono 16 bits, 16 kHz, 24 secondes")
+ok("SD_MMC.open(MUSIC_PATHS[theme]" in audio and
+   "SAMPLE_RATE * 240 / 1000" in audio,
+   "lecture WAV SD en blocs courts avec repli synthetise")
 ok("void drawBattleName" in ino, "noms combat auto-ajustés")
 ok("drawBattleHpInfo" in ino, "PV courant/max affichés")
 ok("Bandeau d'action sombre intégré" in ino, "boutons combat intégrés sans fond gris")
@@ -99,6 +108,9 @@ for script in ["audit_evolutions.py","audit_386_assets.py","verify_web.py"]:
     p=ROOT/"tools"/script
     ok(p.exists(), f"{script} présent")
     subprocess.run([sys.executable,"-m","py_compile",str(p)],check=True)
-ok(subprocess.run(["bash","-n",str(ROOT/"tools/build_web.sh")]).returncode==0, "build_web.sh syntaxe")
+if shutil.which("bash"):
+    ok(subprocess.run(["bash","-n",str(ROOT/"tools/build_web.sh")]).returncode==0, "build_web.sh syntaxe")
+else:
+    print("SKIP build_web.sh syntaxe (bash absent sur ce poste)")
 
 print("AUDIT FINAL V9 OK")

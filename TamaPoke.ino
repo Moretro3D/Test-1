@@ -459,7 +459,7 @@ void maybePlayAmbientSound(uint32_t now) {
   uint8_t hour=sceneHour();
   uint8_t theme=(hour>=7 && hour<13) ? 0 : ((hour>=13 && hour<20) ? 1 : 2);
   audioAmbientPlay(theme);
-  nextAmbientSoundAt = now + 90;
+  nextAmbientSoundAt = now + 10;
 }
 
 uint16_t renderIntervalMs() {

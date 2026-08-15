@@ -1,6 +1,16 @@
 TAMAPOKE V9.1 - COMBAT ET BOITE
 
-OST D'AMBIANCE V9.8
+VRAIES OST WAV V9.9
+- Trois morceaux originaux complets de 24 secondes : morning.wav, lofi.wav
+  et night.wav, avec accords, basse, melodie et percussion lo-fi.
+- Lecture directe depuis /music sur la carte SD, avec boucle automatique.
+- Blocs audio courts de 240 ms pour laisser rapidement la priorite aux cris
+  et aux effets sonores.
+- Si les WAV sont absents, le firmware conserve les anciennes melodies
+  synthetisees V9.8 comme solution de secours.
+- La V9.9 conserve tous les correctifs combat et Boite de la V9.7.
+
+OST D'AMBIANCE SYNTHETISEE V9.8
 - Trois compositions originales, sans reprendre de melodie Pokemon existante.
 - 07h-13h : village du matin, doux et chaleureux.
 - 13h-20h : apres-midi lo-fi, calme et feutre.

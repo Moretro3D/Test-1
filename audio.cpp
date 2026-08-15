@@ -5,6 +5,7 @@
 #include <Wire.h>
 #include <ESP_I2S.h>
 #include <Preferences.h>
+#include <SD_MMC.h>
 
 // ---------------------------------------------------------------------------
 // Audio del TamaPoke: códec ES8311 (DAC -> amplificador PA -> altavoz) por I2S.
@@ -168,6 +169,52 @@ static const uint8_t AMBIENT_LENGTHS[3] = {
   sizeof(OST_NIGHT)/sizeof(OST_NIGHT[0]),
 };
 static uint8_t gAmbientStep[3] = {0,0,0};
+static File gMusicFile;
+static uint8_t gMusicTheme = 0xFF;
+static int16_t buf[256 * 2];  // stereo intercale (L=R)
+static uint8_t modeGainPct();
+static const char *const MUSIC_PATHS[3] = {
+  "/music/morning.wav", "/music/lofi.wav", "/music/night.wav"
+};
+
+static bool openMusic(uint8_t theme) {
+  if (theme >= 3) return false;
+  if (gMusicFile && gMusicTheme == theme) return true;
+  if (gMusicFile) gMusicFile.close();
+  gMusicTheme = theme;
+  gMusicFile = SD_MMC.open(MUSIC_PATHS[theme], FILE_READ);
+  if (!gMusicFile || gMusicFile.size() <= 44) return false;
+  uint8_t header[12];
+  if (gMusicFile.read(header, sizeof(header)) != sizeof(header) ||
+      memcmp(header, "RIFF", 4) || memcmp(header + 8, "WAVE", 4)) {
+    gMusicFile.close(); return false;
+  }
+  gMusicFile.seek(44);
+  return true;
+}
+
+static bool playMusicChunk(uint8_t theme) {
+  if (!openMusic(theme)) return false;
+  static int16_t mono[256];
+  int remaining = SAMPLE_RATE * 240 / 1000; // blocs courts: les SFX restent reactifs
+  while (remaining > 0) {
+    int count = remaining > 256 ? 256 : remaining;
+    int bytes = gMusicFile.read((uint8_t *)mono, count * 2);
+    if (bytes < count * 2) {
+      gMusicFile.seek(44);
+      bytes = gMusicFile.read((uint8_t *)mono, count * 2);
+      if (bytes <= 0) return false;
+      count = bytes / 2;
+    }
+    for (int i=0;i<count;i++) {
+      int16_t s=(int16_t)((int32_t)mono[i] * modeGainPct() / 170);
+      buf[i*2]=s; buf[i*2+1]=s;
+    }
+    i2s.write((uint8_t *)buf, count * 4);
+    remaining -= count;
+  }
+  return true;
+}
 
 struct SfxDef { const Note *n; uint8_t len; };
 static const SfxDef SFX[SFX_COUNT] = {
@@ -223,8 +270,6 @@ static const uint8_t SFX_MIN_MODE[SFX_COUNT] = {
   SOUND_MED,  // EXPEDITION_CLAIM
   SOUND_MED,  // ITEM_USE
 };
-
-static int16_t buf[256 * 2];  // estéreo intercalado (L=R)
 
 static uint16_t noiseState = 0xACE1;
 static int16_t nextNoise() {
@@ -327,9 +372,11 @@ static void audioTask(void *) {
         playSpeciesChirp(event.value);
       } else {
         uint8_t theme=(uint8_t)event.value;
-        uint8_t step=gAmbientStep[theme]++;
-        if (gAmbientStep[theme]>=AMBIENT_LENGTHS[theme]) gAmbientStep[theme]=0;
-        playTone(AMBIENT_TRACKS[theme][step]);
+        if (!playMusicChunk(theme)) {
+          uint8_t step=gAmbientStep[theme]++;
+          if (gAmbientStep[theme]>=AMBIENT_LENGTHS[theme]) gAmbientStep[theme]=0;
+          playTone(AMBIENT_TRACKS[theme][step]);
+        }
       }
       delay(isAmbient ? 18 : (gMode == SOUND_FULL ? 90 : 60));
       digitalWrite(PA, LOW);                 // apaga el amp entre sonidos (evita siseo)
