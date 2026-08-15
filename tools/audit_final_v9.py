@@ -7,6 +7,7 @@ ino=(ROOT/"TamaPoke.ino").read_text(encoding="utf-8")
 dex=(ROOT/"dex.h").read_text(encoding="utf-8")
 battle=(ROOT/"battle.cpp").read_text(encoding="utf-8")
 pet=(ROOT/"pet.cpp").read_text(encoding="utf-8")
+audio=(ROOT/"audio.cpp").read_text(encoding="utf-8")
 chirp=(ROOT/"species_chirp.cpp").read_text(encoding="utf-8")
 
 def ok(cond,msg):
@@ -51,9 +52,10 @@ ok(len(fr)==387 and all(fr[i] for i in range(1,387)), "386 noms français non vi
 
 # Battle UI
 ok("void drawBattlePmd" in ino and "visibleW" in ino and
+   "uint8_t fi=0" in ino and
    "drawBattlePmd(wildPmd, 350, 232, 84" in ino and
    "drawBattlePmd(pmd, 118, 316, 112" in ino,
-   "sprites combat stables avec tailles joueur/adversaire separees")
+   "sprites combat fixes avec tailles joueur/adversaire separees")
 ok("drawBattleName(dexName(battleDex), battleLevel, 78, 72, 190)" in ino and
    "battlePlayer.level, 236, 236, 190" in ino,
    "informations combat opposees aux sprites")
@@ -63,6 +65,11 @@ ok("drawStarterPokeball" in ino and "starterPreviewDex" in ino,
    "Pokeballs et popup de confirmation starter presentes")
 ok("repairCaughtProfiles" in pet and "hasStoredProfile(candidate)" in pet,
    "anciens profils evolues restaures dans la Boite")
+ok(all(name in audio for name in ("OST_MORNING", "OST_LOFI", "OST_NIGHT")) and
+   "AUDIO_EVENT_AMBIENT" in audio and "audioAmbientPlay" in ino,
+   "trois OST originales et lecture ambiante non bloquante")
+ok("hour>=7 && hour<13" in ino and "hour>=13 && hour<20" in ino,
+   "selection OST automatique matin, lo-fi et nuit")
 ok("void drawBattleName" in ino, "noms combat auto-ajustés")
 ok("drawBattleHpInfo" in ino, "PV courant/max affichés")
 ok("Bandeau d'action sombre intégré" in ino, "boutons combat intégrés sans fond gris")

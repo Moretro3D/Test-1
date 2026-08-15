@@ -454,11 +454,12 @@ void maybePlayAmbientSound(uint32_t now) {
     nextAmbientSoundAt = now + 9000;
     return;
   }
-  if (nextAmbientSoundAt == 0) nextAmbientSoundAt = now + 8000 + random(8000);
+  if (nextAmbientSoundAt == 0) nextAmbientSoundAt = now + 2500;
   if (now < nextAmbientSoundAt) return;
-  uint8_t r = (uint8_t)random(3);
-  sfxPlay(r == 0 ? SFX_HEART : (r == 1 ? SFX_EVENT_SPARKLE : SFX_MENU));
-  nextAmbientSoundAt = now + 8000 + random(8000);
+  uint8_t hour=sceneHour();
+  uint8_t theme=(hour>=7 && hour<13) ? 0 : ((hour>=13 && hour<20) ? 1 : 2);
+  audioAmbientPlay(theme);
+  nextAmbientSoundAt = now + 90;
 }
 
 uint16_t renderIntervalMs() {
@@ -3000,21 +3001,18 @@ void drawBattlePmd(PmdMon &m, int cx, int groundY, int target, bool sil=false) {
   const PmdAct &a=m.acts[PMD_IDLE];
   if (!a.frames) return;
   // Bounding box visuel cible ~128px sur l'écran 466px.
-  uint8_t fi=pmdFrameAt(a,millis(),true);
+  // En combat, une pose fixe garantit une silhouette et une taille strictement
+  // stables. Les animations PMD continuent normalement sur l'accueil.
+  uint8_t fi=0;
   const uint8_t *fr=a.data+(uint32_t)fi*a.w*a.h;
   int minC=a.w, maxC=-1, minR=a.h, maxR=-1;
-  // Une seule bounding box pour toutes les frames : l'echelle ne change plus
-  // lorsque le Pokemon bouge pendant le combat.
-  for (int f=0;f<a.frames;f++) {
-    const uint8_t *animFrame=a.data+(uint32_t)f*a.w*a.h;
-    for (int r=0;r<a.h;r++) {
-      for (int c=0;c<a.w;c++) {
-        if (animFrame[r*a.w+c]==0xFF) continue;
-        if (c<minC) minC=c;
-        if (c>maxC) maxC=c;
-        if (r<minR) minR=r;
-        if (r>maxR) maxR=r;
-      }
+  for (int r=0;r<a.h;r++) {
+    for (int c=0;c<a.w;c++) {
+      if (fr[r*a.w+c]==0xFF) continue;
+      if (c<minC) minC=c;
+      if (c>maxC) maxC=c;
+      if (r<minR) minR=r;
+      if (r>maxR) maxR=r;
     }
   }
   if (maxC<minC || maxR<minR) return;

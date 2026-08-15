@@ -25,7 +25,7 @@ static volatile bool gBusy = false;
 static uint32_t gLastQueuedAt[4] = {0, 0, 0, 0};
 static uint32_t gLastChirpAt = 0;
 
-enum AudioEventKind : uint8_t { AUDIO_EVENT_SFX = 0, AUDIO_EVENT_CHIRP };
+enum AudioEventKind : uint8_t { AUDIO_EVENT_SFX = 0, AUDIO_EVENT_CHIRP, AUDIO_EVENT_AMBIENT };
 struct AudioEvent {
   uint8_t kind;
   uint16_t value;  // SFX 0.., ou numéro Pokédex 1..386
@@ -140,6 +140,34 @@ static const Note N_EXPEDITION_START[] = {TRI(523, 52, 64), TRI(659, 62, 70), SL
 static const Note N_EXPEDITION_FOUND[] = {TRI(784, 55, 70), TRI(1047, 58, 76), TRI(1319, 65, 78), SOFT(1568, 130, 72)};
 static const Note N_EXPEDITION_CLAIM[] = {SOFT(988, 55, 66), TRI(1319, 70, 74), SL(1568, 115, 1976, 76, W_TRI)};
 static const Note N_ITEM_USE[] = {SOFT(659, 48, 62), SL(784, 95, 1175, 70, W_TRI)};
+
+// Trois compositions originales "ville douce / lo-fi". Elles sont jouees
+// note par note afin qu'un SFX ou un cri puisse s'intercaler rapidement.
+static const Note OST_MORNING[] = {
+  SOFT(523,260,24), SOFT(659,260,22), TRI(784,300,20), SIL(100),
+  SOFT(659,240,22), SOFT(587,240,21), TRI(523,340,20), SIL(140),
+  SOFT(392,260,20), SOFT(523,260,22), TRI(659,300,21), SIL(100),
+  SOFT(587,240,20), SOFT(523,240,20), TRI(440,380,18), SIL(180),
+};
+static const Note OST_LOFI[] = {
+  SOFT(349,300,20), TRI(440,260,18), SOFT(523,320,20), SIL(120),
+  SOFT(330,300,19), TRI(415,260,18), SOFT(494,340,20), SIL(120),
+  SOFT(294,300,18), TRI(392,260,18), SOFT(466,320,19), SIL(120),
+  SOFT(330,280,18), TRI(440,280,18), SOFT(523,400,20), SIL(180),
+};
+static const Note OST_NIGHT[] = {
+  SOFT(262,360,16), SIL(100), TRI(392,320,17), SOFT(330,380,16),
+  SIL(160), SOFT(294,360,16), TRI(440,340,17), SIL(120),
+  SOFT(349,400,16), SOFT(294,340,15), SIL(140), TRI(392,360,16),
+  SOFT(330,420,15), SIL(180), SOFT(262,480,14), SIL(240),
+};
+static const Note *const AMBIENT_TRACKS[3] = { OST_MORNING, OST_LOFI, OST_NIGHT };
+static const uint8_t AMBIENT_LENGTHS[3] = {
+  sizeof(OST_MORNING)/sizeof(OST_MORNING[0]),
+  sizeof(OST_LOFI)/sizeof(OST_LOFI[0]),
+  sizeof(OST_NIGHT)/sizeof(OST_NIGHT[0]),
+};
+static uint8_t gAmbientStep[3] = {0,0,0};
 
 struct SfxDef { const Note *n; uint8_t len; };
 static const SfxDef SFX[SFX_COUNT] = {
@@ -286,18 +314,24 @@ static void audioTask(void *) {
     if (!xQueueReceive(gQ, &event, portMAX_DELAY) || !gReady) continue;
     bool isSfx = event.kind == AUDIO_EVENT_SFX && event.value < SFX_COUNT;
     bool isChirp = event.kind == AUDIO_EVENT_CHIRP && event.value >= 1 && event.value <= 386 && gMode >= SOUND_MED;
+    bool isAmbient = event.kind == AUDIO_EVENT_AMBIENT && event.value < 3 && gMode == SOUND_FULL;
     if (isSfx && gMode < SFX_MIN_MODE[event.value]) continue;
-    if (isSfx || isChirp) {
+    if (isSfx || isChirp || isAmbient) {
       gBusy = true;
       digitalWrite(PA, HIGH);  // enciende el amplificador
       delay(8);                // deja que arranque
       if (isSfx) {
         const SfxDef &d = SFX[event.value];
         for (uint8_t i = 0; i < d.len; i++) playTone(d.n[i]);
-      } else {
+      } else if (isChirp) {
         playSpeciesChirp(event.value);
+      } else {
+        uint8_t theme=(uint8_t)event.value;
+        uint8_t step=gAmbientStep[theme]++;
+        if (gAmbientStep[theme]>=AMBIENT_LENGTHS[theme]) gAmbientStep[theme]=0;
+        playTone(AMBIENT_TRACKS[theme][step]);
       }
-      delay(gMode == SOUND_FULL ? 90 : 60);  // deja salir la cola del DMA antes de cortar
+      delay(isAmbient ? 18 : (gMode == SOUND_FULL ? 90 : 60));
       digitalWrite(PA, LOW);                 // apaga el amp entre sonidos (evita siseo)
       gBusy = false;
     }
@@ -370,6 +404,12 @@ uint8_t audioMode() { return gMode; }
 
 bool audioBusy() {
   return gBusy || (gQ && uxQueueMessagesWaiting(gQ) > 0);
+}
+
+void audioAmbientPlay(uint8_t theme) {
+  if (!gReady || gMode != SOUND_FULL || !gQ || theme >= 3 || audioBusy()) return;
+  AudioEvent event = { AUDIO_EVENT_AMBIENT, theme };
+  xQueueSend(gQ, &event, 0);
 }
 
 void speciesChirpPlay(int16_t dex) {

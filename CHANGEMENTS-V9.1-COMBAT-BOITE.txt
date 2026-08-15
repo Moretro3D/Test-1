@@ -1,5 +1,15 @@
 TAMAPOKE V9.1 - COMBAT ET BOITE
 
+OST D'AMBIANCE V9.8
+- Trois compositions originales, sans reprendre de melodie Pokemon existante.
+- 07h-13h : village du matin, doux et chaleureux.
+- 13h-20h : apres-midi lo-fi, calme et feutre.
+- 20h-07h : nuit etoilee, lente et reposante.
+- Lecture note par note : les cris et effets peuvent s'intercaler, puis la
+  musique reprend automatiquement.
+- OST active uniquement avec le reglage sonore TOUT.
+- Musique coupee hors accueil, ecran eteint, sommeil, menus, jeux et combats.
+
 CHOIX DU STARTER AU PREMIER DEMARRAGE
 - Choix initial entre 1re, 2e et 3e generation.
 - Trois Pokeballs tactiles sont affichees apres le choix de generation.
@@ -22,6 +32,9 @@ COMBAT
 - Le sprite du compagnon ne change plus de taille en bougeant.
 - Taille maximale distincte : joueur 112 px, adversaire 84 px pour eviter les
   adversaires compacts demesures comme Voltorbe.
+- Correctif V9.7 : pose Idle fixe pendant le combat. La silhouette ne change
+  plus entre deux frames, donc aucune variation visuelle de taille n'est possible.
+- Les animations de l'accueil ne sont pas modifiees.
 - Pokeball affichee pres du nom d'un Pokemon sauvage deja obtenu.
 
 BOITE
