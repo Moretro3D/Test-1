@@ -214,6 +214,11 @@ bool sdSerialCommand(const String &line) {
       return true;
     }
     if (!path.startsWith("/")) path = "/" + path;
+    int slash = path.lastIndexOf('/');
+    if (slash > 0) {
+      String parent = path.substring(0, slash);
+      if (!SD_MMC.exists(parent)) SD_MMC.mkdir(parent);
+    }
     File f = SD_MMC.open(path, FILE_WRITE);
     if (!f) {
       Serial.println("ERR");
