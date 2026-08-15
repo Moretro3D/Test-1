@@ -9,6 +9,7 @@ battle=(ROOT/"battle.cpp").read_text(encoding="utf-8")
 pet=(ROOT/"pet.cpp").read_text(encoding="utf-8")
 audio=(ROOT/"audio.cpp").read_text(encoding="utf-8")
 chirp=(ROOT/"species_chirp.cpp").read_text(encoding="utf-8")
+sdmon=(ROOT/"sdmon.cpp").read_text(encoding="utf-8")
 
 def ok(cond,msg):
     if not cond:
@@ -79,6 +80,8 @@ for filename in ("morning.wav", "lofi.wav", "night.wav"):
 ok("SD_MMC.open(MUSIC_PATHS[theme]" in audio and
    "SAMPLE_RATE * 240 / 1000" in audio,
    "lecture WAV SD en blocs courts avec repli synthetise")
+ok("SD_MMC.exists(path) && !SD_MMC.remove(path)" in sdmon,
+   "chargement USB remplace les fichiers SD sans les agrandir")
 ok("void drawBattleName" in ino, "noms combat auto-ajustés")
 ok("drawBattleHpInfo" in ino, "PV courant/max affichés")
 ok("Bandeau d'action sombre intégré" in ino, "boutons combat intégrés sans fond gris")
