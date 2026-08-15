@@ -219,6 +219,14 @@ bool sdSerialCommand(const String &line) {
       String parent = path.substring(0, slash);
       if (!SD_MMC.exists(parent)) SD_MMC.mkdir(parent);
     }
+    // FILE_WRITE ajoute a la fin d'un fichier existant sur Arduino-ESP32.
+    // Un second chargement doublait donc tous les sprites jusqu'a remplir la SD.
+    // Supprimer d'abord l'ancienne copie garantit un vrai remplacement et
+    // permet aussi de recuperer progressivement une carte deja saturee.
+    if (SD_MMC.exists(path) && !SD_MMC.remove(path)) {
+      Serial.println("ERR");
+      return true;
+    }
     File f = SD_MMC.open(path, FILE_WRITE);
     if (!f) {
       Serial.println("ERR");
