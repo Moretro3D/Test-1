@@ -81,7 +81,7 @@ ok("SD_MMC.open(MUSIC_PATHS[theme]" in audio and
    "SAMPLE_RATE * 240 / 1000" in audio,
    "lecture WAV SD en blocs courts avec repli synthetise")
 ok("gAmbientKeepAliveUntil" in audio and "uxQueueMessagesWaiting(gQ) > 0" in audio and
-   "modeGainPct() / 220" in audio,
+   "modeGainPct() / 240" in audio and "ps_malloc(bytes)" in audio,
    "OST WAV continue, sans coupure d'ampli entre blocs et sans saturation")
 ok("SD_MMC.exists(path) && !SD_MMC.remove(path)" in sdmon,
    "chargement USB remplace les fichiers SD sans les agrandir")

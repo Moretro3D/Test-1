@@ -35,7 +35,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>🔴 TamaPoke FR · V9.11</h1>
+  <h1>🔴 TamaPoke FR · V9.12</h1>
   <p class="sub">Combat corrigé, Boîte et évolutions réparées, choix du starter et trois OST WAV. Installation directe depuis Chrome ou Edge.</p>
 
   <p class="unsupported" id="unsupported">
@@ -45,7 +45,7 @@
   <h2><span class="num">1</span>Flasher le firmware</h2>
   <div class="step">
     <p>Branche le TamaPoke en USB-C, clique sur Installer, sélectionne son port puis attends la fin.</p>
-    <esp-web-install-button manifest="manifest.json?v=1.40.0-moretro-v9.11-sdsafe1">
+    <esp-web-install-button manifest="manifest.json?v=1.40.0-moretro-v9.12-audiopsram1">
       <button slot="activate">⚡ Installer TamaPoke FR modifié</button>
       <span slot="unsupported">Navigateur non compatible (utilise Chrome/Edge).</span>
       <span slot="not-allowed">HTTPS requis.</span>
@@ -193,7 +193,7 @@ document.getElementById('auto').onclick = async () => {
   let items;
   try {
     // Bundle complet servi depuis GitHub Pages : sprites, decors et OST.
-    const resp = await fetch('sprites.pak?v=1.40.0-moretro-v9.11-sdsafe1', { cache: 'no-store' });
+    const resp = await fetch('sprites.pak?v=1.40.0-moretro-v9.12-audiopsram1', { cache: 'no-store' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     items = parsePak(await resp.arrayBuffer());
   } catch (e) { log('Could not download sprites.pak: ' + e.message); return; }

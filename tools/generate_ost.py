@@ -62,15 +62,11 @@ def render(name, cfg):
         env = min(1.0, local * 10.0) * max(0.0, 1.0 - local * 0.82)
         melody = osc(hz(cfg["root"], note), t) * env * 0.24
 
-        # kick doux et souffle/snare lo-fi
+        # kick tres doux, sans souffle aleatoire (evite le gresillement)
         within = beat_pos % 1.0
         kick_env = math.exp(-within * 13.0)
         kick = math.sin(2 * math.pi * (72 - within * 25) * t) * kick_env * 0.22
-        half = (beat_pos + 0.5) % 1.0
-        snare_env = math.exp(-half * 24.0) if int(beat_pos) % 2 else 0.0
-        noise = (random.random() * 2 - 1) * snare_env * 0.055
-
-        raw = pad * 0.28 + arp + bass + melody + cfg["drums"] * (kick + noise)
+        raw = pad * 0.28 + arp + bass + melody + cfg["drums"] * kick
         # filtre passe-bas chaleureux
         alpha = 0.18 + cfg["warm"] * 0.10
         lp += alpha * (raw - lp)

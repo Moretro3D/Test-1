@@ -1,5 +1,12 @@
 TAMAPOKE V9.1 - COMBAT ET BOITE
 
+AUDIO PSRAM V9.12
+- Chaque OST est chargee entierement en PSRAM avant lecture : aucun acces lent
+  a la microSD pendant la musique, donc plus de saut lie aux temps de lecture.
+- Suppression du souffle/snare aleatoire des WAV, qui pouvait etre entendu
+  comme un gresillement sur le petit haut-parleur.
+- Niveau musical encore legerement reduit pour garder une marge propre.
+
 PROTECTION MICROSD V9.11
 - Au demarrage, TamaPoke gere uniquement ses dossiers mons, backgrounds et
   music et supprime les fichiers inconnus ou temporaires qui s'y trouvent.
