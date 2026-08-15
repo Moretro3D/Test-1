@@ -2,6 +2,7 @@
 from pathlib import Path
 import json
 import sys
+import struct
 
 root = Path(__file__).resolve().parents[1]
 web = root / "web"
@@ -21,6 +22,27 @@ def require(path, label, min_size=1):
 require(index_path, "index.html", 100)
 require(manifest_path, "manifest.json", 50)
 require(sprites_path, "sprites.pak", 1024)
+
+if sprites_path.is_file():
+    raw = sprites_path.read_bytes()
+    try:
+        if raw[:4] != b"TPAK":
+            raise ValueError("signature TPAK absente")
+        count = struct.unpack_from("<H", raw, 4)[0]
+        off = 6
+        names = []
+        for _ in range(count):
+            name_len = raw[off]
+            off += 1
+            names.append(raw[off:off + name_len].decode("utf-8"))
+            off += name_len + 4
+        for required in ("music/morning.wav", "music/lofi.wav", "music/night.wav"):
+            if required not in names:
+                errors.append(f"asset automatique absent du bundle: {required}")
+        if not any(name.startswith("backgrounds/") for name in names):
+            errors.append("decors absents du bundle automatique")
+    except Exception as exc:
+        errors.append(f"sprites.pak invalide: {exc}")
 
 try:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))

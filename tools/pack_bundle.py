@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Empaqueta todos los sprites de la SD (tools/sdcard/mons/*.bin) en un unico
-fichero web/sprites.pak para que el instalador web los suba de un clic.
+"""Empaqueta todos los assets SD (sprites, decors et OST) dans un seul
+fichier web/sprites.pak pour que l'installateur web les charge en un clic.
 
 Formato TPAK (little-endian):
   char[4]  "TPAK"
@@ -16,15 +16,20 @@ import os
 import struct
 
 HERE = os.path.dirname(__file__)
-MONS = os.path.join(HERE, 'sdcard', 'mons')
+SDCARD = os.path.join(HERE, 'sdcard')
 OUT = os.path.join(HERE, '..', 'web', 'sprites.pak')
 
 
 def main():
-    files = sorted(glob.glob(os.path.join(MONS, '*.bin')))
+    patterns = (
+        os.path.join(SDCARD, 'mons', '*.bin'),
+        os.path.join(SDCARD, 'backgrounds', '*_466.png'),
+        os.path.join(SDCARD, 'music', '*.wav'),
+    )
+    files = sorted(f for pattern in patterns for f in glob.glob(pattern))
     if not files:
-        raise SystemExit('no hay sprites en ' + MONS)
-    names = ['mons/' + os.path.basename(f) for f in files]
+        raise SystemExit('aucun asset SD dans ' + SDCARD)
+    names = [os.path.relpath(f, SDCARD).replace(os.sep, '/') for f in files]
     blobs = [open(f, 'rb').read() for f in files]
 
     with open(OUT, 'wb') as o:
@@ -39,7 +44,7 @@ def main():
             o.write(blob)
 
     total = sum(len(b) for b in blobs)
-    print(f'{os.path.normpath(OUT)}: {len(files)} sprites, {total / 1048576:.1f} MB datos '
+    print(f'{os.path.normpath(OUT)}: {len(files)} assets SD, {total / 1048576:.1f} MB de donnees '
           f'({os.path.getsize(OUT) / 1048576:.1f} MB total)')
 
 

@@ -9,7 +9,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 FQBN="esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
-VERSION="1.40.0-moretro-v9-final"
+VERSION="1.40.0-moretro-v9.9"
 
 echo "Préparation du sketch TamaPoke..."
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/tamapoke-ci.XXXXXX")"
@@ -67,7 +67,7 @@ fi
 echo "Génération des 386 miniatures Pokédex..."
 python3 "$ROOT/tools/make_thumbs.py"
 
-echo "Empaquetage des sprites Kanto + Johto + Hoenn..."
+echo "Empaquetage des sprites, decors et OST pour l'installation automatique..."
 python3 "$ROOT/tools/pack_bundle.py"
 
 echo "Audit intégral des assets #001-386..."
