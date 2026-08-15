@@ -113,12 +113,98 @@ const uint8_t *SdThumbs::get(int16_t dex) const {
   return data + off;
 }
 
+static String sdBaseName(const String &path) {
+  int slash = path.lastIndexOf('/');
+  return slash >= 0 ? path.substring(slash + 1) : path;
+}
+
+static bool validMonName(const String &name) {
+  if (name == "thumbs.bin") return true;
+  int digit = name.startsWith("ps") ? 2 : (name.startsWith("p") ? 1 : -1);
+  int expectedLen = digit == 2 ? 9 : 8;
+  if (digit < 0 || name.length() != expectedLen || !name.endsWith(".bin")) return false;
+  for (int i=0;i<3;i++) if (!isDigit(name[digit+i])) return false;
+  int dex = name.substring(digit, digit + 3).toInt();
+  return dex >= 1 && dex <= 386;
+}
+
+static bool validBackgroundName(const String &name) {
+  static const char *const biomes[] = {"prairie", "foret", "eau_plage", "montagne", "volcan", "neige"};
+  static const char *const phases[] = {"dawn", "day", "sunset", "night"};
+  for (const char *biome : biomes) for (const char *phase : phases) {
+    String expected = String(biome) + "_" + phase + "_466.png";
+    if (name == expected) return true;
+  }
+  return false;
+}
+
+static bool validMusicName(const String &name) {
+  return name == "morning.wav" || name == "lofi.wav" || name == "night.wav";
+}
+
+// Retourne la taille logique d'un TPK2. Si un ancien PUT a ajoute une seconde
+// copie a la fin, cette taille est inferieure a f.size() et permet de reparer.
+static uint32_t logicalTpk2Size(File &f) {
+  uint8_t h[7];
+  if (!f.seek(0) || f.read(h, sizeof(h)) != sizeof(h) || memcmp(h, "TPK2", 4)) return 0;
+  uint8_t acts = h[4];
+  uint16_t palettes = h[5] | (h[6] << 8);
+  if (acts == 0 || acts > PMD_NACTS || palettes > 256) return 0;
+  uint32_t pos = 7 + (uint32_t)palettes * 2;
+  for (uint8_t i=0;i<acts;i++) {
+    uint8_t a[4];
+    if (pos + 4 > f.size() || !f.seek(pos) || f.read(a, 4) != 4) return 0;
+    uint8_t id=a[0], w=a[1], hgt=a[2], frames=a[3];
+    if (id >= PMD_NACTS || !w || !hgt || !frames || frames > 24) return 0;
+    pos += 4 + (uint32_t)frames * 2 + (uint32_t)w * hgt * frames;
+    if (pos > f.size()) return 0;
+  }
+  return pos;
+}
+
+static bool clearSdTree(const char *root);
+
+static void maintainOwnedDir(const char *root, uint8_t kind) {
+  File dir = SD_MMC.open(root);
+  if (!dir || !dir.isDirectory()) { if (dir) dir.close(); return; }
+  while (true) {
+    File entry = dir.openNextFile();
+    if (!entry) break;
+    String path = entry.path();
+    String name = sdBaseName(path);
+    bool isDir = entry.isDirectory();
+    bool valid = !isDir && (kind == 0 ? validMonName(name) :
+                            (kind == 1 ? validBackgroundName(name) : validMusicName(name)));
+    uint32_t physical = entry.size();
+    uint32_t logical = (valid && kind == 0 && name != "thumbs.bin") ? logicalTpk2Size(entry) : physical;
+    entry.close();
+    if (!valid || (kind == 0 && name != "thumbs.bin" && logical == 0)) {
+      if (isDir) clearSdTree(path.c_str()); else SD_MMC.remove(path);
+      continue;
+    }
+    // Une taille superieure a la taille logique signifie qu'une ou plusieurs
+    // copies ont ete ajoutees a la fin. Supprimer ce fichier evite qu'il ne
+    // continue a occuper plusieurs fois sa place; le ZIP propre le remplacera.
+    if (logical > 0 && logical < physical) SD_MMC.remove(path);
+  }
+  dir.close();
+}
+
+static void maintainTamaPokeSd() {
+  maintainOwnedDir("/mons", 0);
+  maintainOwnedDir("/backgrounds", 1);
+  maintainOwnedDir("/music", 2);
+}
+
 bool sdBegin() {
   SD_MMC.setPins(SDMMC_CLK, SDMMC_CMD, SDMMC_DATA);
   sdReady = SD_MMC.begin("/sdcard", true /* modo 1-bit */, true /* formatea si no monta */);
   if (sdReady) {
     Serial.printf("SD montada: %llu MB\n", SD_MMC.cardSize() / (1024ULL * 1024ULL));
     SD_MMC.mkdir("/mons");
+    SD_MMC.mkdir("/backgrounds");
+    SD_MMC.mkdir("/music");
+    maintainTamaPokeSd();
   } else {
     Serial.println("SD no detectada (el juego usa los sprites de flash)");
   }
@@ -259,6 +345,11 @@ bool sdSerialCommand(const String &line) {
     // permet aussi de recuperer progressivement une carte deja saturee.
     if (SD_MMC.exists(path) && !SD_MMC.remove(path)) {
       Serial.println("ERR");
+      return true;
+    }
+    uint64_t freeBytes = SD_MMC.totalBytes() - SD_MMC.usedBytes();
+    if (freeBytes < (uint64_t)size + 65536ULL) {
+      Serial.println("ERRFULL");
       return true;
     }
     File f = SD_MMC.open(path, FILE_WRITE);

@@ -80,11 +80,21 @@ for filename in ("morning.wav", "lofi.wav", "night.wav"):
 ok("SD_MMC.open(MUSIC_PATHS[theme]" in audio and
    "SAMPLE_RATE * 240 / 1000" in audio,
    "lecture WAV SD en blocs courts avec repli synthetise")
+ok("gAmbientKeepAliveUntil" in audio and "uxQueueMessagesWaiting(gQ) > 0" in audio and
+   "modeGainPct() / 220" in audio,
+   "OST WAV continue, sans coupure d'ampli entre blocs et sans saturation")
 ok("SD_MMC.exists(path) && !SD_MMC.remove(path)" in sdmon,
    "chargement USB remplace les fichiers SD sans les agrandir")
 ok('line == "PREPARE"' in sdmon and 'Serial.println("READY")' not in sdmon and
    '"READY" : "ERRCLEAN"' in sdmon,
    "preparation USB nettoie les anciens assets avant transfert")
+ok("maintainTamaPokeSd()" in sdmon and "logicalTpk2Size" in sdmon and
+   "logical < physical) SD_MMC.remove(path)" in sdmon,
+   "maintenance SD supprime les intrus et anciens TPK2 dupliques")
+ok('Serial.println("ERRFULL")' in sdmon and "freeBytes" in sdmon,
+   "reserve d'espace controlee avant chaque ecriture SD")
+ok("ARRÊT SÉCURISÉ" in ino or "ARRÊT SÉCURISÉ" in (ROOT/"web/index.html").read_text(encoding="utf-8"),
+   "installateur web stoppe des la premiere erreur")
 ok("void drawBattleName" in ino, "noms combat auto-ajustés")
 ok("drawBattleHpInfo" in ino, "PV courant/max affichés")
 ok("Bandeau d'action sombre intégré" in ino, "boutons combat intégrés sans fond gris")

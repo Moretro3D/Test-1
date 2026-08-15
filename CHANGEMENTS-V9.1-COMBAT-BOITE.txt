@@ -1,5 +1,23 @@
 TAMAPOKE V9.1 - COMBAT ET BOITE
 
+PROTECTION MICROSD V9.11
+- Au demarrage, TamaPoke gere uniquement ses dossiers mons, backgrounds et
+  music et supprime les fichiers inconnus ou temporaires qui s'y trouvent.
+- Les anciens TPK2 agrandis par ajout sont detectes et supprimes afin de
+  recuperer immediatement tout l'espace occupe en double.
+- Chaque PUT supprime toujours l'ancienne version avant ecriture.
+- Verification d'une reserve de 64 Ko avant chaque fichier : ERRFULL plutot
+  que de remplir completement la carte.
+- La page arrete tout le transfert des la premiere erreur au lieu de continuer
+  avec des centaines d'echecs.
+
+AUDIO FLUIDE V9.10
+- Flux WAV continu : l'amplificateur n'est plus coupe puis rallume entre les
+  blocs de 240 ms, ce qui supprime les sauts et clics reguliers.
+- Niveau WAV abaisse pour eviter le gresillement par saturation du petit ampli.
+- Les cris et effets gardent la priorite et interrompent la musique au plus
+  tard apres le bloc audio en cours.
+
 VRAIES OST WAV V9.9
 - Trois morceaux originaux complets de 24 secondes : morning.wav, lofi.wav
   et night.wav, avec accords, basse, melodie et percussion lo-fi.

@@ -23,6 +23,8 @@ static bool gReady = false;
 static uint8_t gMode = SOUND_FULL;
 static QueueHandle_t gQ = nullptr;
 static volatile bool gBusy = false;
+static volatile uint32_t gAmbientKeepAliveUntil = 0;
+static volatile uint8_t gAmbientTheme = 0xFF;
 static uint32_t gLastQueuedAt[4] = {0, 0, 0, 0};
 static uint32_t gLastChirpAt = 0;
 
@@ -207,7 +209,9 @@ static bool playMusicChunk(uint8_t theme) {
       count = bytes / 2;
     }
     for (int i=0;i<count;i++) {
-      int16_t s=(int16_t)((int32_t)mono[i] * modeGainPct() / 170);
+      // Marge supplementaire pour les accords/basses WAV : evite la saturation
+      // du petit ampli tout en gardant les SFX bien audibles.
+      int16_t s=(int16_t)((int32_t)mono[i] * modeGainPct() / 220);
       buf[i*2]=s; buf[i*2+1]=s;
     }
     i2s.write((uint8_t *)buf, count * 4);
@@ -372,7 +376,17 @@ static void audioTask(void *) {
         playSpeciesChirp(event.value);
       } else {
         uint8_t theme=(uint8_t)event.value;
-        if (!playMusicChunk(theme)) {
+        bool wavOk = openMusic(theme);
+        if (wavOk) {
+          // Conserver un flux I2S continu tant que l'accueil renouvelle le
+          // keep-alive. L'ampli n'est donc plus coupe/rallume toutes les 240 ms.
+          do {
+            if (!playMusicChunk(theme)) { wavOk=false; break; }
+            if (uxQueueMessagesWaiting(gQ) > 0) break; // priorite aux SFX/cris
+          } while (gMode == SOUND_FULL && gAmbientTheme == theme &&
+                   (int32_t)(gAmbientKeepAliveUntil - millis()) > 0);
+        }
+        if (!wavOk) {
           uint8_t step=gAmbientStep[theme]++;
           if (gAmbientStep[theme]>=AMBIENT_LENGTHS[theme]) gAmbientStep[theme]=0;
           playTone(AMBIENT_TRACKS[theme][step]);
@@ -454,7 +468,10 @@ bool audioBusy() {
 }
 
 void audioAmbientPlay(uint8_t theme) {
-  if (!gReady || gMode != SOUND_FULL || !gQ || theme >= 3 || audioBusy()) return;
+  if (!gReady || gMode != SOUND_FULL || !gQ || theme >= 3) return;
+  gAmbientTheme = theme;
+  gAmbientKeepAliveUntil = millis() + 650;
+  if (audioBusy()) return;
   AudioEvent event = { AUDIO_EVENT_AMBIENT, theme };
   xQueueSend(gQ, &event, 0);
 }
