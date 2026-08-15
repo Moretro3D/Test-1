@@ -35,8 +35,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>🔴 TamaPoke FR · COMBAT UI V6.3</h1>
-  <p class="sub">Version Expanded personnalisée avec les corrections d’affichage validées. Installation directe depuis Chrome ou Edge.</p>
+  <h1>🔴 TamaPoke FR · V9.9</h1>
+  <p class="sub">Combat corrigé, Boîte et évolutions réparées, choix du starter et trois OST WAV. Installation directe depuis Chrome ou Edge.</p>
 
   <p class="unsupported" id="unsupported">
     ⚠️ Ton navigateur ne prend pas en charge Web Serial. Utilise <b>Chrome</b> ou <b>Edge</b> sur ordinateur.
@@ -56,16 +56,15 @@
        sans problème.</p>
   </div>
 
-  <h2><span class="num">2</span>Charger les sprites sur la microSD</h2>
+  <h2><span class="num">2</span>Installer automatiquement la microSD</h2>
   <div class="step">
-    <p>Put a microSD into the board (it formats itself). Press <b>Connecter le TamaPoke</b>
-       and then <b>Charger les sprites</b>: they download and copy over USB automatically
-       (~40 MB, a few minutes). Don't remove the card.</p>
-    <p class="note">Close the step-1 install tab first (only one program can use
-       the port at a time).</p>
+    <p>Insère une microSD dans le TamaPoke, clique sur <b>Connecter</b>, puis sur
+       <b>Tout installer</b>. Les 386 sprites, les décors et les trois OST sont
+       téléchargés et copiés automatiquement par USB. Ne retire pas la carte.</p>
+    <p class="note">Ferme d'abord la fenêtre d'installation de l'étape 1 : un seul programme peut utiliser le port USB.</p>
     <div class="row">
       <button id="connect">🔌 Connecter le TamaPoke</button>
-      <button id="auto" disabled>⬇️ Charger les sprites</button>
+      <button id="auto" disabled>⬇️ Tout installer sur la microSD</button>
     </div>
     <p class="note">Have your own <code>.bin</code> files? <label style="cursor:pointer;text-decoration:underline">pick them manually<input id="files" type="file" accept=".bin" multiple disabled hidden></label></p>
     <p class="note">🎨 Want to make your own sprites? See <a href="https://github.com/ShadowEnemyx/TamaPoke#generate-and-load-the-sprites-yourself" target="_blank">how to generate &amp; load them</a> in the repo.</p>
@@ -166,7 +165,7 @@ document.getElementById('connect').onclick = async () => {
     reader = port.readable.getReader();
     writer = port.writable.getWriter();
     lineBuf = '';
-    log('Connected. Press "Charger les sprites".');
+    log('Connecté. Clique sur "Tout installer sur la microSD".');
     document.getElementById('auto').disabled = false;
     document.getElementById('files').disabled = false;
     document.getElementById('connect').disabled = true;
@@ -176,15 +175,15 @@ document.getElementById('connect').onclick = async () => {
 document.getElementById('auto').onclick = async () => {
   if (!writer) { log('Connect the board first.'); return; }
   document.getElementById('auto').disabled = true;
-  log('Downloading sprite bundle (~58 MB)...');
+  log('Téléchargement des sprites, décors et OST...');
   let items;
   try {
-    // sprites.pak servido desde el mismo origen (GitHub Pages) -> sin lios de CORS
+    // Bundle complet servi depuis GitHub Pages : sprites, decors et OST.
     const resp = await fetch('sprites.pak');
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     items = parsePak(await resp.arrayBuffer());
   } catch (e) { log('Could not download sprites.pak: ' + e.message); return; }
-  log(`${items.length} sprites. Sending over USB...`);
+  log(`${items.length} fichiers. Copie automatique par USB...`);
   await sendAll(items);
 };
 
