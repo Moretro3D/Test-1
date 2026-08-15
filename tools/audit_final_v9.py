@@ -82,6 +82,9 @@ ok("SD_MMC.open(MUSIC_PATHS[theme]" in audio and
    "lecture WAV SD en blocs courts avec repli synthetise")
 ok("SD_MMC.exists(path) && !SD_MMC.remove(path)" in sdmon,
    "chargement USB remplace les fichiers SD sans les agrandir")
+ok('line == "PREPARE"' in sdmon and 'Serial.println("READY")' not in sdmon and
+   '"READY" : "ERRCLEAN"' in sdmon,
+   "preparation USB nettoie les anciens assets avant transfert")
 ok("void drawBattleName" in ino, "noms combat auto-ajustés")
 ok("drawBattleHpInfo" in ino, "PV courant/max affichés")
 ok("Bandeau d'action sombre intégré" in ino, "boutons combat intégrés sans fond gris")
