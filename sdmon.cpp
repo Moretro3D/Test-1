@@ -204,8 +204,42 @@ void SdMon::unload() {
 // Usar con tools/send_sd.py
 // ---------------------------------------------------------------------------
 
+static bool clearSdTree(const char *root) {
+  File dir = SD_MMC.open(root);
+  if (!dir) return true;  // dossier absent = deja propre
+  if (!dir.isDirectory()) { dir.close(); return SD_MMC.remove(root); }
+  while (true) {
+    File entry = dir.openNextFile();
+    if (!entry) break;
+    String child = entry.path();
+    bool isDir = entry.isDirectory();
+    entry.close();
+    if (isDir) {
+      if (!clearSdTree(child.c_str())) { dir.close(); return false; }
+    } else if (!SD_MMC.remove(child)) {
+      dir.close(); return false;
+    }
+  }
+  dir.close();
+  return SD_MMC.rmdir(root);
+}
+
 bool sdSerialCommand(const String &line) {
-  if (line.startsWith("PUT ")) {
+  if (line == "PREPARE") {
+    if (!sdReady) {
+      SD_MMC.end();
+      delay(120);
+      sdBegin();
+    }
+    if (!sdReady) { Serial.println("ERRSD"); return true; }
+    bool clean = clearSdTree("/mons") && clearSdTree("/backgrounds") &&
+                 clearSdTree("/music");
+    if (!clean) { Serial.println("ERRCLEAN"); return true; }
+    bool dirs = SD_MMC.mkdir("/mons") && SD_MMC.mkdir("/backgrounds") &&
+                SD_MMC.mkdir("/music");
+    Serial.println(dirs ? "READY" : "ERRCLEAN");
+    return true;
+  } else if (line.startsWith("PUT ")) {
     int sp = line.lastIndexOf(' ');
     String path = line.substring(4, sp);
     uint32_t size = line.substring(sp + 1).toInt();
