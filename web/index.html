@@ -35,7 +35,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>🔴 TamaPoke FR · V9.13</h1>
+  <h1>🔴 TamaPoke FR · V9.14</h1>
   <p class="sub">Combat corrigé, Boîte et évolutions réparées, choix du starter et trois OST WAV. Installation directe depuis Chrome ou Edge.</p>
 
   <p class="unsupported" id="unsupported">
@@ -45,7 +45,7 @@
   <h2><span class="num">1</span>Flasher le firmware</h2>
   <div class="step">
     <p>Branche le TamaPoke en USB-C, clique sur Installer, sélectionne son port puis attends la fin.</p>
-    <esp-web-install-button manifest="manifest.json?v=1.40.0-moretro-v9.12-audiopsram1">
+    <esp-web-install-button manifest="manifest.json?v=1.40.1-moretro-v9.14-usbfix1">
       <button slot="activate">⚡ Installer TamaPoke FR modifié</button>
       <span slot="unsupported">Navigateur non compatible (utilise Chrome/Edge).</span>
       <span slot="not-allowed">HTTPS requis.</span>
@@ -94,7 +94,7 @@ const supported = 'serial' in navigator;
 if (!supported) { document.getElementById('unsupported').style.display='block';
   document.getElementById('connect').disabled = true; }
 
-let port, reader, writer, lineBuf = '';
+let port, reader, writer, lineBuf = '', lastDeviceError = '';
 
 async function readLine(timeoutMs = 6000) {
   const deadline = Date.now() + timeoutMs;
@@ -109,12 +109,13 @@ async function readLine(timeoutMs = 6000) {
 }
 
 async function waitFor(token, timeoutMs = 6000) {
+  lastDeviceError = '';
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const l = await readLine(deadline - Date.now());
-    if (l === null) return false;
+    if (l === null) { lastDeviceError = 'TIMEOUT USB'; return false; }
     if (l === token) return true;
-    if (l && l.startsWith('ERR')) return false;
+    if (l && l.startsWith('ERR')) { lastDeviceError = l; return false; }
   }
   return false;
 }
@@ -124,12 +125,19 @@ const enc = new TextEncoder();
 // sends one file to the board with the PUT protocol (name includes the mons/ prefix)
 async function sendOne(name, data) {
   await writer.write(enc.encode(`PUT ${name} ${data.length}\n`));
-  if (!await waitFor('OK')) return false;
+  if (!await waitFor('OK')) { log(`Échec ouverture ${name} : ${lastDeviceError || 'aucune réponse'}`); return false; }
   for (let i = 0; i < data.length; i += 2048) {
     await writer.write(data.slice(i, i + 2048));
-    if (!await waitFor('#')) return false;
+    if (!await waitFor('#', 12000)) {
+      log(`Échec écriture ${name} à ${i}/${data.length} octets : ${lastDeviceError || 'aucune réponse'}`);
+      return false;
+    }
   }
-  return await waitFor('DONE', 30000);
+  if (!await waitFor('DONE', 30000)) {
+    log(`Échec finalisation ${name} : ${lastDeviceError || 'aucune réponse'}`);
+    return false;
+  }
+  return true;
 }
 
 // splits the sprites.pak bundle (TPAK) into its individual files
@@ -191,7 +199,7 @@ document.getElementById('music').onclick = async () => {
   log('Téléchargement des trois OST propres...');
   let items;
   try {
-    const resp = await fetch('music.pak?v=1.40.0-moretro-v9.13-musicrepair1', { cache: 'no-store' });
+    const resp = await fetch('music.pak?v=1.40.1-moretro-v9.14-usbfix1', { cache: 'no-store' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     items = parsePak(await resp.arrayBuffer()).filter(it => it.name.startsWith('music/') && it.name.endsWith('.wav'));
     if (items.length !== 3) throw new Error('le paquet ne contient pas exactement trois OST');
@@ -223,7 +231,7 @@ document.getElementById('auto').onclick = async () => {
   let items;
   try {
     // Bundle complet servi depuis GitHub Pages : sprites, decors et OST.
-    const resp = await fetch('sprites.pak?v=1.40.0-moretro-v9.12-audiopsram1', { cache: 'no-store' });
+    const resp = await fetch('sprites.pak?v=1.40.1-moretro-v9.14-usbfix1', { cache: 'no-store' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     items = parsePak(await resp.arrayBuffer());
   } catch (e) { log('Could not download sprites.pak: ' + e.message); return; }

@@ -357,22 +357,41 @@ bool sdSerialCommand(const String &line) {
       Serial.println("ERR");
       return true;
     }
+    // Pendant un transfert le navigateur attend chaque accusé de réception.
+    // Le timeout nul global peut jeter ces messages si l'USB est momentanément
+    // occupé : on lui laisse ici le temps de partir.
+    Serial.setTxTimeoutMs(1000);
     Serial.println("OK");
     static uint8_t buf[2048];
     uint32_t remaining = size;
     Serial.setTimeout(5000);
     while (remaining > 0) {
       size_t want = remaining > sizeof(buf) ? sizeof(buf) : remaining;
-      size_t n = Serial.readBytes(buf, want);
-      if (n == 0) break;  // timeout
-      f.write(buf, n);
-      remaining -= n;
+      size_t received = 0;
+      uint32_t deadline = millis() + 8000;
+      // readBytes() peut rendre un bloc partiel. Ne jamais envoyer l'ACK avant
+      // d'avoir reçu exactement le bloc demandé, sinon navigateur et carte se
+      // désynchronisent après quelques paquets.
+      while (received < want && (int32_t)(deadline - millis()) > 0) {
+        size_t n = Serial.readBytes(buf + received, want - received);
+        if (n > 0) received += n;
+      }
+      if (received != want) break;
+      if (f.write(buf, want) != want) {
+        remaining = UINT32_MAX;
+        break;
+      }
+      remaining -= want;
       Serial.println("#");  // ack: listo para el siguiente bloque
     }
     f.close();
     Serial.setTimeout(1000);
     sdDirty = (remaining == 0);
-    Serial.println(remaining == 0 ? "DONE" : "ERR");
+    if (remaining == 0) Serial.println("DONE");
+    else if (remaining == UINT32_MAX) Serial.println("ERRWRITE");
+    else Serial.println("ERRTIMEOUT");
+    Serial.flush();
+    Serial.setTxTimeoutMs(0);
     return true;
   } else if (line == "LS") {
     File dir = SD_MMC.open("/mons");

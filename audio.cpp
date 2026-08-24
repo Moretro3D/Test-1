@@ -215,9 +215,10 @@ static bool playMusicChunk(uint8_t theme) {
     if (gMusicPosition + count > gMusicSamples) count = gMusicSamples - gMusicPosition;
     if (count <= 0) { gMusicPosition=0; continue; }
     for (int i=0;i<count;i++) {
-      // Marge supplementaire pour les accords/basses WAV : evite la saturation
-      // du petit ampli tout en gardant les SFX bien audibles.
-      int16_t s=(int16_t)((int32_t)gMusicPcm[gMusicPosition+i] * modeGainPct() / 240);
+      // Volume OST V9.14 : environ +4 dB par rapport a V9.12. Les WAV ne
+      // depassent pas 51 % de l'amplitude numerique, donc ce gain reste sous
+      // l'ecretage tout en rendant la musique nettement plus presente.
+      int16_t s=(int16_t)((int32_t)gMusicPcm[gMusicPosition+i] * modeGainPct() / 150);
       buf[i*2]=s; buf[i*2+1]=s;
     }
     i2s.write((uint8_t *)buf, count * 4);
