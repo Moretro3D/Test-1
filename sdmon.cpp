@@ -204,7 +204,8 @@ bool sdBegin() {
     SD_MMC.mkdir("/mons");
     SD_MMC.mkdir("/backgrounds");
     SD_MMC.mkdir("/music");
-    maintainTamaPokeSd();
+    // Ne pas rescanner des centaines de gros sprites à chaque démarrage : la
+    // maintenance complète est réservée aux commandes d'installation USB.
   } else {
     Serial.println("SD no detectada (el juego usa los sprites de flash)");
   }

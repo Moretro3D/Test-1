@@ -16,6 +16,11 @@ if errorlevel 1 (
   exit /b 1
 )
 
+rem Git refuse parfois les dossiers extraits d'un ZIP avec "dubious ownership".
+rem On autorise automatiquement et uniquement le dossier courant du projet.
+set "TAMAPOKE_SAFE_DIR=%CD:\=/%"
+git config --global --add safe.directory "%TAMAPOKE_SAFE_DIR%"
+
 git config --global user.name "Moretro3D"
 git config --global user.email "morgan.duncas@gmail.com"
 

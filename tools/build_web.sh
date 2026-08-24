@@ -9,7 +9,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 FQBN="esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
-VERSION="1.40.2-moretro-v9.15-mimikyu"
+VERSION="1.41.0-moretro-v9.16-classic"
 
 echo "Préparation du sketch TamaPoke..."
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/tamapoke-ci.XXXXXX")"
@@ -67,22 +67,15 @@ fi
 echo "Génération des 386 miniatures Pokédex..."
 python3 "$ROOT/tools/make_thumbs.py"
 
-echo "Installation de Mimiqui #778 pour l'edition speciale..."
-python3 "$ROOT/tools/build_mimikyu_special.py"
-
 echo "Empaquetage des sprites, decors et OST pour l'installation automatique..."
 python3 "$ROOT/tools/pack_bundle.py"
 python3 "$ROOT/tools/pack_music.py"
-python3 "$ROOT/tools/pack_mimikyu.py"
 
 echo "Audit intégral des assets #001-386..."
 python3 "$ROOT/tools/audit_386_assets.py"
 
 echo "Audit intégral des évolutions #001-386..."
 python3 "$ROOT/tools/audit_evolutions.py"
-
-echo "Audit de l'edition speciale Mimiqui..."
-python3 "$ROOT/tools/audit_mimikyu_special.py"
 
 echo "Audit final V9 interface + combat + habitats..."
 python3 "$ROOT/tools/audit_final_v9.py"

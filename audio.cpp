@@ -172,11 +172,13 @@ static const uint8_t AMBIENT_LENGTHS[3] = {
 };
 static uint8_t gAmbientStep[3] = {0,0,0};
 static int16_t *gMusicPcm = nullptr;
+static size_t gMusicCapacity = 0;
 static size_t gMusicSamples = 0;
 static size_t gMusicPosition = 0;
 static uint8_t gMusicTheme = 0xFF;
 static int16_t buf[256 * 2];  // stereo intercale (L=R)
 static uint8_t modeGainPct();
+static uint8_t musicGainPct();
 static const char *const MUSIC_PATHS[3] = {
   "/music/morning.wav", "/music/lofi.wav", "/music/night.wav"
 };
@@ -184,10 +186,12 @@ static const char *const MUSIC_PATHS[3] = {
 static bool openMusic(uint8_t theme) {
   if (theme >= 3) return false;
   if (gMusicPcm && gMusicTheme == theme) return true;
-  if (gMusicPcm) { free(gMusicPcm); gMusicPcm=nullptr; }
   gMusicSamples=0; gMusicPosition=0; gMusicTheme=0xFF;
   File music = SD_MMC.open(MUSIC_PATHS[theme], FILE_READ);
-  if (!music || music.size() <= 44) return false;
+  if (!music || music.size() <= 44) {
+    Serial.printf("OST absente: %s\n", MUSIC_PATHS[theme]);
+    return false;
+  }
   uint8_t header[12];
   if (music.read(header, sizeof(header)) != sizeof(header) ||
       memcmp(header, "RIFF", 4) || memcmp(header + 8, "WAVE", 4)) {
@@ -195,15 +199,33 @@ static bool openMusic(uint8_t theme) {
   }
   size_t bytes = music.size() - 44;
   bytes &= ~1U;
-  gMusicPcm = (int16_t *)ps_malloc(bytes);
-  if (!gMusicPcm) { music.close(); return false; }
+  if (!gMusicPcm || gMusicCapacity < bytes) {
+    if (gMusicPcm) free(gMusicPcm);
+    gMusicPcm = (int16_t *)ps_malloc(bytes);
+    gMusicCapacity = gMusicPcm ? bytes : 0;
+  }
+  if (!gMusicPcm) {
+    Serial.printf("OST sans PSRAM: %u octets requis\n", (unsigned)bytes);
+    music.close(); return false;
+  }
   music.seek(44);
-  if (music.read((uint8_t *)gMusicPcm, bytes) != bytes) {
-    music.close(); free(gMusicPcm); gMusicPcm=nullptr; return false;
+  size_t received = 0;
+  while (received < bytes) {
+    size_t want = bytes - received;
+    if (want > 16384) want = 16384;
+    size_t got = music.read((uint8_t *)gMusicPcm + received, want);
+    if (!got) break;
+    received += got;
+  }
+  if (received != bytes) {
+    Serial.printf("OST tronquee: %s (%u/%u)\n", MUSIC_PATHS[theme],
+                  (unsigned)received, (unsigned)bytes);
+    music.close(); return false;
   }
   music.close();
   gMusicSamples = bytes / 2;
   gMusicTheme = theme;
+  Serial.printf("OST prete en PSRAM: %s (%u KB)\n", MUSIC_PATHS[theme], (unsigned)(bytes / 1024));
   return true;
 }
 
@@ -215,10 +237,10 @@ static bool playMusicChunk(uint8_t theme) {
     if (gMusicPosition + count > gMusicSamples) count = gMusicSamples - gMusicPosition;
     if (count <= 0) { gMusicPosition=0; continue; }
     for (int i=0;i<count;i++) {
-      // Volume OST V9.14 : environ +4 dB par rapport a V9.12. Les WAV ne
-      // depassent pas 51 % de l'amplitude numerique, donc ce gain reste sous
-      // l'ecretage tout en rendant la musique nettement plus presente.
-      int16_t s=(int16_t)((int32_t)gMusicPcm[gMusicPosition+i] * modeGainPct() / 150);
+      // Gain musical indépendant des effets : les niveaux SON MIN/MOY/MAX
+      // pilotent réellement l'ambiance. Les WAV culminent à ~51 %, donc même
+      // le gain MAX de 135 % reste sous l'écrêtage numérique.
+      int16_t s=(int16_t)((int32_t)gMusicPcm[gMusicPosition+i] * musicGainPct() / 100);
       buf[i*2]=s; buf[i*2+1]=s;
     }
     i2s.write((uint8_t *)buf, count * 4);
@@ -317,6 +339,15 @@ static uint8_t modeGainPct() {
   }
 }
 
+static uint8_t musicGainPct() {
+  switch (gMode) {
+    case SOUND_LOW: return 45;   // ambiance discrète
+    case SOUND_MED: return 85;   // niveau de base audible
+    case SOUND_FULL: return 135; // musique renforcée
+    default: return 0;
+  }
+}
+
 static bool criticalSfx(uint8_t id) {
   return id < SFX_COUNT && SFX_MIN_MODE[id] == SOUND_LOW;
 }
@@ -372,7 +403,7 @@ static void audioTask(void *) {
     if (!xQueueReceive(gQ, &event, portMAX_DELAY) || !gReady) continue;
     bool isSfx = event.kind == AUDIO_EVENT_SFX && event.value < SFX_COUNT;
     bool isChirp = event.kind == AUDIO_EVENT_CHIRP && event.value >= 1 && event.value <= 386 && gMode >= SOUND_MED;
-    bool isAmbient = event.kind == AUDIO_EVENT_AMBIENT && event.value < 3 && gMode == SOUND_FULL;
+    bool isAmbient = event.kind == AUDIO_EVENT_AMBIENT && event.value < 3 && gMode >= SOUND_LOW;
     if (isSfx && gMode < SFX_MIN_MODE[event.value]) continue;
     if (isSfx || isChirp || isAmbient) {
       gBusy = true;
@@ -392,7 +423,7 @@ static void audioTask(void *) {
           do {
             if (!playMusicChunk(theme)) { wavOk=false; break; }
             if (uxQueueMessagesWaiting(gQ) > 0) break; // priorite aux SFX/cris
-          } while (gMode == SOUND_FULL && gAmbientTheme == theme &&
+          } while (gMode >= SOUND_LOW && gAmbientTheme == theme &&
                    (int32_t)(gAmbientKeepAliveUntil - millis()) > 0);
         }
         if (!wavOk) {
@@ -477,12 +508,17 @@ bool audioBusy() {
 }
 
 void audioAmbientPlay(uint8_t theme) {
-  if (!gReady || gMode != SOUND_FULL || !gQ || theme >= 3) return;
+  if (!gReady || gMode < SOUND_LOW || !gQ || theme >= 3) return;
   gAmbientTheme = theme;
   gAmbientKeepAliveUntil = millis() + 650;
   if (audioBusy()) return;
   AudioEvent event = { AUDIO_EVENT_AMBIENT, theme };
   xQueueSend(gQ, &event, 0);
+}
+
+bool audioPreloadMusic(uint8_t theme) {
+  if (!gReady || gMode == SOUND_OFF || theme >= 3) return false;
+  return openMusic(theme);
 }
 
 void speciesChirpPlay(int16_t dex) {

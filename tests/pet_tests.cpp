@@ -36,21 +36,6 @@ static Pet hatchedPet(int16_t dex) {
   return pet;
 }
 
-static void testSpecialEditionStartsWithMimikyu() {
-  Pet pet;
-  pet.newEgg();
-  EXPECT_TRUE(!pet.awaitingStarter());
-  pet.eggTap();
-  pet.eggTap();
-  pet.eggTap();
-  EXPECT_EQ(pet.speciesId, 385);
-  EXPECT_TRUE(pet.isRegistered(385));
-  EXPECT_TRUE(pet.isCaught(385));
-  EXPECT_EQ(DEX_TBL[385].type1, TYPE_GHOST);
-  EXPECT_EQ(DEX_TBL[385].type2, TYPE_FAIRY);
-  EXPECT_EQ(DEX_TBL[385].evolvesTo, 0);
-}
-
 static void testEggHatchesChosenStarter() {
   Pet pet = hatchedPet(4);
 
@@ -694,7 +679,6 @@ static void testExpeditionItemsCapAndConsumeSafely() {
 }
 
 int main() {
-  testSpecialEditionStartsWithMimikyu();
   testEggHatchesChosenStarter();
   testAllNineFirstBootStartersHatch();
   testBattleStatsUseBaseGenesLevelAndTraining();

@@ -81,7 +81,7 @@ ok("SD_MMC.open(MUSIC_PATHS[theme]" in audio and
    "SAMPLE_RATE * 240 / 1000" in audio,
    "lecture WAV SD en blocs courts avec repli synthetise")
 ok("gAmbientKeepAliveUntil" in audio and "uxQueueMessagesWaiting(gQ) > 0" in audio and
-   "modeGainPct() / 150" in audio and "ps_malloc(bytes)" in audio,
+   "musicGainPct() / 100" in audio and "case SOUND_FULL: return 135" in audio and "ps_malloc(bytes)" in audio,
    "OST WAV continue, sans coupure d'ampli entre blocs et sans saturation")
 ok("SD_MMC.exists(path) && !SD_MMC.remove(path)" in sdmon,
    "chargement USB remplace les fichiers SD sans les agrandir")
@@ -98,7 +98,7 @@ ok("ARRÊT SÉCURISÉ" in ino or "ARRÊT SÉCURISÉ" in (ROOT/"web/index.html").
 ok("void drawBattleName" in ino, "noms combat auto-ajustés")
 ok("drawBattleHpInfo" in ino, "PV courant/max affichés")
 ok("Bandeau d'action sombre intégré" in ino, "boutons combat intégrés sans fond gris")
-ok('"RAPIDE"' in ino and '"NORMALE"' in ino and '"PUISSANTE"' in ino, "menu attaques clair")
+ok("T(S_QUICK_ATTACK)" in ino and "T(S_NORMAL_ATTACK)" in ino and "T(S_HEAVY_ATTACK)" in ino, "menu attaques traduit")
 ok("BATTLE_ATTACK_QUICK" in ino and "BATTLE_ATTACK_HEAVY" in ino, "menu relié au moteur réel")
 
 # HP / damage exact

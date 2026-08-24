@@ -35,8 +35,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>🔴 TamaPoke FR · V9.15 Édition Mimiqui</h1>
-  <p class="sub">Premier partenaire Mimiqui n°778, sprite animé normal et shiny, boîte compatible et trois OST WAV.</p>
+  <h1>🔴 TamaPoke FR · V9.16 Classique Stable</h1>
+  <p class="sub">Combat corrigé, Boîte et évolutions réparées, choix du starter et trois OST WAV. Installation directe depuis Chrome ou Edge.</p>
 
   <p class="unsupported" id="unsupported">
     ⚠️ Ton navigateur ne prend pas en charge Web Serial. Utilise <b>Chrome</b> ou <b>Edge</b> sur ordinateur.
@@ -45,7 +45,7 @@
   <h2><span class="num">1</span>Flasher le firmware</h2>
   <div class="step">
     <p>Branche le TamaPoke en USB-C, clique sur Installer, sélectionne son port puis attends la fin.</p>
-    <esp-web-install-button manifest="manifest.json?v=1.40.2-moretro-v9.15-mimikyu1">
+    <esp-web-install-button manifest="manifest.json?v=1.41.0-moretro-v9.16-classic1">
       <button slot="activate">⚡ Installer TamaPoke FR modifié</button>
       <span slot="unsupported">Navigateur non compatible (utilise Chrome/Edge).</span>
       <span slot="not-allowed">HTTPS requis.</span>
@@ -66,7 +66,6 @@
       <button id="connect">🔌 Connecter le TamaPoke</button>
       <button id="auto" disabled>⬇️ Tout installer sur la microSD</button>
       <button id="music" disabled>🎵 Réparer uniquement les musiques</button>
-      <button id="special" disabled>👻 Installer les ressources Mimiqui</button>
     </div>
     <p class="note"><b>Pokéball déjà remontée :</b> utilise « Réparer uniquement les musiques ».
        Cette opération remplace seulement les trois OST et ne nettoie pas les sprites.</p>
@@ -168,7 +167,6 @@ async function sendAll(items) {
       fail++;
       document.getElementById('auto').disabled = false;
       document.getElementById('music').disabled = false;
-      document.getElementById('special').disabled = false;
       return false;
     }
     done++;
@@ -188,37 +186,9 @@ document.getElementById('connect').onclick = async () => {
     log('Connecté. Clique sur "Tout installer sur la microSD".');
     document.getElementById('auto').disabled = false;
     document.getElementById('music').disabled = false;
-    document.getElementById('special').disabled = false;
     document.getElementById('files').disabled = false;
     document.getElementById('connect').disabled = true;
   } catch (e) { log('Could not connect: ' + e.message); }
-};
-
-document.getElementById('special').onclick = async () => {
-  if (!writer) { log('Connecte d’abord le TamaPoke.'); return; }
-  const button = document.getElementById('special');
-  button.disabled = true;
-  document.getElementById('auto').disabled = true;
-  document.getElementById('music').disabled = true;
-  log('Téléchargement des sprites et de la miniature Mimiqui...');
-  let items;
-  try {
-    const resp = await fetch('mimikyu.pak?v=1.40.2-moretro-v9.15-mimikyu1', { cache: 'no-store' });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    items = parsePak(await resp.arrayBuffer());
-    if (items.length !== 3) throw new Error('paquet Mimiqui incomplet');
-  } catch (e) {
-    log('ÉCHEC TÉLÉCHARGEMENT MIMIQUI : ' + e.message);
-    button.disabled = false;
-    document.getElementById('auto').disabled = false;
-    document.getElementById('music').disabled = false;
-    return;
-  }
-  const ok = await sendAll(items);
-  if (ok) log('Ressources Mimiqui installées. Redémarre le TamaPoke avec PWR.');
-  button.disabled = false;
-  document.getElementById('auto').disabled = false;
-  document.getElementById('music').disabled = false;
 };
 
 document.getElementById('music').onclick = async () => {
@@ -229,7 +199,7 @@ document.getElementById('music').onclick = async () => {
   log('Téléchargement des trois OST propres...');
   let items;
   try {
-    const resp = await fetch('music.pak?v=1.40.2-moretro-v9.15-mimikyu1', { cache: 'no-store' });
+    const resp = await fetch('music.pak?v=1.41.0-moretro-v9.16-classic1', { cache: 'no-store' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     items = parsePak(await resp.arrayBuffer()).filter(it => it.name.startsWith('music/') && it.name.endsWith('.wav'));
     if (items.length !== 3) throw new Error('le paquet ne contient pas exactement trois OST');
@@ -244,7 +214,6 @@ document.getElementById('music').onclick = async () => {
   if (ok) log('Musiques réparées. Redémarre maintenant le TamaPoke avec le bouton PWR.');
   button.disabled = false;
   document.getElementById('auto').disabled = false;
-  document.getElementById('special').disabled = false;
 };
 
 document.getElementById('auto').onclick = async () => {
@@ -262,7 +231,7 @@ document.getElementById('auto').onclick = async () => {
   let items;
   try {
     // Bundle complet servi depuis GitHub Pages : sprites, decors et OST.
-    const resp = await fetch('sprites.pak?v=1.40.2-moretro-v9.15-mimikyu1', { cache: 'no-store' });
+    const resp = await fetch('sprites.pak?v=1.41.0-moretro-v9.16-classic1', { cache: 'no-store' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     items = parsePak(await resp.arrayBuffer());
   } catch (e) { log('Could not download sprites.pak: ' + e.message); return; }

@@ -27,7 +27,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.40.2-moretro-v9.15-mimikyu"
+#define FW_VERSION "1.41.0-moretro-v9.16-classic"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -383,7 +383,9 @@ void setup() {
   // QSPI a 80MHz (por defecto 40): el flush del framebuffer es el cuello de
   // botella del fps (~56ms a 40MHz). Si el panel mostrara basura, bajar a 40M.
   if (!gfx->begin(80000000)) Serial.println("gfx->begin() fallo");
-  panel->setBrightness(180);
+  // El panel permanece invisible hasta que el primer frame COMPLETO esta listo.
+  // Evita el destello negro que antes se veia durante la inicializacion.
+  panel->setBrightness(0);
 
   touch.setPins(TP_RESET, TP_INT);
   bool touchOk = false;
@@ -406,7 +408,6 @@ void setup() {
                 pet.saveLoadedFromNvs ? "loaded" : "created",
                 pet.speciesId, pet.level(), pet.battleWins, pet.battleLosses, pet.battleStreak);
   sdBegin();
-  thumbs.load();
 
   // reloj real: aplica el tiempo que estuvo apagado
   rtcBegin();
@@ -423,8 +424,16 @@ void setup() {
   loadDarkMode();
 
   audioBegin();  // ES8311 + I2S + amplificador (suena un jingle de arranque)
+  uint8_t audioHour=sceneHour();
+  uint8_t audioTheme=(audioHour>=7 && audioHour<13) ? 0 : ((audioHour>=13 && audioHour<20) ? 1 : 2);
+  audioPreloadMusic(audioTheme);  // réserve la PSRAM avant sprites/miniatures
+  thumbs.load();
 
   lastInteract = millis();
+  ensureMon();
+  render();
+  lastRender = millis();
+  updateBrightness(lastRender);
 }
 
 // carga/descarga el sprite de SD cuando cambia la especie
@@ -445,8 +454,10 @@ void ensureMon() {
 }
 
 bool mainScreenReadyForAmbientSound() {
-  if (audioMode() != SOUND_FULL || screenOff || dimStage > 0) return false;
-  if (pet.awaitingStarter() || pet.isEgg() || pet.sleeping || pet.ceremony) return false;
+  if (audioMode() < SOUND_LOW || screenOff || dimStage > 0) return false;
+  // La musique d'ambiance accompagne aussi l'œuf et le choix du partenaire.
+  // Seuls le sommeil et les cérémonies demandent réellement le silence.
+  if (pet.sleeping || pet.ceremony) return false;
   if (battleOpen || gameOpen || gameMenuOpen || sackOpen || cardOpen || galleryOpen || kbOpen || clockOpen || helpOpen) return false;
   if (feedMenuUntil || confirmUntil || choiceKind || bathUntil || wildPromptUntil || petEventUntil) return false;
   if (pet.evolving() || pet.wantEvolveButton() || pet.canRunawayNow() || pet.wantFarewellButton()) return false;
@@ -458,7 +469,7 @@ void maybePlayAmbientSound(uint32_t now) {
     nextAmbientSoundAt = now + 9000;
     return;
   }
-  if (nextAmbientSoundAt == 0) nextAmbientSoundAt = now + 2500;
+  if (nextAmbientSoundAt == 0) nextAmbientSoundAt = now + 800;
   if (now < nextAmbientSoundAt) return;
   uint8_t hour=sceneHour();
   uint8_t theme=(hour>=7 && hour<13) ? 0 : ((hour>=13 && hour<20) ? 1 : 2);
@@ -484,8 +495,10 @@ uint16_t renderIntervalMs() {
 
 bool lightSleepAllowed(uint32_t now) {
   if (!powerSave || usbPresent() || audioBusy() || Serial.available()) return false;
-  if (!screenOff && dimStage == 0) return false;
-  if (!screenOff && now - lastInteract < 1500UL) return false;
+  // Sur certaines revisions AMOLED, le light-sleep coupe le bus/panel pendant
+  // quelques millisecondes. Cela ressemblait a un refresh noir. On ne dort
+  // donc plus tant qu'un seul pixel est visible, meme en mode attenue.
+  if (!screenOff) return false;
   if (wasPressed || gTouchIrq || now < ignoreTouchUntil) return false;
   if (gameOpen || sackOpen || battleOpen || bathUntil) return false;
   if (pet.awaitingStarter() || feedMenuUntil || confirmUntil || choiceKind || wildPromptUntil || petEventUntil) return false;
@@ -496,7 +509,7 @@ bool lightSleepAllowed(uint32_t now) {
 
 uint16_t lightSleepMs(uint32_t now) {
   if (!lightSleepAllowed(now)) return 0;
-  uint16_t maxMs = screenOff ? 750 : (dimStage >= 2 ? 300 : 180);
+  uint16_t maxMs = 750;
   uint16_t ri = renderIntervalMs();
   uint32_t sinceRender = now - lastRender;
   if (sinceRender < ri) {
@@ -1428,7 +1441,7 @@ void renderStarterSelect() {
   drawStarterCentered(T(S_CHOOSE_STARTER), 60, 2, uiInk());
 
   if (starterGeneration == 0) {
-    drawStarterCentered("CHOISIS TA GENERATION", 92, 1, UI_TRACK);
+    drawStarterCentered(T(S_CHOOSE_GENERATION), 92, 1, UI_TRACK);
     static const char *GEN_LABELS[3] = { "1re GENERATION", "2e GENERATION", "3e GENERATION" };
     static const uint16_t GEN_COLORS[3] = { 0xF800, 0xFD20, 0x07E0 };
     for (uint8_t i = 0; i < 3; i++) {
@@ -1440,31 +1453,32 @@ void renderStarterSelect() {
   } else {
     gfx->fillRoundRect(28, 52, 98, 44, 12, uiPanel());
     gfx->drawRoundRect(28, 52, 98, 44, 12, UI_TRACK);
-    gfx->setTextColor(uiInk()); gfx->setTextSize(1); gfx->setCursor(49, 70); gfx->print("< RETOUR");
+    gfx->setTextColor(uiInk()); gfx->setTextSize(1); gfx->setCursor(49, 70); gfx->printf("< %s", T(S_LAN_BACK));
     char generation[20];
-    snprintf(generation, sizeof(generation), "GENERATION %u", starterGeneration);
+    snprintf(generation, sizeof(generation), T(S_GENERATION_FMT), starterGeneration);
     drawStarterCentered(generation, 112, 2, UI_TRACK);
     static const int BALL_X[3] = { 104, 233, 362 };
     for (uint8_t i = 0; i < 3; i++) {
       drawStarterPokeball(BALL_X[i], STARTER_BALL_Y, STARTER_BALL_R);
       gfx->setTextColor(UI_TRACK); gfx->setTextSize(1);
-      gfx->setCursor(BALL_X[i] - 21, 287); gfx->print("CHOISIR");
+      const char *choose=T(S_CHOOSE);
+      gfx->setCursor(BALL_X[i] - strlen(choose) * 3, 287); gfx->print(choose);
     }
-    drawStarterCentered("TOUCHE UNE POKEBALL", 330, 1, uiInk());
+    drawStarterCentered(T(S_TOUCH_POKEBALL), 330, 1, uiInk());
   }
 
   if (starterPreviewDex > 0) {
     const DexEntry &de = DEX_TBL[starterPreviewDex];
     gfx->fillRoundRect(58, 86, 350, 330, 22, uiPanel());
     gfx->drawRoundRect(58, 86, 350, 330, 22, de.accent);
-    drawStarterCentered("TON STARTER", 108, 2, de.accent);
+    drawStarterCentered(T(S_YOUR_STARTER), 108, 2, de.accent);
     const uint8_t *th = thumbs.get(starterPreviewDex);
     if (th) drawThumb(th, CX - 80, 130, 5, false);
     drawStarterCentered(dexName(starterPreviewDex), 286, 3, uiInk());
     gfx->fillRoundRect(92, 348, 136, 52, 14, UI_TRACK);
     gfx->fillRoundRect(238, 348, 136, 52, 14, UI_BAR_OK);
-    gfx->setTextColor(uiContrastText(UI_TRACK)); gfx->setTextSize(2); gfx->setCursor(122, 366); gfx->print("RETOUR");
-    gfx->setTextColor(uiContrastText(UI_BAR_OK)); gfx->setCursor(258, 366); gfx->print("VALIDER");
+    gfx->setTextColor(uiContrastText(UI_TRACK)); gfx->setTextSize(2); gfx->setCursor(122, 366); gfx->print(T(S_LAN_BACK));
+    gfx->setTextColor(uiContrastText(UI_BAR_OK)); gfx->setCursor(258, 366); gfx->print(T(S_VALIDATE));
   }
   gfx->flush();
 }
@@ -3065,7 +3079,7 @@ void drawBattleHpInfo(int x,int y,uint16_t cur,uint16_t maxHp,uint16_t color) {
   gfx->setTextColor(UI_WHITE);
   gfx->setTextSize(1);
   gfx->setCursor(x,y);
-  gfx->print("PV");
+  gfx->print(T(S_HP));
   drawBattleHpBar(x+22,y-1,cur,maxHp,color);
   char hp[18];
   snprintf(hp,sizeof(hp),"%u/%u",(unsigned)cur,(unsigned)maxHp);
@@ -3188,11 +3202,11 @@ void renderBattle() {
       gfx->fillRoundRect(300, 350, 96, 52, 12, UI_BAR_WARN);
 
       gfx->setTextColor(uiContrastText(C565(0x1a,0x54,0x9a)));
-      drawBattleButtonLabel(70,363,96,"RAPIDE");
+      drawBattleButtonLabel(70,363,96,T(S_QUICK_ATTACK));
       gfx->setTextColor(uiContrastText(UI_BAR_BAD));
-      drawBattleButtonLabel(185,363,96,"NORMALE");
+      drawBattleButtonLabel(185,363,96,T(S_NORMAL_ATTACK));
       gfx->setTextColor(uiContrastText(UI_BAR_WARN));
-      drawBattleButtonLabel(300,363,96,"PUISSANTE");
+      drawBattleButtonLabel(300,363,96,T(S_HEAVY_ATTACK));
 
       gfx->setTextSize(1);
       gfx->setTextColor(UI_WHITE);
@@ -3507,7 +3521,7 @@ void renderDisplaySettings() {
 
   gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
-  const char *title="AFFICHAGE";
+  const char *title=T(S_DISPLAY_LABEL);
   gfx->setCursor(CX-(int)strlen(title)*9,38);
   gfx->print(title);
 
@@ -3527,7 +3541,7 @@ void renderDisplaySettings() {
   gfx->setTextColor(darkMode ? UI_WHITE : uiInk());
   gfx->setTextSize(2);
   gfx->setCursor(78,100);
-  gfx->print("MODE");
+  gfx->print(T(S_MODE_LABEL));
   const char *modeTxt = darkMode ? "SOMBRE" : "CLAIR";
   gfx->setCursor(388-(int)strlen(modeTxt)*12,100);
   gfx->print(modeTxt);
@@ -3608,14 +3622,14 @@ void renderClock() {
 
   // Paramètres principaux sous forme de cartes propres.
   const char *sl=soundModeLabel();
-  drawSettingsRow(58,198,350,46,"SON",sl,false);
+  drawSettingsRow(58,198,350,46,T(S_SOUND_LABEL),sl,false);
 
-  drawSettingsRow(58,250,350,46,"ECO",powerSave ? "ON" : "OFF",powerSave);
+  drawSettingsRow(58,250,350,46,T(S_POWER_SAVE_LABEL),powerSave ? "ON" : "OFF",powerSave);
 
   char langVal[10];
   snprintf(langVal,sizeof(langVal),"%s",LANG_CODES[gLang]);
-  drawSettingsRow(58,302,168,46,"LANGUE",langVal,false);
-  drawSettingsRow(240,302,168,46,"AFFICHAGE","",true);
+  drawSettingsRow(58,302,168,46,T(S_LANG_LABEL),langVal,false);
+  drawSettingsRow(240,302,168,46,T(S_DISPLAY_LABEL),"",true);
 
   gfx->fillRoundRect(58,364,154,46,14,uiPanel());
   gfx->drawRoundRect(58,364,154,46,14,uiLine());
