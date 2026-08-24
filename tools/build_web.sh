@@ -69,6 +69,7 @@ python3 "$ROOT/tools/make_thumbs.py"
 
 echo "Empaquetage des sprites, decors et OST pour l'installation automatique..."
 python3 "$ROOT/tools/pack_bundle.py"
+python3 "$ROOT/tools/pack_music.py"
 
 echo "Audit intégral des assets #001-386..."
 python3 "$ROOT/tools/audit_386_assets.py"
