@@ -27,7 +27,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.40.1-moretro-v9.14"
+#define FW_VERSION "1.40.2-moretro-v9.15-mimikyu"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -184,6 +184,10 @@ int flashIdxForDex(int16_t dex) {
   static const int8_t IDX[10] = { -1, 3, 4, 5, 0, 1, 2, 6, 7, 8 };
   return (dex >= 1 && dex <= 9) ? IDX[dex] : -1;
 }
+
+// Le slot interne 385 conserve le format de sauvegarde historique, mais cette
+// edition l'affiche avec le vrai numero national de Mimiqui.
+uint16_t displayedDexNumber(int16_t dex) { return dex == 385 ? 778 : dex; }
 
 #define CX 233  // centro de la pantalla redonda
 #define CY 233
@@ -4355,7 +4359,7 @@ void renderCardBox() {
     gfx->fillRoundRect(58, y, 350, 34, 9, uiPanel());
     gfx->drawRoundRect(58, y, 350, 34, 9, d.accent);
     char name[24];
-    snprintf(name, sizeof(name), "#%03d %s", dex, dexName(dex));
+    snprintf(name, sizeof(name), "#%03u %s", displayedDexNumber(dex), dexName(dex));
     int ts = strlen(name) <= 16 ? 2 : 1;
     gfx->setTextSize(ts);
     gfx->setTextColor(uiInk());
@@ -4930,7 +4934,7 @@ void renderGallery() {
     bool caught = pet.isCaught(galleryDetail);
     bool known = reg || caught;
     char head[24];
-    snprintf(head, sizeof(head), "N.%03d %s%s", galleryDetail,
+    snprintf(head, sizeof(head), "N.%03u %s%s", displayedDexNumber(galleryDetail),
              pet.isShinyRegistered(galleryDetail) ? "*" : "", known ? dexName(galleryDetail) : "???");
     gfx->setTextColor(known ? d.accent : UI_INK);
     int glen = strlen(head);

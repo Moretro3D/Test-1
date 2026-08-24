@@ -22,8 +22,11 @@ void Pet::newEgg() {
   weight = 0;
   speciesId = -1;
   prevSpeciesId = -1;
-  eggTarget = pickEggSpecies();  // especie oculta segun rareza y pokedex
-  starterPick = (registeredCount() == 0);  // primera partida: el jugador elige inicial
+  bool firstPartner = (registeredCount() == 0);
+  // Edition speciale Mimiqui : le premier oeuf contient toujours Mimiqui et
+  // remplace completement l'ecran de choix des starters 1G/2G/3G.
+  eggTarget = firstPartner ? 385 : pickEggSpecies();
+  starterPick = false;
   // sorteo shiny: 1/48 base, mejor con despedida y con racha/vinculo altos
   int shinyBase = (lastEnd == CER_FAREWELL ? 24 : 48) - careBonus();
   if (shinyBase < 8) shinyBase = 8;

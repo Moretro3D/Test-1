@@ -415,7 +415,7 @@ static const DexEntry DEX_TBL[DEX_COUNT + 1] = {
   { "KYOGRE", 0, 0, R_LEGENDARIO, 0x4C98, 100, 100, 90, 90, TYPE_WATER, TYPE_NONE, 1 },  // 382 water
   { "GROUDON", 0, 0, R_LEGENDARIO, 0xB447, 100, 150, 140, 90, TYPE_GROUND, TYPE_NONE, 4 },  // 383 ground
   { "RAYQUAZA", 0, 0, R_LEGENDARIO, 0x5A5A, 105, 150, 90, 95, TYPE_DRAGON, TYPE_FLYING, 0 },  // 384 dragon/flying
-  { "JIRACHI", 0, 0, R_LEGENDARIO, 0x8CB4, 100, 100, 100, 100, TYPE_STEEL, TYPE_PSYCHIC, 0 },  // 385 steel/psychic
+  { "MIMIKYU", 0, 0, R_EVO, 0x9B59, 55, 90, 80, 96, TYPE_GHOST, TYPE_FAIRY, 2 },  // 385 special: Mimiqui #778
   { "DEOXYS", 0, 0, R_LEGENDARIO, 0xD28F, 50, 150, 50, 150, TYPE_PSYCHIC, TYPE_NONE, 0 },  // 386 psychic
 };
 

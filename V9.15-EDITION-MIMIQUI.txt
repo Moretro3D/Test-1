@@ -1,0 +1,9 @@
+TamaPoke V9.15 - édition spéciale Mimiqui
+
+- Le premier œuf d'une partie neuve contient toujours Mimiqui.
+- L'écran de choix des starters 1G/2G/3G est ignoré dans cette édition.
+- Mimiqui est affiché sous le numéro national 778.
+- Types Spectre/Fée, statistiques dédiées, aucune évolution.
+- Sprite PMD animé normal et shiny, plus miniature pour la boîte/Pokédex.
+- Bouton USB dédié : installe uniquement les ressources Mimiqui sans nettoyer la SD.
+- Compatibilité conservée avec les sauvegardes 386 : le slot interne 385 remplace Jirachi dans cette édition.

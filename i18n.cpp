@@ -388,6 +388,7 @@ const char *T(StrId id) { return STRINGS[gLang][id]; }
 
 const char *dexName(int16_t dex) {
   if (dex < 1 || dex > DEX_COUNT) return "?";
+  if (dex == 385) return gLang == LANG_FR ? "MIMIQUI" : "MIMIKYU";
   uint8_t lang = (gLang < LANG_COUNT) ? (uint8_t)gLang : LANG_DEFAULT;
   if (lang >= DEX_LANG_COUNT) lang = LANG_DEFAULT;
   return DEX_NAMES[lang][dex];

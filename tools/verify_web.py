@@ -10,6 +10,7 @@ manifest_path = web / "manifest.json"
 index_path = web / "index.html"
 sprites_path = web / "sprites.pak"
 music_path = web / "music.pak"
+mimikyu_path = web / "mimikyu.pak"
 
 errors = []
 
@@ -24,6 +25,7 @@ require(index_path, "index.html", 100)
 require(manifest_path, "manifest.json", 50)
 require(sprites_path, "sprites.pak", 1024)
 require(music_path, "music.pak", 1000000)
+require(mimikyu_path, "mimikyu.pak", 100000)
 
 if sprites_path.is_file():
     raw = sprites_path.read_bytes()
@@ -79,6 +81,8 @@ if index_path.is_file():
         errors.append("index.html ne charge pas ESP Web Tools")
     if 'id="music"' not in html or "music.pak?" not in html:
         errors.append("réparation musicale USB absente")
+    if 'id="special"' not in html or "mimikyu.pak?" not in html:
+        errors.append("installation USB Mimiqui absente")
 
 if errors:
     print("ECHEC VERIFICATION WEB:")
@@ -94,3 +98,4 @@ print(" - offsets firmware OK")
 print(" - 4 binaires firmware OK")
 print(" - sprites.pak OK")
 print(" - music.pak et réparation USB OK")
+print(" - mimikyu.pak et édition spéciale OK")
