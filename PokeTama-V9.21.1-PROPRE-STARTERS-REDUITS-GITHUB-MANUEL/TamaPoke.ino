@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.0-moretro3d-v9.21-sprite-scale"
+#define FW_VERSION "1.46.1-moretro3d-v9.21.1-starter-size"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -1527,7 +1527,9 @@ void drawStarterThumbCentered(const uint8_t *b, int16_t dex, int cx, int cy, int
   }
   if (maxX < minX || maxY < minY) return;
   int visibleW=maxX-minX+1, visibleH=maxY-minY+1;
-  int target=190*spriteSizePercent(dex)/100;
+  // La fiche starter doit respirer sur l'ecran rond : taille volontairement
+  // plus sobre que l'accueil et le combat.
+  int target=145*spriteSizePercent(dex)/100;
   int scale=min(maxSize, target/max(visibleW,visibleH));
   if (scale < 2) scale=2;
   int x0=cx-visibleW*scale/2-minX*scale;
@@ -1622,7 +1624,7 @@ void renderStarterSelect() {
     // Vraie fiche plein ecran, claire et sans carte posee au milieu.
     gfx->fillScreen(UI_WHITE);
     const uint8_t *th = thumbs.get(starterPreviewDex);
-    drawStarterThumbCentered(th, starterPreviewDex, CX, 190, 10);
+    drawStarterThumbCentered(th, starterPreviewDex, CX, 190, 8);
     drawStarterCentered(dexName(starterPreviewDex), 302, 3, de.accent);
     // Zone sure du rond 1,75 pouce : aucun coin de bouton n'est coupe.
     gfx->fillRoundRect(84,358,140,50,14,UI_TRACK);

@@ -21,7 +21,7 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.21
+## Version V9.21.1
 
 - 386 Pokemon et leurs evolutions ;
 - six langues : francais, anglais, espagnol, allemand, italien et portugais ;

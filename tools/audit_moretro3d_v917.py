@@ -14,7 +14,7 @@ build = (root / "tools" / "build_web.sh").read_text(encoding="utf-8")
 
 def check(value, label):
     if not value:
-        raise SystemExit("ECHEC V9.21: " + label)
+        raise SystemExit("ECHEC V9.21.1: " + label)
     print("OK  ", label)
 
 all_public = "\n".join((ino, dex, pet, html, readme, build, json.dumps(manifest)))
@@ -49,12 +49,13 @@ check("drawStarterCentered(T(S_CHOOSE_GENERATION), 92, 2, 0x0000)" in ino and
       "drawStarterCentered(generation, 112, 2, 0x0000)" in ino,
       "titres de generation noirs")
 check("gfx->fillScreen(UI_WHITE);" in ino and
-      "drawStarterThumbCentered(th, starterPreviewDex, CX, 190, 10)" in ino and
+      "drawStarterThumbCentered(th, starterPreviewDex, CX, 190, 8)" in ino and
       "gfx->fillRoundRect(84,358,140,50,14,UI_TRACK)" in ino and
       "gfx->fillRoundRect(242,358,140,50,14,UI_BAR_OK)" in ino,
       "fiche starter blanche adaptee a l'ecran rond")
 check("spriteSizePercent" in ino and "visibleW=maxX-minX+1" in ino and
-      "target=target*spriteSizePercent(dex)/100" in ino,
+      "target=target*spriteSizePercent(dex)/100" in ino and
+      "target=145*spriteSizePercent(dex)/100" in ino,
       "sprites centres sur silhouette et tailles par evolution")
 check("panel->setBrightness(0)" in ino and "gfx->flush();\n  panel->setBrightness(120);" in ino,
       "splash complet avant allumage AMOLED")
@@ -70,11 +71,11 @@ check("speciesId == 133 && caughtTotal <= 1" in pet,
       "ancienne sauvegarde Evoli reparee")
 check("case 252: case 255: case 258:" in (root / "pet.h").read_text(encoding="utf-8") and
       "case 133" not in (root / "pet.h").read_text(encoding="utf-8"), "Evoli refuse comme starter")
-check(manifest["name"] == "PokeTama Moretro3D - V9.21", "manifest Moretro3D")
-check(manifest["version"] == "1.46.0-moretro3d-v9.21-sprite-scale", "version Web coherente")
-check('VERSION="1.46.0-moretro3d-v9.21-sprite-scale"' in build, "version de compilation coherente")
+check(manifest["name"] == "PokeTama Moretro3D - V9.21.1", "manifest Moretro3D")
+check(manifest["version"] == "1.46.1-moretro3d-v9.21.1-starter-size", "version Web coherente")
+check('VERSION="1.46.1-moretro3d-v9.21.1-starter-size"' in build, "version de compilation coherente")
 check("PokeTama Moretro3D" in html and "Installer le firmware Moretro3D" in html,
       "page firmware Moretro3D")
 check("Moretro3D/Test-1" in readme, "page GitHub Moretro3D/Test-1")
 check(not re.search(r"\b(Care for|Could not|Connect the board|Done \()", html), "page utilisateur entierement en francais")
-print("AUDIT MORETRO3D V9.21 OK")
+print("AUDIT MORETRO3D V9.21.1 OK")
