@@ -106,7 +106,7 @@ jobs:
       - name: Conserver une copie du firmware compile
         uses: actions/upload-artifact@v4
         with:
-          name: PokeTama-Moretro3D-V9.19.1-firmware
+          name: PokeTama-Moretro3D-V9.20-firmware
           path: |
             web/firmware/*.bin
             web/manifest.json

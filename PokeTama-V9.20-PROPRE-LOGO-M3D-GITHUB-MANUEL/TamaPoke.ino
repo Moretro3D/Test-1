@@ -24,10 +24,11 @@
 #include "i18n.h"
 #include "audio.h"
 #include "battle.h"
+#include "brand_logo.h"
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.44.1-moretro3d-v9.19.1-brand-center"
+#define FW_VERSION "1.45.0-moretro3d-v9.20-brand-logo"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -37,6 +38,15 @@ Arduino_CO5300 *panel = new Arduino_CO5300(
   bus, LCD_RESET, 0 /*rotation*/, LCD_WIDTH, LCD_HEIGHT, 6, 0, 0, 0);
 // Framebuffer completo en PSRAM: dibujamos todo y hacemos flush() (sin parpadeo)
 Arduino_Canvas *gfx = new Arduino_Canvas(LCD_WIDTH, LCD_HEIGHT, panel);
+
+void drawBrandLogo(int16_t x0, int16_t y0) {
+  for (uint16_t y = 0; y < BRAND_LOGO_H; y++) {
+    for (uint16_t x = 0; x < BRAND_LOGO_W; x++) {
+      uint16_t color = pgm_read_word(&BRAND_LOGO_PIXELS[(uint32_t)y * BRAND_LOGO_W + x]);
+      gfx->drawPixel(x0 + x, y0 + y, color);
+    }
+  }
+}
 
 TouchDrvCST92xx touch;
 Pet pet;
@@ -387,14 +397,15 @@ void setup() {
   // splash apparait tout de suite pendant l'initialisation SD/audio/sprites.
   panel->setBrightness(0);
   gfx->fillScreen(C565(0x10,0x18,0x2e));
+  drawBrandLogo(CX - BRAND_LOGO_W / 2, 36);
   gfx->setTextColor(UI_WHITE);
   gfx->setTextSize(3);
   // 8 caracteres x 6 px x taille 3 = 144 px : centre exact a x=161.
-  gfx->setCursor(CX - 72, 176); gfx->print("PokeTama");
+  gfx->setCursor(CX - 72, 238); gfx->print("PokeTama");
   gfx->setTextColor(C565(0xff,0x3b,0x45));
   gfx->setTextSize(3);
   // 9 caracteres x 6 px x taille 3 = 162 px : centre exact a x=152.
-  gfx->setCursor(CX - 81, 224); gfx->print("Moretro3D");
+  gfx->setCursor(CX - 81, 280); gfx->print("Moretro3D");
   gfx->flush();
   panel->setBrightness(120);
 
@@ -1062,10 +1073,10 @@ void onTap(int16_t x, int16_t y) {
     }
     if (starterPreviewDex > 0) {
       // Page plein ecran : confirmer a droite, revenir a gauche.
-      if (x >= 240 && x <= 416 && y >= 392 && y <= 444) {
+      if (x >= 242 && x <= 382 && y >= 358 && y <= 408) {
         pet.chooseStarter(starterPreviewDex);
         starterPreviewDex = 0;
-      } else if (x >= 50 && x <= 226 && y >= 392 && y <= 444) {
+      } else if (x >= 84 && x <= 224 && y >= 358 && y <= 408) {
         starterPreviewDex = 0;
       }
       starterDirty = true;
@@ -1076,7 +1087,7 @@ void onTap(int16_t x, int16_t y) {
     }
     if (starterGeneration == 0) {
       // Retour langue centre en bas.
-      if (x >= 82 && x <= 384 && y >= 392 && y <= 444) {
+      if (x >= 96 && x <= 370 && y >= 368 && y <= 414) {
         starterLanguageChosen = false;
         starterDirty = true;
         markUiDirty();
@@ -1097,7 +1108,7 @@ void onTap(int16_t x, int16_t y) {
       }
     } else {
       // Retour generations centre en bas.
-      if (x >= 82 && x <= 384 && y >= 392 && y <= 444) {
+      if (x >= 96 && x <= 370 && y >= 368 && y <= 414) {
         starterGeneration = 0;
       } else {
         static const int BALL_X[3] = { 104, 233, 362 };
@@ -1540,7 +1551,7 @@ void renderStarterSelect() {
   }
 
   if (starterGeneration == 0) {
-    drawStarterCentered(T(S_CHOOSE_GENERATION), 92, 1, UI_TRACK);
+    drawStarterCentered(T(S_CHOOSE_GENERATION), 92, 1, UI_INK);
     static const uint16_t GEN_COLORS[3] = { 0xF800, 0xFD20, 0x07E0 };
     for (uint8_t i = 0; i < 3; i++) {
       int gy = STARTER_GEN_Y + i * 82;
@@ -1548,16 +1559,16 @@ void renderStarterSelect() {
       gfx->drawRoundRect(82, gy, 302, STARTER_GEN_H, 18, GEN_COLORS[i]);
       char generation[20];
       snprintf(generation, sizeof(generation), T(S_GENERATION_FMT), i + 1);
-      drawStarterCentered(generation, gy + 22, 2, uiInk());
+      drawStarterCentered(generation, gy + 22, 2, UI_INK);
     }
-    gfx->fillRoundRect(82,392,302,52,14,UI_TRACK);
+    gfx->fillRoundRect(96,368,274,46,14,UI_TRACK);
     gfx->setTextColor(uiContrastText(UI_TRACK)); gfx->setTextSize(2);
     const char *backText=T(S_LAN_BACK);
-    gfx->setCursor(CX-(int)strlen(backText)*6,410); gfx->print(backText);
+    gfx->setCursor(CX-(int)strlen(backText)*6,383); gfx->print(backText);
   } else {
     char generation[20];
     snprintf(generation, sizeof(generation), T(S_GENERATION_FMT), starterGeneration);
-    drawStarterCentered(generation, 112, 2, UI_TRACK);
+    drawStarterCentered(generation, 112, 2, UI_INK);
     static const int BALL_X[3] = { 104, 233, 362 };
     static const uint16_t STARTER_COLORS[3] = {
       C565(0x35,0xb8,0x58), // plante
@@ -1573,10 +1584,10 @@ void renderStarterSelect() {
       gfx->print(starterName);
     }
     drawStarterCentered(T(S_TOUCH_POKEBALL), 330, 1, uiSub());
-    gfx->fillRoundRect(82,392,302,52,14,UI_TRACK);
+    gfx->fillRoundRect(96,368,274,46,14,UI_TRACK);
     gfx->setTextColor(uiContrastText(UI_TRACK)); gfx->setTextSize(2);
     const char *backText=T(S_LAN_BACK);
-    gfx->setCursor(CX-(int)strlen(backText)*6,410); gfx->print(backText);
+    gfx->setCursor(CX-(int)strlen(backText)*6,383); gfx->print(backText);
   }
 
   if (starterPreviewDex > 0) {
@@ -1586,15 +1597,16 @@ void renderStarterSelect() {
     const uint8_t *th = thumbs.get(starterPreviewDex);
     drawStarterThumbCentered(th, CX, 190, 8);
     drawStarterCentered(dexName(starterPreviewDex), 302, 3, de.accent);
-    gfx->fillRoundRect(50,392,176,52,14,UI_TRACK);
-    gfx->fillRoundRect(240,392,176,52,14,UI_BAR_OK);
+    // Zone sure du rond 1,75 pouce : aucun coin de bouton n'est coupe.
+    gfx->fillRoundRect(84,358,140,50,14,UI_TRACK);
+    gfx->fillRoundRect(242,358,140,50,14,UI_BAR_OK);
     gfx->setTextSize(2);
     const char *backText=T(S_LAN_BACK);
     gfx->setTextColor(uiContrastText(UI_TRACK));
-    gfx->setCursor(138-(int)strlen(backText)*6,410); gfx->print(backText);
+    gfx->setCursor(154-(int)strlen(backText)*6,375); gfx->print(backText);
     const char *okText=T(S_VALIDATE);
     gfx->setTextColor(uiContrastText(UI_BAR_OK));
-    gfx->setCursor(328-(int)strlen(okText)*6,410); gfx->print(okText);
+    gfx->setCursor(312-(int)strlen(okText)*6,375); gfx->print(okText);
   }
   gfx->flush();
 }
