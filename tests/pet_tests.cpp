@@ -29,10 +29,19 @@ static int failures = 0;
 
 static Pet hatchedPet(int16_t dex) {
   Pet pet;
-  pet.chooseStarter(dex);
-  pet.eggTap();
-  pet.eggTap();
-  pet.eggTap();
+  // Les neuf starters passent par le vrai parcours de premier demarrage.
+  // Les autres especes servent uniquement a tester leurs statistiques et
+  // evolutions : elles sont installees directement dans cette fixture.
+  bool officialStarter = dex == 1 || dex == 4 || dex == 7 ||
+                         dex == 152 || dex == 155 || dex == 158 ||
+                         dex == 252 || dex == 255 || dex == 258;
+  if (officialStarter) {
+    pet.chooseStarter(dex);
+  } else {
+    pet.speciesId = dex;
+    pet.dexReg[(dex - 1) >> 3] |= (1 << ((dex - 1) & 7));
+    pet.dexCaught[(dex - 1) >> 3] |= (1 << ((dex - 1) & 7));
+  }
   return pet;
 }
 
