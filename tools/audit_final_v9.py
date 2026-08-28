@@ -54,8 +54,8 @@ ok(len(fr)==387 and all(fr[i] for i in range(1,387)), "386 noms français non vi
 # Battle UI
 ok("void drawBattlePmd" in ino and "visibleW" in ino and
    "uint8_t fi=0" in ino and
-   "drawBattlePmd(wildPmd, 350, 232, 84" in ino and
-   "drawBattlePmd(pmd, 118, 316, 112" in ino,
+   "drawBattlePmd(wildPmd, battleDex, 350, 232, 84" in ino and
+   "drawBattlePmd(pmd, pet.speciesId, 118, 316, 112" in ino,
    "sprites combat fixes avec tailles joueur/adversaire separees")
 ok("drawBattleName(dexName(battleDex), battleLevel, 78, 72, 190)" in ino and
    "battlePlayer.level, 236, 236, 190" in ino,

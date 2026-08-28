@@ -101,6 +101,7 @@ bool SdThumbs::load() {
   }
   f.close();
   memcpy(&count, data + 4, 2);
+  dataSize = size;
   loaded = true;
   Serial.printf("miniaturas cargadas: %u (%u KB)\n", count, size / 1024);
   return true;
@@ -110,6 +111,10 @@ const uint8_t *SdThumbs::get(int16_t dex) const {
   if (!loaded || dex < 1 || dex > count) return nullptr;
   uint32_t off;
   memcpy(&off, data + 6 + 4 * (dex - 1), 4);
+  if (off < 6 + 4UL * count || off + 3 > dataSize) return nullptr;
+  uint8_t w=data[off], h=data[off+1], n=data[off+2];
+  uint32_t need=3UL+2UL*n+(uint32_t)w*h;
+  if (!w || !h || !n || off + need > dataSize) return nullptr;
   return data + off;
 }
 

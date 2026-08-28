@@ -70,6 +70,15 @@ def main():
     count = struct.unpack_from("<H", data, 4)[0]
     if count != 386:
         raise RuntimeError(f"thumbs.bin count={count}, attendu 386")
+    head = 6 + 4 * count
+    for dex in range(1, count + 1):
+        off = struct.unpack_from("<I", data, 6 + 4 * (dex - 1))[0]
+        if off < head or off + 3 > len(data):
+            raise RuntimeError(f"thumbs.bin #{dex:03d}: offset invalide {off}")
+        w, h, pal = data[off:off + 3]
+        need = 3 + 2 * pal + w * h
+        if not w or not h or not pal or off + need > len(data):
+            raise RuntimeError(f"thumbs.bin #{dex:03d}: blob invalide {w}x{h}, pal={pal}")
 
     # Audit statique anti-régression du bug #278 -> #22.
     sdh = (ROOT / "sdmon.h").read_text(encoding="utf-8")

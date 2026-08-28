@@ -36,7 +36,7 @@
 <body>
 <div class="wrap">
   <h1>PokeTama Moretro3D</h1>
-  <p class="sub">Version V9.20. Logo Moretro3D et interface adaptee a l'ecran rond.</p>
+  <p class="sub">Version V9.21. Sprites centres et tailles coherentes par evolution.</p>
 
   <p class="unsupported" id="unsupported">
     ⚠️ Ton navigateur ne prend pas en charge Web Serial. Utilise <b>Chrome</b> ou <b>Edge</b> sur ordinateur.
@@ -45,7 +45,7 @@
   <h2><span class="num">1</span>Flasher le firmware</h2>
   <div class="step">
     <p>Branche le PokeTama en USB-C, clique sur Installer, sélectionne son port puis attends la fin.</p>
-    <esp-web-install-button manifest="manifest.json?v=1.45.0-moretro3d-v9.20-brand-logo1">
+    <esp-web-install-button manifest="manifest.json?v=1.46.0-moretro3d-v9.21-sprite-scale1">
       <button slot="activate">Installer le firmware Moretro3D</button>
       <span slot="unsupported">Navigateur non compatible (utilise Chrome/Edge).</span>
       <span slot="not-allowed">HTTPS requis.</span>
@@ -192,7 +192,7 @@ document.getElementById('music').onclick = async () => {
   log('Téléchargement des trois OST propres...');
   let items;
   try {
-    const resp = await fetch('music.pak?v=1.45.0-moretro3d-v9.20-brand-logo1', { cache: 'no-store' });
+    const resp = await fetch('music.pak?v=1.46.0-moretro3d-v9.21-sprite-scale1', { cache: 'no-store' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     items = parsePak(await resp.arrayBuffer()).filter(it => it.name.startsWith('music/') && it.name.endsWith('.wav'));
     if (items.length !== 3) throw new Error('le paquet ne contient pas exactement trois OST');
@@ -224,7 +224,7 @@ document.getElementById('auto').onclick = async () => {
   let items;
   try {
     // Bundle complet servi depuis GitHub Pages : sprites, decors et OST.
-    const resp = await fetch('sprites.pak?v=1.45.0-moretro3d-v9.20-brand-logo1', { cache: 'no-store' });
+    const resp = await fetch('sprites.pak?v=1.46.0-moretro3d-v9.21-sprite-scale1', { cache: 'no-store' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     items = parsePak(await resp.arrayBuffer());
   } catch (e) { log('Telechargement de sprites.pak impossible : ' + e.message); return; }

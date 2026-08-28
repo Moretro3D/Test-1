@@ -14,7 +14,7 @@ build = (root / "tools" / "build_web.sh").read_text(encoding="utf-8")
 
 def check(value, label):
     if not value:
-        raise SystemExit("ECHEC V9.20: " + label)
+        raise SystemExit("ECHEC V9.21: " + label)
     print("OK  ", label)
 
 all_public = "\n".join((ino, dex, pet, html, readme, build, json.dumps(manifest)))
@@ -24,10 +24,13 @@ check('uint16_t displayedDexNumber(int16_t dex) { return dex; }' in ino, "numero
 check('"JIRACHI"' in dex, "Jirachi restaure au numero 385")
 check("{ 1, 4, 7 }" in ino and "{ 152, 155, 158 }" in ino and "{ 252, 255, 258 }" in ino,
       "neuf starters 1G/2G/3G")
-check("starterLanguageChosen" in ino and "LANGUAGE / LANGUE" in ino, "choix de langue avant generation")
+check("starterLanguageChosen" in ino and "LANGUAGE / LANGUE" not in ino,
+      "choix de langue epure avant generation")
 check("starterName=dexName" in ino, "noms des trois starters affiches")
 check("STARTER_COLORS[3]" in ino and "// plante" in ino and "// feu" in ino and "// eau" in ino,
       "couleurs Plante vert, Feu rouge, Eau bleu")
+check("drawStarterCentered(T(S_TOUCH_POKEBALL), 330, 1, 0x0000)" in ino,
+      "instruction Pokeball noire")
 check('gfx->setCursor(CX - 72, 238); gfx->print("PokeTama")' in ino and
       'gfx->setCursor(CX - 81, 280); gfx->print("Moretro3D")' in ino and
       'drawStarterCentered("PokeTama", 48, 3' in ino and
@@ -41,15 +44,18 @@ check('#include "brand_logo.h"' in ino and
 check(ino.count("gfx->fillRoundRect(96,368,274,46,14,UI_TRACK)") == 2 and
       ino.count("x >= 96 && x <= 370 && y >= 368 && y <= 414") == 2,
       "boutons retour centres et remontes dans le rond")
-check("drawStarterCentered(T(S_CHOOSE_GENERATION), 92, 1, UI_INK)" in ino and
-      "drawStarterCentered(generation, gy + 22, 2, UI_INK)" in ino and
-      "drawStarterCentered(generation, 112, 2, UI_INK)" in ino,
+check("drawStarterCentered(T(S_CHOOSE_GENERATION), 92, 2, 0x0000)" in ino and
+      "drawStarterCentered(generation, gy + 22, 2, 0x0000)" in ino and
+      "drawStarterCentered(generation, 112, 2, 0x0000)" in ino,
       "titres de generation noirs")
 check("gfx->fillScreen(UI_WHITE);" in ino and
-      "drawStarterThumbCentered(th, CX, 190, 8)" in ino and
+      "drawStarterThumbCentered(th, starterPreviewDex, CX, 190, 10)" in ino and
       "gfx->fillRoundRect(84,358,140,50,14,UI_TRACK)" in ino and
       "gfx->fillRoundRect(242,358,140,50,14,UI_BAR_OK)" in ino,
       "fiche starter blanche adaptee a l'ecran rond")
+check("spriteSizePercent" in ino and "visibleW=maxX-minX+1" in ino and
+      "target=target*spriteSizePercent(dex)/100" in ino,
+      "sprites centres sur silhouette et tailles par evolution")
 check("panel->setBrightness(0)" in ino and "gfx->flush();\n  panel->setBrightness(120);" in ino,
       "splash complet avant allumage AMOLED")
 check("if (!screenOff) return false;" in ino, "aucun light-sleep ecran visible")
@@ -64,11 +70,11 @@ check("speciesId == 133 && caughtTotal <= 1" in pet,
       "ancienne sauvegarde Evoli reparee")
 check("case 252: case 255: case 258:" in (root / "pet.h").read_text(encoding="utf-8") and
       "case 133" not in (root / "pet.h").read_text(encoding="utf-8"), "Evoli refuse comme starter")
-check(manifest["name"] == "PokeTama Moretro3D - V9.20", "manifest Moretro3D")
-check(manifest["version"] == "1.45.0-moretro3d-v9.20-brand-logo", "version Web coherente")
-check('VERSION="1.45.0-moretro3d-v9.20-brand-logo"' in build, "version de compilation coherente")
+check(manifest["name"] == "PokeTama Moretro3D - V9.21", "manifest Moretro3D")
+check(manifest["version"] == "1.46.0-moretro3d-v9.21-sprite-scale", "version Web coherente")
+check('VERSION="1.46.0-moretro3d-v9.21-sprite-scale"' in build, "version de compilation coherente")
 check("PokeTama Moretro3D" in html and "Installer le firmware Moretro3D" in html,
       "page firmware Moretro3D")
 check("Moretro3D/Test-1" in readme, "page GitHub Moretro3D/Test-1")
 check(not re.search(r"\b(Care for|Could not|Connect the board|Done \()", html), "page utilisateur entierement en francais")
-print("AUDIT MORETRO3D V9.20 OK")
+print("AUDIT MORETRO3D V9.21 OK")

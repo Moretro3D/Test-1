@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.45.0-moretro3d-v9.20-brand-logo"
+#define FW_VERSION "1.46.0-moretro3d-v9.21-sprite-scale"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -197,6 +197,25 @@ int flashIdxForDex(int16_t dex) {
 
 // L'edition normale affiche les numeros nationaux 001 a 386 tels quels.
 uint16_t displayedDexNumber(int16_t dex) { return dex; }
+
+bool hasPreEvolution(int16_t dex) {
+  if (dex < 1 || dex > DEX_COUNT) return false;
+  for (int16_t i = 1; i <= DEX_COUNT; i++)
+    if (DEX_TBL[i].evolvesTo == dex) return true;
+  return false;
+}
+
+// Echelle coherente entre les 386 especes : base legerement plus petite,
+// evolution intermediaire normale, forme finale legerement plus grande.
+uint8_t spriteSizePercent(int16_t dex) {
+  if (dex < 1 || dex > DEX_COUNT) return 100;
+  bool pre = hasPreEvolution(dex);
+  bool next = DEX_TBL[dex].evolvesTo != 0;
+  if (!pre && next) return 92;
+  if (pre && next) return 100;
+  if (pre && !next) return 108;
+  return 100;
+}
 
 #define CX 233  // centro de la pantalla redonda
 #define CY 233
@@ -1495,15 +1514,24 @@ void drawStarterPokeball(int cx, int cy, int r) {
   gfx->fillCircle(cx, cy, 4, C565(0xe5, 0xe8, 0xee));
 }
 
-void drawStarterThumbCentered(const uint8_t *b, int cx, int cy, int maxSize) {
+void drawStarterThumbCentered(const uint8_t *b, int16_t dex, int cx, int cy, int maxSize) {
   if (!b) return;
   uint8_t w=b[0], h=b[1], n=b[2];
   const uint8_t *pal=b+3;
   const uint8_t *data=pal+n*2;
-  int scale=maxSize;
-  while (scale > 2 && (w*scale > 260 || h*scale > 220)) scale--;
-  int x0=cx-(int)w*scale/2;
-  int y0=cy-(int)h*scale/2;
+  int minX=w, minY=h, maxX=-1, maxY=-1;
+  for (uint8_t y=0; y<h; y++) for (uint8_t x=0; x<w; x++) {
+    if (data[(uint16_t)y*w+x] == 0xFF) continue;
+    minX=min(minX,(int)x); minY=min(minY,(int)y);
+    maxX=max(maxX,(int)x); maxY=max(maxY,(int)y);
+  }
+  if (maxX < minX || maxY < minY) return;
+  int visibleW=maxX-minX+1, visibleH=maxY-minY+1;
+  int target=190*spriteSizePercent(dex)/100;
+  int scale=min(maxSize, target/max(visibleW,visibleH));
+  if (scale < 2) scale=2;
+  int x0=cx-visibleW*scale/2-minX*scale;
+  int y0=cy-visibleH*scale/2-minY*scale;
   for (uint8_t y=0; y<h; y++) {
     for (uint8_t x=0; x<w; x++) {
       uint8_t idx=data[(uint16_t)y*w+x];
@@ -1530,7 +1558,6 @@ void renderStarterSelect() {
   if (!starterLanguageChosen) {
     drawStarterCentered("PokeTama", 48, 3, uiInk());
     drawStarterCentered("Moretro3D", 86, 2, C565(0xe8,0x32,0x3f));
-    drawStarterCentered("LANGUAGE / LANGUE", 120, 1, uiSub());
     static const char *LANG_NAMES[6] = {
       "ESPANOL", "ENGLISH", "FRANCAIS", "DEUTSCH", "ITALIANO", "PORTUGUES"
     };
@@ -1551,7 +1578,7 @@ void renderStarterSelect() {
   }
 
   if (starterGeneration == 0) {
-    drawStarterCentered(T(S_CHOOSE_GENERATION), 92, 1, UI_INK);
+    drawStarterCentered(T(S_CHOOSE_GENERATION), 92, 2, 0x0000);
     static const uint16_t GEN_COLORS[3] = { 0xF800, 0xFD20, 0x07E0 };
     for (uint8_t i = 0; i < 3; i++) {
       int gy = STARTER_GEN_Y + i * 82;
@@ -1559,7 +1586,7 @@ void renderStarterSelect() {
       gfx->drawRoundRect(82, gy, 302, STARTER_GEN_H, 18, GEN_COLORS[i]);
       char generation[20];
       snprintf(generation, sizeof(generation), T(S_GENERATION_FMT), i + 1);
-      drawStarterCentered(generation, gy + 22, 2, UI_INK);
+      drawStarterCentered(generation, gy + 22, 2, 0x0000);
     }
     gfx->fillRoundRect(96,368,274,46,14,UI_TRACK);
     gfx->setTextColor(uiContrastText(UI_TRACK)); gfx->setTextSize(2);
@@ -1568,7 +1595,7 @@ void renderStarterSelect() {
   } else {
     char generation[20];
     snprintf(generation, sizeof(generation), T(S_GENERATION_FMT), starterGeneration);
-    drawStarterCentered(generation, 112, 2, UI_INK);
+    drawStarterCentered(generation, 112, 2, 0x0000);
     static const int BALL_X[3] = { 104, 233, 362 };
     static const uint16_t STARTER_COLORS[3] = {
       C565(0x35,0xb8,0x58), // plante
@@ -1583,7 +1610,7 @@ void renderStarterSelect() {
       gfx->setCursor(BALL_X[i] - strlen(starterName) * 6, 286);
       gfx->print(starterName);
     }
-    drawStarterCentered(T(S_TOUCH_POKEBALL), 330, 1, uiSub());
+    drawStarterCentered(T(S_TOUCH_POKEBALL), 330, 1, 0x0000);
     gfx->fillRoundRect(96,368,274,46,14,UI_TRACK);
     gfx->setTextColor(uiContrastText(UI_TRACK)); gfx->setTextSize(2);
     const char *backText=T(S_LAN_BACK);
@@ -1595,7 +1622,7 @@ void renderStarterSelect() {
     // Vraie fiche plein ecran, claire et sans carte posee au milieu.
     gfx->fillScreen(UI_WHITE);
     const uint8_t *th = thumbs.get(starterPreviewDex);
-    drawStarterThumbCentered(th, CX, 190, 8);
+    drawStarterThumbCentered(th, starterPreviewDex, CX, 190, 10);
     drawStarterCentered(dexName(starterPreviewDex), 302, 3, de.accent);
     // Zone sure du rond 1,75 pouce : aucun coin de bouton n'est coupe.
     gfx->fillRoundRect(84,358,140,50,14,UI_TRACK);
@@ -3143,7 +3170,7 @@ void drawPetEvent() {
 }
 
 
-void drawBattlePmd(PmdMon &m, int cx, int groundY, int target, bool sil=false) {
+void drawBattlePmd(PmdMon &m, int16_t dex, int cx, int groundY, int target, bool sil=false) {
   const PmdAct &a=m.acts[PMD_IDLE];
   if (!a.frames) return;
   // Bounding box visuel cible ~128px sur l'écran 466px.
@@ -3163,6 +3190,7 @@ void drawBattlePmd(PmdMon &m, int cx, int groundY, int target, bool sil=false) {
   }
   if (maxC<minC || maxR<minR) return;
   int visibleW=maxC-minC+1, visibleH=maxR-minR+1;
+  target=target*spriteSizePercent(dex)/100;
   int maxDim=max(visibleW,visibleH);
   uint8_t s=maxDim>0 ? (uint8_t)(target/maxDim) : 2;
   if (s<1) s=1;
@@ -3249,12 +3277,12 @@ void renderBattle() {
   drawTypeChips(236, 284, mine, false);
 
   // Sprites standardisés dans une boîte visuelle ~82 px, quelle que soit l'espèce.
-  if (wildPmd.loaded) drawBattlePmd(wildPmd, 350, 232, 84, false);
+  if (wildPmd.loaded) drawBattlePmd(wildPmd, battleDex, 350, 232, 84, false);
   else {
     const uint8_t *th=thumbs.get(battleDex);
     if (th) drawThumb(th, 282, 118, 3, false);
   }
-  if (pmd.loaded) drawBattlePmd(pmd, 118, 316, 112, false);
+  if (pmd.loaded) drawBattlePmd(pmd, pet.speciesId, 118, 316, 112, false);
   else {
     const uint8_t *th=thumbs.get(pet.speciesId);
     if (th) drawThumb(th, 54, 190, 3, false);
@@ -5057,8 +5085,15 @@ void drawThumb(const uint8_t *b, int x, int y, int s, bool sil) {
   uint8_t w = b[0], h = b[1], n = b[2];
   const uint8_t *pal = b + 3;
   const uint8_t *d = pal + n * 2;
-  int ox = x + (GAL_CELL - w * s) / 2;
-  int oy = y + (GAL_CELL - h * s) / 2;
+  int minX=w, minY=h, maxX=-1, maxY=-1;
+  for (int r=0;r<h;r++) for (int c=0;c<w;c++) {
+    if (d[r*w+c] == 0xFF) continue;
+    minX=min(minX,c); minY=min(minY,r); maxX=max(maxX,c); maxY=max(maxY,r);
+  }
+  if (maxX < minX || maxY < minY) return;
+  int visibleW=maxX-minX+1, visibleH=maxY-minY+1;
+  int ox = x + (GAL_CELL - visibleW * s) / 2 - minX*s;
+  int oy = y + (GAL_CELL - visibleH * s) / 2 - minY*s;
   for (int r = 0; r < h; r++) {
     for (int c = 0; c < w; c++) {
       uint8_t idx = d[r * w + c];
@@ -5095,7 +5130,7 @@ void renderGallery() {
     }
     if (galleryPmd.loaded) {
       // animado y a color si se conoce; silueta estatica si no (estilo "?")
-      drawPmdActM(galleryPmd, PMD_IDLE, CX, 300, known ? millis() : 0, true, !known, 6);
+      drawPmdActM(galleryPmd, PMD_IDLE, CX, 300, known ? millis() : 0, true, !known, 6, galleryDetail);
     } else {
       const uint8_t *t = thumbs.get(galleryDetail);
       if (t) drawThumb(t, CX - GAL_CELL, 135, 4, !known);
@@ -5549,7 +5584,7 @@ void drawEvolveFX(uint32_t now) {
   // final (t>0.9) se queda fija en la nueva para el fogonazo de revelado
   int period = 60 + (int)(220 * (1.0f - t));
   bool showOld = t < 0.9f && evoPmd.loaded && ((now / period) % 2) == 0;
-  if (showOld) drawPmdActM(evoPmd, PMD_IDLE, cx, PET_GROUND, 0, true, true, 5);
+  if (showOld) drawPmdActM(evoPmd, PMD_IDLE, cx, PET_GROUND, 0, true, true, 5, pet.prevSpeciesId);
   else drawPmdAct(PMD_IDLE, cx, PET_GROUND, 0, true, true, 5);
   // chispas que salen disparadas
   for (int i = 0; i < 10; i++) {
@@ -5699,10 +5734,19 @@ uint8_t pmdFrameAt(const PmdAct &a, uint32_t t, bool loop) {
 
 // dibuja una accion anclada por la base (centro-x, suelo) y devuelve su escala
 // dibuja una accion de un PmdMon concreto (m); drawPmdAct usa el global pmd
-void drawPmdActM(PmdMon &m, uint8_t actId, int cx, int groundY, uint32_t t, bool loop, bool sil, uint8_t maxS) {
+void drawPmdActM(PmdMon &m, uint8_t actId, int cx, int groundY, uint32_t t, bool loop, bool sil, uint8_t maxS, int16_t dex) {
   const PmdAct &a = m.acts[actId];
   if (!a.frames) return;
-  uint8_t sBase = m.acts[PMD_IDLE].h ? 170 / m.acts[PMD_IDLE].h : 5;
+  const PmdAct &idle=m.acts[PMD_IDLE];
+  int minR=idle.h, maxR=-1;
+  if (idle.frames) {
+    const uint8_t *idleFrame=idle.data;
+    for (int r=0;r<idle.h;r++) for (int c=0;c<idle.w;c++)
+      if (idleFrame[r*idle.w+c] != 0xFF) { minR=min(minR,r); maxR=max(maxR,r); }
+  }
+  int visibleH=maxR>=minR ? maxR-minR+1 : idle.h;
+  int targetH=170*spriteSizePercent(dex)/100;
+  uint8_t sBase = visibleH ? targetH / visibleH : 5;
   if (sBase < 2) sBase = 2;
   if (sBase > maxS) sBase = maxS;
   uint8_t s = sBase;
@@ -5722,7 +5766,7 @@ void drawPmdActM(PmdMon &m, uint8_t actId, int cx, int groundY, uint32_t t, bool
   }
 }
 void drawPmdAct(uint8_t actId, int cx, int groundY, uint32_t t, bool loop, bool sil, uint8_t maxS) {
-  drawPmdActM(pmd, actId, cx, groundY, t, loop, sil, maxS);
+  drawPmdActM(pmd, actId, cx, groundY, t, loop, sil, maxS, pet.speciesId);
 }
 
 // elige el siguiente capricho del bicho cuando esta contento

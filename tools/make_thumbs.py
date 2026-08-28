@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Genera /mons/thumbs.bin: miniaturas 40x40 de los 151 para la galeria.
+"""Genera /mons/thumbs.bin: miniaturas de los 386 para galeria y starters.
 
 Se derivan del frame frontal (Idle, frame 0) de los sprites PMD ya empaquetados
 (tools/sdcard/mons/pNNN.bin, formato TPK2) -> miniaturas legales (CC BY-NC), mismo

@@ -47,6 +47,7 @@ struct PmdMon {
 struct SdThumbs {
   bool loaded = false;
   uint8_t *data = nullptr;
+  uint32_t dataSize = 0;
   uint16_t count = 0;
   bool load();
   const uint8_t *get(int16_t dex) const;  // blob: w,h,palCount,pal[],idx[]
