@@ -1,1 +1,0 @@
-Fix compilation V6.1: méthodes Collection Active rendues publiques et SFX_CONFIRM remplacé par SFX_CATCH_OK.

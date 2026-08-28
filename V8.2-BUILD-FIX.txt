@@ -1,5 +1,0 @@
-V8.2 build fix
-- DexEntry.evolvesTo: uint8_t -> uint16_t pour les evolutions #256-386.
-- pet.h inclut dex.h avant les methodes inline utilisant DEX_COUNT.
-- gen_dex.py corrige pour ne pas regenerer le bug.
-Version: 1.33.2-moretro-hoenn-v8.2-buildfix

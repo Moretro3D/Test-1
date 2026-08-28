@@ -27,7 +27,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.41.0-moretro-v9.16-classic"
+#define FW_VERSION "1.42.0-moretro3d-v9.17-normal"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -185,9 +185,8 @@ int flashIdxForDex(int16_t dex) {
   return (dex >= 1 && dex <= 9) ? IDX[dex] : -1;
 }
 
-// Le slot interne 385 conserve le format de sauvegarde historique, mais cette
-// edition l'affiche avec le vrai numero national de Mimiqui.
-uint16_t displayedDexNumber(int16_t dex) { return dex == 385 ? 778 : dex; }
+// L'edition normale affiche les numeros nationaux 001 a 386 tels quels.
+uint16_t displayedDexNumber(int16_t dex) { return dex; }
 
 #define CX 233  // centro de la pantalla redonda
 #define CY 233
@@ -383,9 +382,18 @@ void setup() {
   // QSPI a 80MHz (por defecto 40): el flush del framebuffer es el cuello de
   // botella del fps (~56ms a 40MHz). Si el panel mostrara basura, bajar a 40M.
   if (!gfx->begin(80000000)) Serial.println("gfx->begin() fallo");
-  // El panel permanece invisible hasta que el primer frame COMPLETO esta listo.
-  // Evita el destello negro que antes se veia durante la inicializacion.
+  // Premier frame complet avant d'allumer l'AMOLED : aucun flash noir. Ce
+  // splash apparait tout de suite pendant l'initialisation SD/audio/sprites.
   panel->setBrightness(0);
+  gfx->fillScreen(C565(0x10,0x18,0x2e));
+  gfx->setTextColor(UI_WHITE);
+  gfx->setTextSize(3);
+  gfx->setCursor(CX - 81, 184); gfx->print("MORETRO3D");
+  gfx->setTextColor(C565(0xff,0x3b,0x45));
+  gfx->setTextSize(4);
+  gfx->setCursor(CX - 96, 230); gfx->print("TAMAPOKE");
+  gfx->flush();
+  panel->setBrightness(120);
 
   touch.setPins(TP_RESET, TP_INT);
   bool touchOk = false;
@@ -455,21 +463,21 @@ void ensureMon() {
 
 bool mainScreenReadyForAmbientSound() {
   if (audioMode() < SOUND_LOW || screenOff || dimStage > 0) return false;
-  // La musique d'ambiance accompagne aussi l'œuf et le choix du partenaire.
-  // Seuls le sommeil et les cérémonies demandent réellement le silence.
+  // La musique reste continue dans toutes les pages et tous les menus. Elle ne
+  // doit pas etre rechargee ni redemarree lors du retour a l'accueil.
   if (pet.sleeping || pet.ceremony) return false;
-  if (battleOpen || gameOpen || gameMenuOpen || sackOpen || cardOpen || galleryOpen || kbOpen || clockOpen || helpOpen) return false;
-  if (feedMenuUntil || confirmUntil || choiceKind || bathUntil || wildPromptUntil || petEventUntil) return false;
+  if (battleOpen) return false;
   if (pet.evolving() || pet.wantEvolveButton() || pet.canRunawayNow() || pet.wantFarewellButton()) return false;
   return true;
 }
 
 void maybePlayAmbientSound(uint32_t now) {
   if (!mainScreenReadyForAmbientSound()) {
-    nextAmbientSoundAt = now + 9000;
+    // Repart presque immediatement quand l'interruption legitime se termine.
+    nextAmbientSoundAt = 0;
     return;
   }
-  if (nextAmbientSoundAt == 0) nextAmbientSoundAt = now + 800;
+  if (nextAmbientSoundAt == 0) nextAmbientSoundAt = now + 120;
   if (now < nextAmbientSoundAt) return;
   uint8_t hour=sceneHour();
   uint8_t theme=(hour>=7 && hour<13) ? 0 : ((hour>=13 && hour<20) ? 1 : 2);
@@ -570,7 +578,7 @@ void loop() {
 
   // pulsacion corta del PWR: pantalla on/off
   static uint32_t lastPwr = 0;
-  if (now - lastPwr > 250) {
+  if (now - lastPwr > 60) {
     lastPwr = now;
     if (pwrShortPressed()) {
       bool wasOff = screenOff;
@@ -581,6 +589,11 @@ void loop() {
           ignoreTouchUntil = now + 900;
           swallowGesture = true;
           wasPressed = false;
+          // Le framebuffer precedent reste visible jusqu'au nouveau frame
+          // complet. Le reveil PWR ne montre donc jamais un ecran noir.
+          markUiDirty();
+          render();
+          lastRender = millis();
         }
       }
     }
@@ -1442,13 +1455,14 @@ void renderStarterSelect() {
 
   if (starterGeneration == 0) {
     drawStarterCentered(T(S_CHOOSE_GENERATION), 92, 1, UI_TRACK);
-    static const char *GEN_LABELS[3] = { "1re GENERATION", "2e GENERATION", "3e GENERATION" };
     static const uint16_t GEN_COLORS[3] = { 0xF800, 0xFD20, 0x07E0 };
     for (uint8_t i = 0; i < 3; i++) {
       int gy = STARTER_GEN_Y + i * 82;
       gfx->fillRoundRect(82, gy, 302, STARTER_GEN_H, 18, lerp565(GEN_COLORS[i], uiPanel(), 3, 8));
       gfx->drawRoundRect(82, gy, 302, STARTER_GEN_H, 18, GEN_COLORS[i]);
-      drawStarterCentered(GEN_LABELS[i], gy + 22, 2, uiInk());
+      char generation[20];
+      snprintf(generation, sizeof(generation), T(S_GENERATION_FMT), i + 1);
+      drawStarterCentered(generation, gy + 22, 2, uiInk());
     }
   } else {
     gfx->fillRoundRect(28, 52, 98, 44, 12, uiPanel());
@@ -1458,11 +1472,18 @@ void renderStarterSelect() {
     snprintf(generation, sizeof(generation), T(S_GENERATION_FMT), starterGeneration);
     drawStarterCentered(generation, 112, 2, UI_TRACK);
     static const int BALL_X[3] = { 104, 233, 362 };
+    static const uint16_t STARTER_COLORS[3] = {
+      C565(0x35,0xb8,0x58), // plante
+      C565(0xef,0x45,0x3a), // feu
+      C565(0x38,0x88,0xe8)  // eau
+    };
     for (uint8_t i = 0; i < 3; i++) {
       drawStarterPokeball(BALL_X[i], STARTER_BALL_Y, STARTER_BALL_R);
-      gfx->setTextColor(UI_TRACK); gfx->setTextSize(1);
-      const char *choose=T(S_CHOOSE);
-      gfx->setCursor(BALL_X[i] - strlen(choose) * 3, 287); gfx->print(choose);
+      const char *starterName=dexName(STARTER_DEX[starterGeneration - 1][i]);
+      gfx->setTextColor(STARTER_COLORS[i]);
+      gfx->setTextSize(2);
+      gfx->setCursor(BALL_X[i] - strlen(starterName) * 6, 286);
+      gfx->print(starterName);
     }
     drawStarterCentered(T(S_TOUCH_POKEBALL), 330, 1, uiInk());
   }
@@ -1649,7 +1670,7 @@ void drawGameMenu() {
   gfx->drawRoundRect(78, 112, 310, 266, 18, uiInk());
   gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
-  const char *title = "PLAY";
+  const char *title = T(S_GOAL_PLAY);
   gfx->setCursor(CX - strlen(title) * 9, 124);
   gfx->print(title);
   const char *labels[5] = { T(S_GAME_BALL), T(S_GAME_CATCH), T(S_GAME_MEMO), T(S_GAME_CLEAN), T(S_GAME_TYPE) };
@@ -3493,10 +3514,11 @@ void helpTap(int16_t x, int16_t y) {
 }
 
 const char *frameTemplateName(uint8_t frame) {
-  static const char *const NAMES[] = {
-    "AUCUN", "CLASSIQUE", "POKEBALL", "OR", "ARGENT", "NEON"
+  static const StrId NAMES[] = {
+    S_FRAME_NONE, S_FRAME_CLASSIC, S_FRAME_POKEBALL,
+    S_FRAME_GOLD, S_FRAME_SILVER, S_FRAME_NEON
   };
-  return frame < 6 ? NAMES[frame] : "CADRE";
+  return frame < 6 ? T(NAMES[frame]) : T(S_FRAME_NONE);
 }
 
 void drawSettingsRow(int x, int y, int w, int h, const char *label, const char *value, bool selected=false) {
@@ -3542,7 +3564,7 @@ void renderDisplaySettings() {
   gfx->setTextSize(2);
   gfx->setCursor(78,100);
   gfx->print(T(S_MODE_LABEL));
-  const char *modeTxt = darkMode ? "SOMBRE" : "CLAIR";
+  const char *modeTxt = darkMode ? T(S_DARK) : T(S_LIGHT);
   gfx->setCursor(388-(int)strlen(modeTxt)*12,100);
   gfx->print(modeTxt);
 
@@ -3583,7 +3605,7 @@ void renderDisplaySettings() {
 
   gfx->setTextColor(uiSub());
   gfx->setTextSize(1);
-  const char *hint="CADRES DEBLOQUES VIA LE POKEDEX";
+  const char *hint=T(S_FRAME_UNLOCK_HINT);
   gfx->setCursor(CX-(int)strlen(hint)*3,368);
   gfx->print(hint);
 
@@ -3603,7 +3625,7 @@ void renderClock() {
 
   gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
-  const char *title="REGLAGES";
+  const char *title=T(S_SETTINGS);
   gfx->setCursor(CX-(int)strlen(title)*9,34);
   gfx->print(title);
 
@@ -3624,7 +3646,7 @@ void renderClock() {
   const char *sl=soundModeLabel();
   drawSettingsRow(58,198,350,46,T(S_SOUND_LABEL),sl,false);
 
-  drawSettingsRow(58,250,350,46,T(S_POWER_SAVE_LABEL),powerSave ? "ON" : "OFF",powerSave);
+  drawSettingsRow(58,250,350,46,T(S_POWER_SAVE_LABEL),powerSave ? T(S_ON) : T(S_OFF),powerSave);
 
   char langVal[10];
   snprintf(langVal,sizeof(langVal),"%s",LANG_CODES[gLang]);
@@ -4519,7 +4541,7 @@ void renderCardProgress() {
     evo = T(S_FINAL_FORM);
   } else if (d.evolveLevel == 0) {
     // Pierre / échange / bonheur / beauté : aucun faux niveau.
-    evo = "EVOLUTION SPECIALE";
+    evo = T(S_SPECIAL_EVOLUTION);
     evoCol = UI_BAR_WARN;
   } else {
     int needed = d.evolveLevel;
@@ -4808,7 +4830,7 @@ void renderCard() {
   gfx->drawRoundRect(136, 394, 194, 42, 12, uiLine());
   gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
-  const char *cardBack="RETOUR";
+  const char *cardBack=T(S_LAN_BACK);
   gfx->setCursor(CX-(int)strlen(cardBack)*6,408);
   gfx->print(cardBack);
   gfx->flush();
@@ -4996,7 +5018,7 @@ void renderGallery() {
     // Pokémon capturé : bouton pour le choisir comme compagnon actif.
     if (caught || reg) {
       bool active = (galleryDetail == pet.speciesId);
-      const char *care = active ? "ACTIF" : "S'OCCUPER";
+      const char *care = active ? T(S_ACTIVE) : T(S_CARE_ACTION);
       uint16_t bc = active ? UI_TRACK : UI_BAR_OK;
       gfx->fillRoundRect(128, 386, 210, 42, 13, bc);
       gfx->setTextColor(UI_WHITE);
@@ -5097,7 +5119,7 @@ void renderGallery() {
   gfx->drawRoundRect(136, 398, 194, 40, 12, uiLine());
   gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
-  const char *dexBack="RETOUR";
+  const char *dexBack=T(S_LAN_BACK);
   gfx->setCursor(CX-(int)strlen(dexBack)*6,411);
   gfx->print(dexBack);
 
@@ -5247,7 +5269,7 @@ void drawHomeIdentity(const char *name, uint8_t level, uint16_t nameColor, const
   gfx->print(name);
 
   char lv[16];
-  snprintf(lv,sizeof(lv),"Niv.%u",(unsigned)level);
+  snprintf(lv,sizeof(lv),T(S_LVL_FMT),(unsigned)level);
   gfx->setTextColor(C565(0xff,0xd7,0x48));
   gfx->setTextSize(2);
   gfx->setCursor(CX-(int)strlen(lv)*6,70);

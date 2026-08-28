@@ -465,7 +465,7 @@ void audioBegin() {
   gReady = true;
   gQ = xQueueCreate(32, sizeof(AudioEvent));
   xTaskCreatePinnedToCore(audioTask, "audio", 4096, nullptr, 1, nullptr, 0);
-  sfxPlay(SFX_HATCH);  // jingle de arranque (confirma que suena)
+  // Pas de jingle bloquant au demarrage : l'OST peut prendre la main aussitot.
 }
 
 void sfxPlay(uint8_t id) {

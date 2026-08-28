@@ -1,9 +1,0 @@
-TamaPoke V9.14 - correction du transfert USB vers microSD
-
-- Le firmware attend désormais la réception complète de chaque bloc de 2 048 octets.
-- Un accusé de réception n'est plus envoyé pour un bloc partiel.
-- Le nombre d'octets réellement écrit sur la microSD est contrôlé.
-- Les erreurs distinguent maintenant ouverture, carte pleine, écriture et timeout USB.
-- Le bouton de réparation musicale affiche le fichier et la position d'une erreur.
-- La réparation conserve les sprites et remplace uniquement les trois OST.
-- Le volume des OST est augmenté d'environ 4 dB sans modifier les effets ni les cris.

@@ -1,4 +1,4 @@
-name: TamaPoke MoRetro - Build + Web Flasher
+name: TamaPoke Moretro3D - Firmware et page Web
 
 on:
   push:
@@ -106,7 +106,7 @@ jobs:
       - name: Conserver une copie du firmware compile
         uses: actions/upload-artifact@v4
         with:
-          name: TamaPoke-MoRetro-firmware
+          name: TamaPoke-Moretro3D-V9.17-firmware
           path: |
             web/firmware/*.bin
             web/manifest.json

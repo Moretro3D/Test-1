@@ -1,9 +1,0 @@
-TAMAPOKE MORETRO UI V3
-
-- Remplacement des anciennes icônes vectorielles par 6 vrais sprites pixel-art 16x16 intégrés au firmware.
-- Poké Ball réelle en pixel-art dans la case BALLE.
-- Nouveaux sprites Capture, Mémo, Nettoyage, Type et Combat.
-- Dessin optimisé par segments horizontaux (moins d'appels graphiques).
-- Cadence d'affichage légèrement accélérée pour une sensation plus fluide.
-- Écrans statiques toujours protégés par les flags Dirty : pas de redraw inutile.
-- Version web/firmware : 1.29.1-moretro-ui3 pour éviter le cache de l'ancienne version.

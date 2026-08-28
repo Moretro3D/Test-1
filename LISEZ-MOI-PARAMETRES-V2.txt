@@ -1,6 +1,0 @@
-PARAMÈTRES V2
-- Boutons AIDE et OK remontés.
-- Boutons légèrement agrandis.
-- Zones tactiles mises à jour.
-- Ajout d'une séparation visuelle discrète.
-- Aucun changement du gameplay ni des sauvegardes.

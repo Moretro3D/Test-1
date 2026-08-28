@@ -28,7 +28,7 @@ ok('gfx->fillRoundRect(136, 398, 194, 40' in ino, "bouton RETOUR Pokédex remont
 ok("galleryPage--" in ino and "galleryPage++" in ino, "navigation tactile flèches Pokédex")
 
 # Fiche
-ok('const char *cardBack="RETOUR"' in ino, "vrai bouton RETOUR fiche")
+ok('const char *cardBack=T(S_LAN_BACK)' in ino, "bouton RETOUR fiche traduit")
 ok('gfx->fillCircle(dotsX + i * 20, 374' in ino, "pagination fiche remontée")
 ok('y >= 388 && y <= 446' in ino, "zone tactile RETOUR fiche")
 ok("cardPage == 0 && y >= 366 && y <= 398" not in ino, "ancienne zone cachée de cadre supprimée")

@@ -1,10 +1,10 @@
 @echo off
 chcp 65001 >nul
-title TamaPoke MoRetro - Test-1 FINAL VERIFIE
+title TamaPoke Moretro3D V9.17 - Envoi Test-1
 cd /d "%~dp0"
 
 echo ============================================================
-echo   TamaPoke MoRetro - FINAL VERIFIE
+echo   TamaPoke Moretro3D V9.17 NORMAL
 echo ============================================================
 echo Depot : https://github.com/Moretro3D/Test-1
 echo.
@@ -38,7 +38,7 @@ echo [2/4] Ajout des fichiers...
 git add -A
 
 echo [3/4] Commit...
-git commit -m "TamaPoke MoRetro FINAL verifie"
+git commit -m "TamaPoke Moretro3D V9.17 normal"
 if errorlevel 1 echo Aucun nouveau changement a committer, poursuite...
 
 echo [4/4] Push GitHub...

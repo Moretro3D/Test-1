@@ -1,7 +1,0 @@
-TamaPoke V9.13 - réparation musique USB
-
-- Ajout d'un bouton « Réparer uniquement les musiques » sur la page GitHub.
-- Transfert de morning.wav, lofi.wav et night.wav sans commande PREPARE.
-- Aucun nettoyage ou remplacement des sprites pendant cette réparation.
-- Petit paquet music.pak dédié (environ 2,3 Mo).
-- Compatible avec une Pokéball déjà remontée : aucun accès physique à la SD.
