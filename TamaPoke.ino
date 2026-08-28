@@ -27,7 +27,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.43.0-moretro3d-v9.18-onboarding"
+#define FW_VERSION "1.44.1-moretro3d-v9.19.1-brand-center"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -389,10 +389,12 @@ void setup() {
   gfx->fillScreen(C565(0x10,0x18,0x2e));
   gfx->setTextColor(UI_WHITE);
   gfx->setTextSize(3);
-  gfx->setCursor(CX - 81, 176); gfx->print("POKETAMA");
+  // 8 caracteres x 6 px x taille 3 = 144 px : centre exact a x=161.
+  gfx->setCursor(CX - 72, 176); gfx->print("PokeTama");
   gfx->setTextColor(C565(0xff,0x3b,0x45));
   gfx->setTextSize(3);
-  gfx->setCursor(CX - 81, 224); gfx->print("MORETRO3D");
+  // 9 caracteres x 6 px x taille 3 = 162 px : centre exact a x=152.
+  gfx->setCursor(CX - 81, 224); gfx->print("Moretro3D");
   gfx->flush();
   panel->setBrightness(120);
 
@@ -1059,11 +1061,11 @@ void onTap(int16_t x, int16_t y) {
       return;
     }
     if (starterPreviewDex > 0) {
-      // Popup : confirmer en bas a droite, revenir en bas a gauche.
-      if (x >= 238 && x <= 374 && y >= 348 && y <= 400) {
+      // Page plein ecran : confirmer a droite, revenir a gauche.
+      if (x >= 240 && x <= 416 && y >= 392 && y <= 444) {
         pet.chooseStarter(starterPreviewDex);
         starterPreviewDex = 0;
-      } else if (x >= 92 && x <= 228 && y >= 348 && y <= 400) {
+      } else if (x >= 50 && x <= 226 && y >= 392 && y <= 444) {
         starterPreviewDex = 0;
       }
       starterDirty = true;
@@ -1073,7 +1075,8 @@ void onTap(int16_t x, int16_t y) {
       return;
     }
     if (starterGeneration == 0) {
-      if (x >= 28 && x <= 126 && y >= 52 && y <= 96) {
+      // Retour langue centre en bas.
+      if (x >= 82 && x <= 384 && y >= 392 && y <= 444) {
         starterLanguageChosen = false;
         starterDirty = true;
         markUiDirty();
@@ -1093,7 +1096,8 @@ void onTap(int16_t x, int16_t y) {
         }
       }
     } else {
-      if (x >= 28 && x <= 126 && y >= 52 && y <= 96) {
+      // Retour generations centre en bas.
+      if (x >= 82 && x <= 384 && y >= 392 && y <= 444) {
         starterGeneration = 0;
       } else {
         static const int BALL_X[3] = { 104, 233, 362 };
@@ -1486,7 +1490,7 @@ void drawStarterThumbCentered(const uint8_t *b, int cx, int cy, int maxSize) {
   const uint8_t *pal=b+3;
   const uint8_t *data=pal+n*2;
   int scale=maxSize;
-  while (scale > 2 && (w*scale > 190 || h*scale > 170)) scale--;
+  while (scale > 2 && (w*scale > 260 || h*scale > 220)) scale--;
   int x0=cx-(int)w*scale/2;
   int y0=cy-(int)h*scale/2;
   for (uint8_t y=0; y<h; y++) {
@@ -1513,8 +1517,8 @@ void renderStarterSelect() {
   gfx->fillScreen(uiBg());
 
   if (!starterLanguageChosen) {
-    drawStarterCentered("POKETAMA", 48, 3, uiInk());
-    drawStarterCentered("MORETRO3D", 86, 2, C565(0xe8,0x32,0x3f));
+    drawStarterCentered("PokeTama", 48, 3, uiInk());
+    drawStarterCentered("Moretro3D", 86, 2, C565(0xe8,0x32,0x3f));
     drawStarterCentered("LANGUAGE / LANGUE", 120, 1, uiSub());
     static const char *LANG_NAMES[6] = {
       "ESPANOL", "ENGLISH", "FRANCAIS", "DEUTSCH", "ITALIANO", "PORTUGUES"
@@ -1536,9 +1540,6 @@ void renderStarterSelect() {
   }
 
   if (starterGeneration == 0) {
-    gfx->fillRoundRect(28,52,98,44,12,uiPanel());
-    gfx->drawRoundRect(28,52,98,44,12,UI_TRACK);
-    gfx->setTextColor(uiInk()); gfx->setTextSize(1); gfx->setCursor(45,70); gfx->print("LANG");
     drawStarterCentered(T(S_CHOOSE_GENERATION), 92, 1, UI_TRACK);
     static const uint16_t GEN_COLORS[3] = { 0xF800, 0xFD20, 0x07E0 };
     for (uint8_t i = 0; i < 3; i++) {
@@ -1549,10 +1550,11 @@ void renderStarterSelect() {
       snprintf(generation, sizeof(generation), T(S_GENERATION_FMT), i + 1);
       drawStarterCentered(generation, gy + 22, 2, uiInk());
     }
+    gfx->fillRoundRect(82,392,302,52,14,UI_TRACK);
+    gfx->setTextColor(uiContrastText(UI_TRACK)); gfx->setTextSize(2);
+    const char *backText=T(S_LAN_BACK);
+    gfx->setCursor(CX-(int)strlen(backText)*6,410); gfx->print(backText);
   } else {
-    gfx->fillRoundRect(28, 52, 98, 44, 12, uiPanel());
-    gfx->drawRoundRect(28, 52, 98, 44, 12, UI_TRACK);
-    gfx->setTextColor(uiInk()); gfx->setTextSize(1); gfx->setCursor(49, 70); gfx->printf("< %s", T(S_LAN_BACK));
     char generation[20];
     snprintf(generation, sizeof(generation), T(S_GENERATION_FMT), starterGeneration);
     drawStarterCentered(generation, 112, 2, UI_TRACK);
@@ -1571,19 +1573,28 @@ void renderStarterSelect() {
       gfx->print(starterName);
     }
     drawStarterCentered(T(S_TOUCH_POKEBALL), 330, 1, uiSub());
+    gfx->fillRoundRect(82,392,302,52,14,UI_TRACK);
+    gfx->setTextColor(uiContrastText(UI_TRACK)); gfx->setTextSize(2);
+    const char *backText=T(S_LAN_BACK);
+    gfx->setCursor(CX-(int)strlen(backText)*6,410); gfx->print(backText);
   }
 
   if (starterPreviewDex > 0) {
     const DexEntry &de = DEX_TBL[starterPreviewDex];
-    gfx->fillRoundRect(58, 86, 350, 330, 22, uiPanel());
-    gfx->drawRoundRect(58, 86, 350, 330, 22, uiLine());
+    // Vraie fiche plein ecran, claire et sans carte posee au milieu.
+    gfx->fillScreen(UI_WHITE);
     const uint8_t *th = thumbs.get(starterPreviewDex);
-    drawStarterThumbCentered(th, CX, 205, 6);
-    drawStarterCentered(dexName(starterPreviewDex), 292, 3, de.accent);
-    gfx->fillRoundRect(92, 348, 136, 52, 14, UI_TRACK);
-    gfx->fillRoundRect(238, 348, 136, 52, 14, UI_BAR_OK);
-    gfx->setTextColor(uiContrastText(UI_TRACK)); gfx->setTextSize(2); gfx->setCursor(122, 366); gfx->print(T(S_LAN_BACK));
-    gfx->setTextColor(uiContrastText(UI_BAR_OK)); gfx->setCursor(258, 366); gfx->print(T(S_VALIDATE));
+    drawStarterThumbCentered(th, CX, 190, 8);
+    drawStarterCentered(dexName(starterPreviewDex), 302, 3, de.accent);
+    gfx->fillRoundRect(50,392,176,52,14,UI_TRACK);
+    gfx->fillRoundRect(240,392,176,52,14,UI_BAR_OK);
+    gfx->setTextSize(2);
+    const char *backText=T(S_LAN_BACK);
+    gfx->setTextColor(uiContrastText(UI_TRACK));
+    gfx->setCursor(138-(int)strlen(backText)*6,410); gfx->print(backText);
+    const char *okText=T(S_VALIDATE);
+    gfx->setTextColor(uiContrastText(UI_BAR_OK));
+    gfx->setCursor(328-(int)strlen(okText)*6,410); gfx->print(okText);
   }
   gfx->flush();
 }
