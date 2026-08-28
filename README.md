@@ -21,7 +21,10 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.21.1
+## Version V9.22
+
+- cadence d'affichage securisee pendant le lavage, le repas et les interactions sur l'accueil ;
+- suppression du chevauchement entre deux transferts complets vers l'AMOLED afin d'eviter les petits flashs noirs.
 
 - 386 Pokemon et leurs evolutions ;
 - six langues : francais, anglais, espagnol, allemand, italien et portugais ;

@@ -14,7 +14,7 @@ build = (root / "tools" / "build_web.sh").read_text(encoding="utf-8")
 
 def check(value, label):
     if not value:
-        raise SystemExit("ECHEC V9.21.1: " + label)
+        raise SystemExit("ECHEC V9.22: " + label)
     print("OK  ", label)
 
 all_public = "\n".join((ino, dex, pet, html, readme, build, json.dumps(manifest)))
@@ -71,11 +71,12 @@ check("speciesId == 133 && caughtTotal <= 1" in pet,
       "ancienne sauvegarde Evoli reparee")
 check("case 252: case 255: case 258:" in (root / "pet.h").read_text(encoding="utf-8") and
       "case 133" not in (root / "pet.h").read_text(encoding="utf-8"), "Evoli refuse comme starter")
-check(manifest["name"] == "PokeTama Moretro3D - V9.21.1", "manifest Moretro3D")
-check(manifest["version"] == "1.46.1-moretro3d-v9.21.1-starter-size", "version Web coherente")
-check('VERSION="1.46.1-moretro3d-v9.21.1-starter-size"' in build, "version de compilation coherente")
+check(manifest["name"] == "PokeTama Moretro3D - V9.22", "manifest Moretro3D")
+check(manifest["version"] == "1.46.2-moretro3d-v9.22-anti-flash", "version Web coherente")
+check('VERSION="1.46.2-moretro3d-v9.22-anti-flash"' in build, "version de compilation coherente")
+check('if (!powerSave) return 110;' in ino, "cadence AMOLED anti-chevauchement")
 check("PokeTama Moretro3D" in html and "Installer le firmware Moretro3D" in html,
       "page firmware Moretro3D")
 check("Moretro3D/Test-1" in readme, "page GitHub Moretro3D/Test-1")
 check(not re.search(r"\b(Care for|Could not|Connect the board|Done \()", html), "page utilisateur entierement en francais")
-print("AUDIT MORETRO3D V9.21.1 OK")
+print("AUDIT MORETRO3D V9.22 OK")

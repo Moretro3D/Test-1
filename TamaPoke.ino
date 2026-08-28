@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.1-moretro3d-v9.21.1-starter-size"
+#define FW_VERSION "1.46.2-moretro3d-v9.22-anti-flash"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -528,7 +528,12 @@ uint16_t renderIntervalMs() {
   if (galleryOpen || cardOpen || kbOpen || clockOpen || helpOpen || gameMenuOpen)
     return powerSave ? 400 : 135;
 
-  if (!powerSave) return 68;
+  // Le framebuffer 466x466 est envoye en entier au panneau. A 68 ms, un
+  // nouveau flush pouvait commencer juste avant la fin du precedent pendant
+  // manger, laver ou une interaction tactile : certaines revisions AMOLED
+  // montraient alors une image noire tres breve. On conserve des animations
+  // fluides, mais avec une marge DMA sure entre deux images completes.
+  if (!powerSave) return 110;
   if (dimStage >= 2) return 650;
   if (dimStage >= 1) return 250;
   return 120;

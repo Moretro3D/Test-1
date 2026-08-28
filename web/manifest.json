@@ -1,25 +1,25 @@
 {
-  "name": "PokeTama Moretro3D - V9.21.1",
-  "version": "1.46.1-moretro3d-v9.21.1-starter-size",
+  "name": "PokeTama Moretro3D - V9.22",
+  "version": "1.46.2-moretro3d-v9.22-anti-flash",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/poketama-1.46.1-moretro3d-v9.21.1-starter-size-bootloader.bin",
+          "path": "firmware/poketama-1.46.2-moretro3d-v9.22-anti-flash-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/poketama-1.46.1-moretro3d-v9.21.1-starter-size-partitions.bin",
+          "path": "firmware/poketama-1.46.2-moretro3d-v9.22-anti-flash-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/poketama-1.46.1-moretro3d-v9.21.1-starter-size-boot_app0.bin",
+          "path": "firmware/poketama-1.46.2-moretro3d-v9.22-anti-flash-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/poketama-1.46.1-moretro3d-v9.21.1-starter-size-app.bin",
+          "path": "firmware/poketama-1.46.2-moretro3d-v9.22-anti-flash-app.bin",
           "offset": 65536
         }
       ]
