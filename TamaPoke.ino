@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.8-moretro3d-v9.28-gba-food"
+#define FW_VERSION "1.46.9-moretro3d-v9.29-pokeball-pixel"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -1509,22 +1509,10 @@ void drawScene(uint8_t biome, uint32_t now, bool night) {
 }
 
 void drawStarterPokeball(int cx, int cy, int r) {
-  const uint16_t red = C565(0xe8, 0x32, 0x3f);
-  const uint16_t edge = C565(0x25, 0x28, 0x35);
-  gfx->fillCircle(cx + 3, cy + 5, r, C565(0xb8, 0xb5, 0xad));
-  // Deux demi-cercles calcules ligne par ligne : aucune couleur ne peut
-  // depasser du contour rond, contrairement a l'ancien rectangle rouge.
-  for (int yy = -r + 2; yy <= r - 2; yy++) {
-    int half = (int)sqrtf((float)((r - 2) * (r - 2) - yy * yy));
-    gfx->drawFastHLine(cx - half, cy + yy, half * 2 + 1, yy < 0 ? red : UI_WHITE);
-  }
-  gfx->drawCircle(cx, cy, r, edge);
-  gfx->drawCircle(cx, cy, r - 1, edge);
-  gfx->fillRoundRect(cx - r + 3, cy - 5, r * 2 - 6, 10, 5, edge);
-  gfx->fillCircle(cx, cy, 16, edge);
-  gfx->fillCircle(cx, cy, 11, UI_WHITE);
-  gfx->drawCircle(cx, cy, 11, C565(0x8d, 0x92, 0x9d));
-  gfx->fillCircle(cx, cy, 4, C565(0xe5, 0xe8, 0xee));
+  (void)r;
+  // Meme vraie Poke Ball pixel-art 16x16 que dans le reste du firmware.
+  // Echelle x5 : 80 px, centree dans chacune des trois zones tactiles.
+  drawMap(SPR_ICON_PLAY, 16, cx - 40, cy - 40, 5, false);
 }
 
 void drawStarterThumbCentered(const uint8_t *b, int16_t dex, int cx, int cy, int maxSize) {

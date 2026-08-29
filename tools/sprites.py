@@ -415,15 +415,14 @@ def icon_food():
 
 
 def icon_play():
-    g = G(16)
-    g.disk(8, 8, 6.2, 6.2, 'r', 'R')
-    g.disk(8, 11.4, 5.4, 3.2, 'w', 'Y')
-    g.outline()
-    g.rect(3, 8, 13, 8, 'k')
-    g.px(2, 8, 'k'); g.px(14, 8, 'k')
-    g.rect(7, 7, 9, 9, 'k')
-    g.px(8, 8, 'w')
-    return g.rows()
+    # Poke Ball 16x16 originale : contour net, reflet, ombre rouge,
+    # charniere centrale, double anneau et bouton blanc façon inventaire GBA.
+    return [
+        "................", ".....kkkkkk.....", "...kkrrrrrrkk...", "..krrwwrrrrRRk..",
+        ".krrwrrrrrrRRRk.", ".krrrrrrrrRRRRk.", "krrrrrrrrrrrrRRk", "kkkkkkkwwkkkkkkk",
+        "kwwwwwkwwkwwwwwk", "kwwwwwkkkkwwwwwk", "kwwwwwwwwwwwwwwk", ".kwwwwwwwwwwYYk.",
+        ".kwwwwwwwwwYYYk.", "..kwwwwwwYYYyk..", "...kkwwYYYYkk...", ".....kkkkkk.....",
+    ]
 
 
 def icon_light():

@@ -1,25 +1,25 @@
 {
-  "name": "PokeTama Moretro3D - V9.28",
-  "version": "1.46.8-moretro3d-v9.28-gba-food",
+  "name": "PokeTama Moretro3D - V9.29",
+  "version": "1.46.9-moretro3d-v9.29-pokeball-pixel",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/poketama-1.46.8-moretro3d-v9.28-gba-food-bootloader.bin",
+          "path": "firmware/poketama-1.46.9-moretro3d-v9.29-pokeball-pixel-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/poketama-1.46.8-moretro3d-v9.28-gba-food-partitions.bin",
+          "path": "firmware/poketama-1.46.9-moretro3d-v9.29-pokeball-pixel-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/poketama-1.46.8-moretro3d-v9.28-gba-food-boot_app0.bin",
+          "path": "firmware/poketama-1.46.9-moretro3d-v9.29-pokeball-pixel-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/poketama-1.46.8-moretro3d-v9.28-gba-food-app.bin",
+          "path": "firmware/poketama-1.46.9-moretro3d-v9.29-pokeball-pixel-app.bin",
           "offset": 65536
         }
       ]

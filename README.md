@@ -21,7 +21,11 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.28
+## Version V9.29
+
+- nouvelle Poke Ball 16x16 entierement redessinee en pixel-art ;
+- coque rouge ombree, reflet, separation centrale et bouton blanc ;
+- rendu inspire des interfaces GBA et integre directement au firmware.
 
 - nouvelles baies rouge, bleue et verte en pixel-art inspire de l'esthetique GBA ;
 - silhouettes et couleurs distinctes pour une lecture immediate ;
