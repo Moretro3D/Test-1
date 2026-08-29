@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.11-moretro3d-v9.31-icones-pixel"
+#define FW_VERSION "1.46.12-moretro3d-v9.32-pokeball-ajustee"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -5926,7 +5926,7 @@ void drawButtons() {
     if (!off) {
       // Bouton JOUER de l'accueil : même vraie Poké Ball pixel-art que la page RECORDS.
       // Les autres boutons conservent leurs sprites d'origine.
-      if (i == 1) drawMap(SPR_ICON_PLAY, 16, buttons[i].cx - 24, buttons[i].cy - 24, 3, false);
+      if (i == 1) drawMap(SPR_ICON_PLAY, 16, buttons[i].cx - 16, buttons[i].cy - 16, 2, false);
       else drawMap(buttons[i].icon, 16, buttons[i].cx - 16, buttons[i].cy - 16, 2, false);
     }
   }

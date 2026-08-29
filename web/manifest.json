@@ -1,25 +1,25 @@
 {
-  "name": "PokeTama Moretro3D - V9.31",
-  "version": "1.46.11-moretro3d-v9.31-icones-pixel",
+  "name": "PokeTama Moretro3D - V9.32",
+  "version": "1.46.12-moretro3d-v9.32-pokeball-ajustee",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/poketama-1.46.11-moretro3d-v9.31-icones-pixel-bootloader.bin",
+          "path": "firmware/poketama-1.46.12-moretro3d-v9.32-pokeball-ajustee-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/poketama-1.46.11-moretro3d-v9.31-icones-pixel-partitions.bin",
+          "path": "firmware/poketama-1.46.12-moretro3d-v9.32-pokeball-ajustee-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/poketama-1.46.11-moretro3d-v9.31-icones-pixel-boot_app0.bin",
+          "path": "firmware/poketama-1.46.12-moretro3d-v9.32-pokeball-ajustee-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/poketama-1.46.11-moretro3d-v9.31-icones-pixel-app.bin",
+          "path": "firmware/poketama-1.46.12-moretro3d-v9.32-pokeball-ajustee-app.bin",
           "offset": 65536
         }
       ]

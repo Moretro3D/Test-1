@@ -1,29 +1,29 @@
 @echo off
 chcp 65001 >nul
-title PokeTama Moretro3D V9.31 - Envoi Test-1
+title PokeTama Moretro3D V9.32 - Envoi Test-1
 cd /d "%~dp0"
 
 echo ============================================================
-echo   PokeTama Moretro3D V9.31
+echo   PokeTama Moretro3D V9.32
 echo ============================================================
 echo Depot : https://github.com/Moretro3D/Test-1
 echo.
 
 rem Refuse immediatement un ancien dossier V9.30 ouvert par erreur.
-findstr /C:"Version V9.31" "web\index.html" >nul 2>nul
+findstr /C:"Version V9.32" "web\index.html" >nul 2>nul
 if errorlevel 1 (
-  echo [ERREUR] Ce dossier n'est pas la V9.31.
+  echo [ERREUR] Ce dossier n'est pas la V9.32.
   echo Extrais le nouveau ZIP dans un dossier vide puis relance ce fichier.
   pause
   exit /b 1
 )
-findstr /C:"buttons[i].cx - 24" "TamaPoke.ino" >nul 2>nul
+findstr /C:"buttons[i].cx - 16, buttons[i].cy - 16, 2" "TamaPoke.ino" >nul 2>nul
 if errorlevel 1 (
-  echo [ERREUR] Correction Poke Ball V9.31 absente du firmware local.
+  echo [ERREUR] Ajustement Poke Ball V9.32 absent du firmware local.
   pause
   exit /b 1
 )
-echo [OK] Dossier local V9.31 et nouvelle Poke Ball verifies.
+echo [OK] Dossier local V9.32 et Poke Ball 32 px verifies.
 echo.
 
 where git >nul 2>nul
@@ -55,7 +55,7 @@ echo [2/4] Ajout des fichiers...
 git add -A
 
 echo [3/4] Commit...
-git commit -m "PokeTama Moretro3D V9.31 icones pixel art corrigees"
+git commit -m "PokeTama Moretro3D V9.32 Poke Ball accueil ajustee"
 if errorlevel 1 echo Aucun nouveau changement a committer, poursuite...
 
 echo [4/4] Push GitHub...
@@ -69,20 +69,20 @@ if errorlevel 1 (
 
 echo Verification de la version reellement recue par GitHub...
 git fetch origin main >nul 2>nul
-git show origin/main:web/index.html | findstr /C:"Version V9.31" >nul 2>nul
+git show origin/main:web/index.html | findstr /C:"Version V9.32" >nul 2>nul
 if errorlevel 1 (
   echo.
-  echo [ERREUR] GitHub ne contient toujours pas la V9.31.
+  echo [ERREUR] GitHub ne contient toujours pas la V9.32.
   echo Le message PUSH TERMINE ne sera pas affiche.
   pause
   exit /b 1
 )
-echo [OK] GitHub origin/main contient bien la V9.31.
+echo [OK] GitHub origin/main contient bien la V9.32.
 
 echo.
 echo ============================================================
 echo PUSH TERMINE
-echo VERSION DISTANTE VERIFIEE : V9.31
+echo VERSION DISTANTE VERIFIEE : V9.32
 echo ============================================================
 echo.
 echo IMPORTANT - UNE SEULE FOIS POUR CE NOUVEAU DEPOT :
