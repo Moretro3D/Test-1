@@ -29,11 +29,11 @@ ok("galleryPage--" in ino and "galleryPage++" in ino, "navigation tactile flèch
 
 # Fiche
 ok('const char *cardBack=T(S_LAN_BACK)' in ino, "bouton RETOUR fiche traduit")
-ok('gfx->setCursor(96, 405); gfx->print("<")' in ino and
-   'gfx->setCursor(354, 405); gfx->print(">")' in ino and
+ok('gfx->setCursor(96, navY + 11); gfx->print("<")' in ino and
+   'gfx->setCursor(354, navY + 11); gfx->print(">")' in ino and
    'dotsX' not in ino,
    "pagination fiche remplacee par deux fleches")
-ok('y >= 388 && y <= 446' in ino, "zone tactile RETOUR fiche")
+ok('y >= cardNavY && y <= cardNavY + 58' in ino, "zone tactile RETOUR fiche")
 ok("cardPage == 0 && y >= 366 && y <= 398" not in ino, "ancienne zone cachée de cadre supprimée")
 
 # Accueil / heure / habitat

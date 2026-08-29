@@ -14,7 +14,7 @@ build = (root / "tools" / "build_web.sh").read_text(encoding="utf-8")
 
 def check(value, label):
     if not value:
-        raise SystemExit("ECHEC V9.24: " + label)
+        raise SystemExit("ECHEC V9.25: " + label)
     print("OK  ", label)
 
 all_public = "\n".join((ino, dex, pet, html, readme, build, json.dumps(manifest)))
@@ -71,17 +71,31 @@ check("speciesId == 133 && caughtTotal <= 1" in pet,
       "ancienne sauvegarde Evoli reparee")
 check("case 252: case 255: case 258:" in (root / "pet.h").read_text(encoding="utf-8") and
       "case 133" not in (root / "pet.h").read_text(encoding="utf-8"), "Evoli refuse comme starter")
-check(manifest["name"] == "PokeTama Moretro3D - V9.24", "manifest Moretro3D")
-check(manifest["version"] == "1.46.4-moretro3d-v9.24-uniform-sprites", "version Web coherente")
-check('VERSION="1.46.4-moretro3d-v9.24-uniform-sprites"' in build, "version de compilation coherente")
+check(manifest["name"] == "PokeTama Moretro3D - V9.25", "manifest Moretro3D")
+check(manifest["version"] == "1.46.5-moretro3d-v9.25-polished-pages", "version Web coherente")
+check('VERSION="1.46.5-moretro3d-v9.25-polished-pages"' in build, "version de compilation coherente")
 check('if (!powerSave) return 110;' in ino, "cadence AMOLED anti-chevauchement")
 check('dotsX' not in ino and 'cardPage--;' in ino and 'cardPage++;' in ino,
       "fleches tactiles remplacent les billes de pages")
 check('(void)dex;' in ino and 'return 92;' in ino and
       'if (!pre && next) return 92;' not in ino,
       "une seule echelle reduite pour tous les sprites")
+check('drawCollectionFrame(CX, 146, 98' in ino, "cadre centre sur la silhouette")
+check('snprintf(bonus' not in ino and 'rewardWasComplete' in pet,
+      "recompense quotidienne unique apres trois objectifs")
+check('x + (196 - (int)strlen(desc) * 12) / 2' in ino,
+      "textes des medailles centres")
+check('uint16_t evoCol = darkMode ? UI_WHITE : UI_INK;' in ino and
+      'S_MISTAKES_FMT' not in ino,
+      "progres sombre lisible et negligences masquees")
+check('bool Pet::canRunawayNow() const {\n  return false;' in pet and
+      'line == "ABANDON"' not in ino and 'line == "RUN"' not in ino,
+      "aucun depart par negligence")
+check('cardPage == 2 || cardPage == 5 || cardPage == 6' in ino and
+      '? 370 : 394' in ino,
+      "retour et fleches remontes sur les trois pages")
 check("PokeTama Moretro3D" in html and "Installer le firmware Moretro3D" in html,
       "page firmware Moretro3D")
 check("Moretro3D/Test-1" in readme, "page GitHub Moretro3D/Test-1")
 check(not re.search(r"\b(Care for|Could not|Connect the board|Done \()", html), "page utilisateur entierement en francais")
-print("AUDIT MORETRO3D V9.24 OK")
+print("AUDIT MORETRO3D V9.25 OK")

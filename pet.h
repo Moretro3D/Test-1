@@ -112,7 +112,7 @@ public:
   uint32_t ageMinutes = 0;
   int16_t speciesId = -1;      // numero de Pokedex (1-386), -1 = huevo
   int16_t prevSpeciesId = -1;  // para la animacion de evolucion
-  uint8_t careMistakes = 0;   // descuidos: cada uno retrasa la evolucion 1 nivel
+  uint8_t careMistakes = 0;   // conserve uniquement pour compatibilite des sauvegardes
   bool sleeping = false;
   uint32_t lastSeenEpoch = 0;   // ultima hora RTC vista (para progresion offline)
   uint8_t ceremony = CER_NONE;  // despedida/escapada/liberacion en curso
@@ -202,7 +202,7 @@ public:
   void syncClock(uint32_t nowEpoch);  // aplica el tiempo transcurrido apagado
   void setClock(uint32_t nowEpoch);   // fija la hora sin aplicar progresion
   void startFarewell();  // tambien usable desde la consola serie (BYE)
-  void startRunaway();   // tambien usable desde la consola serie (RUN)
+  void startRunaway();   // ancien format de sauvegarde, non accessible dans l'interface
 
   bool isEgg() const { return speciesId < 0; }
   uint8_t eggCracks() const { return eggTaps; }
@@ -217,7 +217,7 @@ public:
   bool canEvolveNow() const;  // condiciones de evolucion cumplidas (lista)
   void evolve();              // dispara la transformacion (la llama un toque del usuario)
   bool canFarewellNow() const;  // forma final + 7 dias: lista para despedirse (boton)
-  bool canRunawayNow() const;   // abandono total 1h: lista para escaparse (boton triste)
+  bool canRunawayNow() const;   // toujours false : aucun depart par negligence
   // el usuario decide en un dialogo; "mantener/quedaros" pospone y re-ofrece luego
   bool wantEvolveButton() const { return canEvolveNow() && level() > evoDeclinedLv; }
   bool wantFarewellButton() const { return canFarewellNow() && ageMinutes >= farDeclinedAge; }

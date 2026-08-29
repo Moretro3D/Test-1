@@ -165,24 +165,11 @@ void Pet::tick() {
   if (hygiene < 30) dJoy -= 2;
   joy = clamp100(joy + dJoy);
 
-  // Descuido: dejar una estadistica por los suelos cuenta como error de
-  // cuidado (con enfriamiento para no contar el mismo descuido cada minuto)
-  if (mistakeCooldown > 0) mistakeCooldown--;
-  if (lowestStat() <= 10 && mistakeCooldown == 0) {
-    careMistakes++;
-    mistakeCooldown = 30;
-    if (bond > 3) bond -= 3;  // el descuido enfria el vinculo
-  }
-
   checkMedals();  // la evolucion la dispara el usuario (canEvolveNow + tap), no el tick
-
-  // abandono total: con TODO a cero durante una hora queda lista para escaparse;
-  // NO se va sola, la dispara el usuario con el boton (final triste, lo presencia)
-  if (fullness == 0 && joy == 0 && energy == 0 && hygiene == 0) {
-    if (neglectTicks < RUNAWAY_TICKS) neglectTicks++;
-  } else {
-    neglectTicks = 0;  // un solo cuidado la salva
-  }
+  // La negligence n'est plus comptabilisee et le Pokemon ne fuit jamais.
+  careMistakes = 0;
+  mistakeCooldown = 0;
+  neglectTicks = 0;
 
   // ciclo completo (forma final + 7 dias): la despedida NO salta sola; queda
   // lista (canFarewellNow) y la dispara el usuario con el boton, para que la vea
@@ -309,6 +296,8 @@ void Pet::noteDailyGoal(uint8_t goalType, uint8_t amount) {
   ensureDailyGoals();
   if (dailyGoalDay == 0) return;
   bool changed = false;
+  const uint8_t allDoneMask = (1 << DAILY_GOAL_COUNT) - 1;
+  bool rewardWasComplete = (dailyGoalDone & allDoneMask) == allDoneMask;
   for (uint8_t i = 0; i < DAILY_GOAL_COUNT; i++) {
     if (dailyGoalType[i] != goalType || dailyGoalComplete(i)) continue;
     uint8_t target = dailyGoalTarget(goalType);
@@ -317,10 +306,13 @@ void Pet::noteDailyGoal(uint8_t goalType, uint8_t amount) {
     changed = true;
     if (dailyGoalProgress[i] >= target) {
       dailyGoalDone |= (1 << i);
-      applyDailyReward();
-      heartUntil = millis() + HEART_MS;
-      sfxPlay(SFX_DAILY_GOAL);
     }
+  }
+  // Une seule recompense, directement au moment ou les trois objectifs sont faits.
+  if (!rewardWasComplete && (dailyGoalDone & allDoneMask) == allDoneMask) {
+    applyDailyReward();
+    heartUntil = millis() + HEART_MS;
+    sfxPlay(SFX_DAILY_GOAL);
   }
   if (changed) save();
 }
@@ -366,7 +358,7 @@ void Pet::checkMedals() {
   if (streak >= 7) medals |= MED_STREAK7;
   if (bond >= 100) medals |= MED_BOND;
   if (DEX_TBL[speciesId].evolvesTo == 0) medals |= MED_FINAL;
-  if (weight == 0 && level() >= 5 && careMistakes == 0) medals |= MED_FIT;
+  if (weight == 0 && level() >= 5) medals |= MED_FIT;
   uint16_t gained = medals & ~before;
   if (gained) {
     for (uint16_t m = gained; m; m &= (m - 1)) totalMedals++;
@@ -553,7 +545,7 @@ bool Pet::canFarewellNow() const {
 // abandono total durante 1h: lista para escaparse. La dispara el usuario con el
 // boton (final triste); cuidarla un solo tick la salva (neglectTicks se resetea)
 bool Pet::canRunawayNow() const {
-  return !isEgg() && !sleeping && ceremony == CER_NONE && neglectTicks >= RUNAWAY_TICKS;
+  return false;
 }
 
 void Pet::startFarewell() {
@@ -827,7 +819,7 @@ PetPersonality Pet::personality() const {
   if (weight >= 72 || energy <= 20) return PERS_LAZY;
   if (battleWins >= 8 || bestBattleStreak >= 4) return PERS_BRAVE;
   if (catchHi >= 18 || memoHi >= 8 || gameHi >= 24 || trSpe >= 55) return PERS_PLAYFUL;
-  if ((bond >= 45 && careMistakes <= 1) || (streak >= 5 && careMistakes == 0)) return PERS_CALM;
+  if (bond >= 45 || streak >= 5) return PERS_CALM;
   return PERS_BALANCED;
 }
 

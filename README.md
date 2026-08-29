@@ -21,7 +21,14 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.24
+## Version V9.25
+
+- page Quotidien lisible en noir et recompense unique apres les trois objectifs ;
+- textes des medailles centres ;
+- page Progres sans negligences et texte d'evolution blanc en mode sombre ;
+- cadre du profil recentre sur la silhouette du Pokemon ;
+- aucun depart ni abandon cause par un manque de soins ;
+- navigation Retour et fleches remontee sur Quotidien, Medailles et Progres.
 
 - une seule configuration de taille pour les 386 Pokemon ;
 - sprites uniformement reduits et centres sur leur silhouette pour un rendu plus propre.

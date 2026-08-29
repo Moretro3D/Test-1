@@ -9,7 +9,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 FQBN="esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
-VERSION="1.46.4-moretro3d-v9.24-uniform-sprites"
+VERSION="1.46.5-moretro3d-v9.25-polished-pages"
 
 echo "Préparation du sketch TamaPoke..."
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/tamapoke-ci.XXXXXX")"

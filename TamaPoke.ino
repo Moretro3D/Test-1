@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.4-moretro3d-v9.24-uniform-sprites"
+#define FW_VERSION "1.46.5-moretro3d-v9.25-polished-pages"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -587,12 +587,6 @@ void loop() {
   bool evoReady = pet.wantEvolveButton();
   if (evoReady && !wasEvoReady) sfxPlay(SFX_MEDAL);
   wasEvoReady = evoReady;
-  // aviso sombrio cuando el bicho esta a punto de escaparse por abandono
-  static bool wasRunReady = false;
-  bool runReady = pet.canRunawayNow();
-  if (runReady && !wasRunReady) sfxPlay(SFX_DENY);
-  wasRunReady = runReady;
-
   handleTouch();
   handleSerial();
   ensureMon();
@@ -790,14 +784,8 @@ void handleSerial() {
   } else if (line == "BYE") {
     pet.startFarewell();
     Serial.println("DONE");
-  } else if (line == "RUN") {
-    pet.startRunaway();
-    Serial.println("DONE");
   } else if (line == "BEEP") {
     sfxPlay(SFX_HATCH);  // prueba de audio
-    Serial.println("DONE");
-  } else if (line == "ABANDON") {
-    pet.dbgRunawayReady();  // fuerza el estado "lista para escaparse" (test del boton)
     Serial.println("DONE");
   } else if (line == "WIPE") {
     pet.factoryReset();     // borra NVS y reinicia -> partida nueva (eleccion de inicial)
@@ -1167,7 +1155,8 @@ void onTap(int16_t x, int16_t y) {
   if (pet.ceremony) return;  // durante la despedida no hay botones
   if (cardOpen) {
     // Fleches tactiles en complement du glissement horizontal.
-    if (y >= 388 && y <= 446 && x >= 76 && x <= 132) {
+    int cardNavY = (cardPage == 2 || cardPage == 5 || cardPage == 6) ? 364 : 388;
+    if (y >= cardNavY && y <= cardNavY + 58 && x >= 76 && x <= 132) {
       if (cardPage > 0) {
         cardPage--;
         expeditionTrainChoiceOpen = false;
@@ -1177,7 +1166,7 @@ void onTap(int16_t x, int16_t y) {
       lockTouchBrief();
       return;
     }
-    if (y >= 388 && y <= 446 && x >= 334 && x <= 390) {
+    if (y >= cardNavY && y <= cardNavY + 58 && x >= 334 && x <= 390) {
       if (cardPage + 1 < CARD_COUNT) {
         cardPage++;
         expeditionTrainChoiceOpen = false;
@@ -1187,7 +1176,7 @@ void onTap(int16_t x, int16_t y) {
       lockTouchBrief();
       return;
     }
-    if (x >= 136 && x <= 330 && y >= 388 && y <= 446) {
+    if (x >= 136 && x <= 330 && y >= cardNavY && y <= cardNavY + 58) {
       cardOpen=false;
       markUiDirty();
       lockTouchBrief();
@@ -1326,7 +1315,6 @@ void onTap(int16_t x, int16_t y) {
   // botones de final (mismo recuadro): escapada directa; despedida abre dialogo
   if (x >= FAR_BTN_X && x <= FAR_BTN_X + FAR_BTN_W &&
       y >= FAR_BTN_Y && y <= FAR_BTN_Y + FAR_BTN_H) {
-    if (pet.canRunawayNow()) { pet.startRunaway(); return; }
     if (pet.wantFarewellButton()) { choiceKind = 2; choiceUntil = millis() + 12000; return; }
   }
   for (int i = 0; i < 4; i++) {
@@ -1758,7 +1746,6 @@ void render() {
     drawPetEvent();
     if (gameMenuOpen) drawGameMenu();
     if (pet.wantEvolveButton()) drawEvolveButton();        // CTA rojo: evolucionar
-    else if (pet.canRunawayNow()) drawRunawayButton();     // CTA sombrio: escapada (abandono)
     else if (pet.wantFarewellButton()) drawFarewellButton();  // CTA dorado: despedida
   }
 
@@ -4128,7 +4115,8 @@ void renderCardProfile() {
   }
 
   // retrato grande animado mit dem aktuell ausgewaehlten Sammlerrahmen
-  drawCollectionFrame(CX, 206, 98, pet.collectionFrame);
+  // Le cadre entoure la silhouette, pas le point d'ancrage situe aux pieds.
+  drawCollectionFrame(CX, 146, 98, pet.collectionFrame);
   if (pmd.loaded) drawPmdAct(PMD_IDLE, CX, 206, millis(), true, false, 4);
 
   // racha con llama
@@ -4411,7 +4399,8 @@ void drawDailyGoalRow(int y, uint8_t idx) {
   gfx->fillRoundRect(58, y, 350, 52, 12, done ? col : uiPanel());
   gfx->drawRoundRect(58, y, 350, 52, 12, col);
   gfx->setTextSize(2);
-  gfx->setTextColor(done ? UI_BG_DAY : UI_INK);
+  // Page Quotidien volontairement en texte noir, y compris en mode sombre.
+  gfx->setTextColor(UI_INK);
   gfx->setCursor(82, y + 18);
   gfx->print(T(dailyGoalLabelId(type)));
 
@@ -4421,7 +4410,7 @@ void drawDailyGoalRow(int y, uint8_t idx) {
   gfx->print(done ? T(S_DONE) : prog);
   if (done) {
     gfx->fillCircle(374, y + 26, 12, UI_BG_DAY);
-    gfx->setTextColor(col);
+      gfx->setTextColor(UI_INK);
     gfx->setCursor(368, y + 18);
     gfx->print("v");
   }
@@ -4430,28 +4419,19 @@ void drawDailyGoalRow(int y, uint8_t idx) {
 // pagina 2: objetivos diarios
 void renderCardDaily() {
   pet.ensureDailyGoals();
-  gfx->setTextColor(uiInk());
+  gfx->setTextColor(UI_INK);
   gfx->setTextSize(3);
   gfx->setCursor(CX - strlen(T(S_DAILY)) * 9, 44);
   gfx->print(T(S_DAILY));
   const char *phase = T(dayPhaseTextId(currentDayPhase()));
-  gfx->setTextColor(UI_TRACK);
+  gfx->setTextColor(UI_INK);
   gfx->setTextSize(2);
   gfx->setCursor(CX - strlen(phase) * 6, 74);
   gfx->print(phase);
 
-  uint8_t done = 0;
   for (uint8_t i = 0; i < DAILY_GOAL_COUNT; i++) {
-    if (pet.dailyGoalComplete(i)) done++;
     drawDailyGoalRow(104 + i * 70, i);
   }
-
-  char bonus[24];
-  snprintf(bonus, sizeof(bonus), "%s %u/%u", T(S_REWARD), done, DAILY_GOAL_COUNT);
-  gfx->setTextColor(done == DAILY_GOAL_COUNT ? UI_BAR_OK : UI_TRACK);
-  gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(bonus) * 6, 324);
-  gfx->print(bonus);
 }
 
 #define BOX_ROWS 5
@@ -4646,17 +4626,11 @@ void renderCardMedals() {
     int x = 28 + (i % 2) * 206, y = 104 + (i / 2) * 54;
     bool g = pet.hasMedal(1 << i);
     gfx->fillRoundRect(x, y, 196, 44, 10, g ? UI_BAR_OK : UI_TRACK);
-    if (g) {  // marca de conseguida
-      gfx->fillCircle(x + 22, y + 22, 11, UI_BG_DAY);
-      gfx->setTextColor(UI_BAR_OK);
-      gfx->setTextSize(2);
-      gfx->setCursor(x + 16, y + 13);
-      gfx->print("v");
-    }
     gfx->setTextColor(g ? UI_BG_DAY : 0x8410);
     gfx->setTextSize(2);
-    gfx->setCursor(x + 44, y + 14);
-    gfx->print(medalDesc(i));
+    const char *desc = medalDesc(i);
+    gfx->setCursor(x + (196 - (int)strlen(desc) * 12) / 2, y + 14);
+    gfx->print(desc);
   }
 }
 
@@ -4695,7 +4669,7 @@ void renderCardProgress() {
   gfx->print(T(S_EVO_LABEL));
   char evoBuf[28];
   const char *evo;
-  uint16_t evoCol = UI_INK;
+  uint16_t evoCol = darkMode ? UI_WHITE : UI_INK;
   if (d.evolvesTo == 0) {
     evo = T(S_FINAL_FORM);
   } else if (d.evolveLevel == 0) {
@@ -4716,12 +4690,6 @@ void renderCardProgress() {
   gfx->setCursor(CX - strlen(evo) * 6, 256);
   gfx->print(evo);
 
-  // descuidos (retrasan la evolucion)
-  char ms[24];
-  snprintf(ms, sizeof(ms), T(S_MISTAKES_FMT), pet.careMistakes);
-  gfx->setTextColor(pet.careMistakes > 0 ? UI_BAR_BAD : UI_INK);
-  gfx->setCursor(CX - strlen(ms) * 6, 312);
-  gfx->print(ms);
 }
 
 StrId expeditionItemText(ExpeditionItem item) {
@@ -4979,24 +4947,27 @@ void renderCard() {
   else renderCardExpedition();
 
   // Pages remontées + vrai bouton RETOUR.
-  uint16_t prevCol = cardPage > 0 ? uiInk() : uiSub();
-  uint16_t nextCol = cardPage + 1 < CARD_COUNT ? uiInk() : uiSub();
-  gfx->fillRoundRect(76, 394, 56, 42, 12, uiPanel());
-  gfx->drawRoundRect(76, 394, 56, 42, 12, prevCol);
-  gfx->fillRoundRect(334, 394, 56, 42, 12, uiPanel());
-  gfx->drawRoundRect(334, 394, 56, 42, 12, nextCol);
+  int navY = (cardPage == 2 || cardPage == 5 || cardPage == 6) ? 370 : 394;
+  uint16_t navInk = cardPage == 2 ? UI_INK : uiInk();
+  uint16_t navSub = cardPage == 2 ? UI_INK : uiSub();
+  uint16_t prevCol = cardPage > 0 ? navInk : navSub;
+  uint16_t nextCol = cardPage + 1 < CARD_COUNT ? navInk : navSub;
+  gfx->fillRoundRect(76, navY, 56, 42, 12, uiPanel());
+  gfx->drawRoundRect(76, navY, 56, 42, 12, prevCol);
+  gfx->fillRoundRect(334, navY, 56, 42, 12, uiPanel());
+  gfx->drawRoundRect(334, navY, 56, 42, 12, nextCol);
   gfx->setTextSize(3);
   gfx->setTextColor(prevCol);
-  gfx->setCursor(96, 405); gfx->print("<");
+  gfx->setCursor(96, navY + 11); gfx->print("<");
   gfx->setTextColor(nextCol);
-  gfx->setCursor(354, 405); gfx->print(">");
+  gfx->setCursor(354, navY + 11); gfx->print(">");
 
-  gfx->fillRoundRect(136, 394, 194, 42, 12, uiPanel());
-  gfx->drawRoundRect(136, 394, 194, 42, 12, uiLine());
-  gfx->setTextColor(uiInk());
+  gfx->fillRoundRect(136, navY, 194, 42, 12, uiPanel());
+  gfx->drawRoundRect(136, navY, 194, 42, 12, uiLine());
+  gfx->setTextColor(navInk);
   gfx->setTextSize(2);
   const char *cardBack=T(S_LAN_BACK);
-  gfx->setCursor(CX-(int)strlen(cardBack)*6,408);
+  gfx->setCursor(CX-(int)strlen(cardBack)*6,navY + 14);
   gfx->print(cardBack);
   gfx->flush();
 }
