@@ -1,0 +1,9 @@
+POKETAMA MORETRO3D V9.31
+
+CORRECTIONS VERIFIEES :
+- meme Poke Ball SPR_ICON_PLAY sur l'accueil et le choix des starters ;
+- Poke Ball d'accueil affichee en 48 px ;
+- nouveau coeur d'affection pixel-art.
+
+UTILISER UNIQUEMENT : ENVOYER_SUR_GITHUB.bat
+Le lanceur controle maintenant la version locale et la version recue par GitHub.

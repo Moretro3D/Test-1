@@ -9,6 +9,23 @@ echo ============================================================
 echo Depot : https://github.com/Moretro3D/Test-1
 echo.
 
+rem Refuse immediatement un ancien dossier V9.30 ouvert par erreur.
+findstr /C:"Version V9.31" "web\index.html" >nul 2>nul
+if errorlevel 1 (
+  echo [ERREUR] Ce dossier n'est pas la V9.31.
+  echo Extrais le nouveau ZIP dans un dossier vide puis relance ce fichier.
+  pause
+  exit /b 1
+)
+findstr /C:"buttons[i].cx - 24" "TamaPoke.ino" >nul 2>nul
+if errorlevel 1 (
+  echo [ERREUR] Correction Poke Ball V9.31 absente du firmware local.
+  pause
+  exit /b 1
+)
+echo [OK] Dossier local V9.31 et nouvelle Poke Ball verifies.
+echo.
+
 where git >nul 2>nul
 if errorlevel 1 (
   echo [ERREUR] Git for Windows n'est pas installe.
@@ -50,9 +67,22 @@ if errorlevel 1 (
   exit /b 1
 )
 
+echo Verification de la version reellement recue par GitHub...
+git fetch origin main >nul 2>nul
+git show origin/main:web/index.html | findstr /C:"Version V9.31" >nul 2>nul
+if errorlevel 1 (
+  echo.
+  echo [ERREUR] GitHub ne contient toujours pas la V9.31.
+  echo Le message PUSH TERMINE ne sera pas affiche.
+  pause
+  exit /b 1
+)
+echo [OK] GitHub origin/main contient bien la V9.31.
+
 echo.
 echo ============================================================
 echo PUSH TERMINE
+echo VERSION DISTANTE VERIFIEE : V9.31
 echo ============================================================
 echo.
 echo IMPORTANT - UNE SEULE FOIS POUR CE NOUVEAU DEPOT :
