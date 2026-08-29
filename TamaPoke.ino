@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.5-moretro3d-v9.25-polished-pages"
+#define FW_VERSION "1.46.6-moretro3d-v9.26-round-ui"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -82,8 +82,8 @@ bool cardOpen = false;        // ficha del bicho (deslizar vertical)
 bool kbOpen = false;          // teclado para renombrar al bicho
 char nameBuf[12] = "";
 uint8_t nameLen = 0;
-#define CARD_COUNT 8
-uint8_t cardPage = 0;         // 0 perfil, 1 personalidad, 2 diario, 3 caja, 4 combate, 5 medallas, 6 progreso, 7 expedicion
+#define CARD_COUNT 9
+uint8_t cardPage = 0;         // 0 profil, 1 caractere, 2 quotidien, 3 boite, 4 combat, 5 medailles, 6 progres, 7 expedition, 8 records
 uint8_t boxPage = 0;
 uint8_t boxSort = 0;          // 0 dex, 1 tipo, 2 criados primero
 bool expeditionTrainChoiceOpen = false;
@@ -1155,7 +1155,7 @@ void onTap(int16_t x, int16_t y) {
   if (pet.ceremony) return;  // durante la despedida no hay botones
   if (cardOpen) {
     // Fleches tactiles en complement du glissement horizontal.
-    int cardNavY = (cardPage == 2 || cardPage == 5 || cardPage == 6) ? 364 : 388;
+    int cardNavY = cardPage == 3 ? 388 : 354;
     if (y >= cardNavY && y <= cardNavY + 58 && x >= 76 && x <= 132) {
       if (cardPage > 0) {
         cardPage--;
@@ -1217,12 +1217,12 @@ void onTap(int16_t x, int16_t y) {
           lockTouchBrief();
         }
       }
-    } else if (cardPage == 4 && y >= 286 && y <= 336 && x >= 82 && x <= 384) {
+    } else if (cardPage == 4 && y >= 264 && y <= 310 && x >= 82 && x <= 384) {
       cardOpen = false;
       markUiDirty();
       lockTouchBrief();
       startBattle();
-    } else if (cardPage == 4 && y >= 330 && y <= 388 && x >= 82 && x <= 384) {
+    } else if (cardPage == 4 && y >= 312 && y <= 358 && x >= 82 && x <= 384) {
       cardOpen = false;            // boton ENTRENAR FUERZA
       markUiDirty();
       lockTouchBrief();
@@ -4336,36 +4336,49 @@ void drawRecordSprite(int x, int y, uint8_t icon, uint8_t scale = 1) {
 }
 
 void drawPersonalityRecord(int x,int y,const char *label,uint16_t val,uint16_t color,uint8_t icon) {
-  const int w=118,h=42;
+  const int w=160,h=48;
   gfx->fillRoundRect(x,y,w,h,8,uiPanel());
   gfx->drawRoundRect(x,y,w,h,8,color);
 
   // Fond clair derrière le sprite : aspect "badge" propre.
-  gfx->fillRoundRect(x+7,y+9,24,24,6,lerp565(color, uiPanel(), 1, 5));
-  drawRecordSprite(x+11,y+13,icon);
+  gfx->fillRoundRect(x+8,y+12,24,24,6,lerp565(color, uiPanel(), 1, 5));
+  drawRecordSprite(x+12,y+16,icon);
 
   gfx->setTextColor(color);
   gfx->setTextSize(1);
-  gfx->setCursor(x+36,y+5);
+  gfx->setCursor(x+40,y+7);
   gfx->print(label);
 
   char num[8];
   snprintf(num,sizeof(num),"%u",val);
   gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
-  gfx->setCursor(x+36,y+19);
+  gfx->setCursor(x+40,y+23);
   gfx->print(num);
 }
 
-// pagina 1: personalidad calculada + records largos, sin tocar balance
+// Page Caractere : uniquement la personnalite et ses deux indicateurs.
 void renderCardPersonality() {
   PetPersonality pers=pet.personality(); const char *title=T(S_PERSONALITY); const char *name=T(personalityNameId(pers)); const char *hint=T(personalityHintId(pers)); uint16_t col=personalityColor(pers);
   gfx->setTextColor(uiInk()); gfx->setTextSize(3); gfx->setCursor(CX-strlen(title)*9,38); gfx->print(title);
   gfx->fillRoundRect(62,78,342,70,16,col); gfx->setTextColor(UI_BG_DAY); int nts=(strlen(name)<=10)?3:2; gfx->setTextSize(nts); gfx->setCursor(CX-strlen(name)*(nts==3?9:6),nts==3?96:103); gfx->print(name); gfx->setTextSize(2); gfx->setCursor(CX-strlen(hint)*6,128); gfx->print(hint);
-  drawCardStat(170,T(S_VIN),pet.bond,100,C565(0xd4,0x52,0x7e)); drawCardStat(208,T(S_BAR_JOY),pet.joy,100,UI_BAR_WARN);
-  gfx->setTextColor(uiInk()); gfx->setTextSize(2); gfx->setCursor(CX-strlen(T(S_RECORDS))*6,252); gfx->print(T(S_RECORDS));
-  drawPersonalityRecord(52,276,T(S_GAME_BALL),pet.gameHi,UI_BAR_OK,REC_BALL); drawPersonalityRecord(178,276,T(S_GAME_CATCH),pet.catchHi,UI_BAR_WARN,REC_CATCH); drawPersonalityRecord(304,276,T(S_GAME_MEMO),pet.memoHi,0x4C98,REC_MEMO);
-  drawPersonalityRecord(52,326,T(S_GAME_CLEAN),pet.cleanHi,UI_BAR_OK,REC_CLEAN); drawPersonalityRecord(178,326,T(S_GAME_TYPE),pet.typeHi,0xF3B7,REC_TYPE); drawPersonalityRecord(304,326,T(S_BATTLE),pet.bestBattleStreak,UI_BAR_BAD,REC_BATTLE);
+  drawCardStat(180,T(S_VIN),pet.bond,100,C565(0xd4,0x52,0x7e));
+  drawCardStat(226,T(S_BAR_JOY),pet.joy,100,UI_BAR_WARN);
+}
+
+// Page dediee aux records : six cases larges dans la zone sure du cercle.
+void renderCardRecords() {
+  const char *title=T(S_RECORDS);
+  gfx->setTextColor(uiInk());
+  gfx->setTextSize(3);
+  gfx->setCursor(CX-(int)strlen(title)*9,44);
+  gfx->print(title);
+  drawPersonalityRecord(68,94,T(S_GAME_BALL),pet.gameHi,UI_BAR_OK,REC_BALL);
+  drawPersonalityRecord(238,94,T(S_GAME_CATCH),pet.catchHi,UI_BAR_WARN,REC_CATCH);
+  drawPersonalityRecord(68,154,T(S_GAME_MEMO),pet.memoHi,0x4C98,REC_MEMO);
+  drawPersonalityRecord(238,154,T(S_GAME_CLEAN),pet.cleanHi,UI_BAR_OK,REC_CLEAN);
+  drawPersonalityRecord(68,214,T(S_GAME_TYPE),pet.typeHi,0xF3B7,REC_TYPE);
+  drawPersonalityRecord(238,214,T(S_BATTLE),pet.bestBattleStreak,UI_BAR_BAD,REC_BATTLE);
 }
 
 StrId dailyGoalLabelId(uint8_t goalType) {
@@ -4390,6 +4403,10 @@ uint16_t dailyGoalColor(uint8_t goalType) {
   }
 }
 
+uint16_t dailyTextColor() {
+  return darkMode ? UI_WHITE : UI_INK;
+}
+
 void drawDailyGoalRow(int y, uint8_t idx) {
   uint8_t type = pet.dailyGoalType[idx];
   uint8_t target = pet.dailyGoalTarget(type);
@@ -4399,8 +4416,7 @@ void drawDailyGoalRow(int y, uint8_t idx) {
   gfx->fillRoundRect(58, y, 350, 52, 12, done ? col : uiPanel());
   gfx->drawRoundRect(58, y, 350, 52, 12, col);
   gfx->setTextSize(2);
-  // Page Quotidien volontairement en texte noir, y compris en mode sombre.
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(dailyTextColor());
   gfx->setCursor(82, y + 18);
   gfx->print(T(dailyGoalLabelId(type)));
 
@@ -4410,7 +4426,7 @@ void drawDailyGoalRow(int y, uint8_t idx) {
   gfx->print(done ? T(S_DONE) : prog);
   if (done) {
     gfx->fillCircle(374, y + 26, 12, UI_BG_DAY);
-      gfx->setTextColor(UI_INK);
+    gfx->setTextColor(dailyTextColor());
     gfx->setCursor(368, y + 18);
     gfx->print("v");
   }
@@ -4419,12 +4435,12 @@ void drawDailyGoalRow(int y, uint8_t idx) {
 // pagina 2: objetivos diarios
 void renderCardDaily() {
   pet.ensureDailyGoals();
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(dailyTextColor());
   gfx->setTextSize(3);
   gfx->setCursor(CX - strlen(T(S_DAILY)) * 9, 44);
   gfx->print(T(S_DAILY));
   const char *phase = T(dayPhaseTextId(currentDayPhase()));
-  gfx->setTextColor(UI_INK);
+  gfx->setTextColor(dailyTextColor());
   gfx->setTextSize(2);
   gfx->setCursor(CX - strlen(phase) * 6, 74);
   gfx->print(phase);
@@ -4578,10 +4594,9 @@ void renderCardStats() {
   gfx->setCursor(CX - strlen(T(S_BATTLE)) * 9, 48);
   gfx->print(T(S_BATTLE));
 
-  drawCardStat(112, T(S_STAT_ATK), pet.atkStat(), 260, UI_BAR_BAD);
-  drawCardStat(150, T(S_STAT_DEF), pet.defStat(), 260, 0x4C98);
-  drawCardStat(188, T(S_STAT_SPE), pet.speStat(), 260, UI_BAR_WARN);
-  drawCardStat(226, T(S_STAT_WGT), pet.weight, 100, 0xB3C8);
+  drawCardStat(102, T(S_STAT_ATK), pet.atkStat(), 260, UI_BAR_BAD);
+  drawCardStat(142, T(S_STAT_DEF), pet.defStat(), 260, 0x4C98);
+  drawCardStat(182, T(S_STAT_SPE), pet.speStat(), 260, UI_BAR_WARN);
 
   char wl[20], bs[18], bb[16];
   snprintf(wl, sizeof(wl), T(S_WL_FMT), pet.battleWins, pet.battleLosses);
@@ -4589,24 +4604,24 @@ void renderCardStats() {
   snprintf(bb, sizeof(bb), T(S_BBEST_FMT), pet.bestBattleStreak);
   gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
-  gfx->setCursor(74, 266);
+  gfx->setCursor(74, 226);
   gfx->print(wl);
-  gfx->setCursor(210, 266);
+  gfx->setCursor(210, 226);
   gfx->print(bs);
-  gfx->setCursor(334, 266);
+  gfx->setCursor(334, 226);
   gfx->print(bb);
 
-  gfx->fillRoundRect(96, 294, 274, 36, 11, 0x4C98);
+  gfx->fillRoundRect(96, 264, 274, 40, 11, 0x4C98);
   gfx->setTextColor(uiContrastText(0x4C98));
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(T(S_WILD_BATTLE)) * 6, 305);
+  gfx->setCursor(CX - strlen(T(S_WILD_BATTLE)) * 6, 277);
   gfx->print(T(S_WILD_BATTLE));
 
   // boton: saco de entrenamiento de fuerza
-  gfx->fillRoundRect(96, 338, 274, 36, 11, UI_BAR_BAD);
+  gfx->fillRoundRect(96, 312, 274, 40, 11, UI_BAR_BAD);
   gfx->setTextColor(uiContrastText(UI_BAR_BAD));
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(T(S_TRAIN_STR)) * 6, 349);
+  gfx->setCursor(CX - strlen(T(S_TRAIN_STR)) * 6, 325);
   gfx->print(T(S_TRAIN_STR));
 }
 
@@ -4623,13 +4638,13 @@ void renderCardMedals() {
   gfx->print(head);
 
   for (int i = 0; i < MED_COUNT; i++) {
-    int x = 28 + (i % 2) * 206, y = 104 + (i / 2) * 54;
+    int x = 42 + (i % 2) * 196, y = 104 + (i / 2) * 54;
     bool g = pet.hasMedal(1 << i);
-    gfx->fillRoundRect(x, y, 196, 44, 10, g ? UI_BAR_OK : UI_TRACK);
+    gfx->fillRoundRect(x, y, 186, 44, 10, g ? UI_BAR_OK : UI_TRACK);
     gfx->setTextColor(g ? UI_BG_DAY : 0x8410);
     gfx->setTextSize(2);
     const char *desc = medalDesc(i);
-    gfx->setCursor(x + (196 - (int)strlen(desc) * 12) / 2, y + 14);
+    gfx->setCursor(x + (186 - (int)strlen(desc) * 12) / 2, y + 14);
     gfx->print(desc);
   }
 }
@@ -4944,12 +4959,13 @@ void renderCard() {
   else if (cardPage == 4) renderCardStats();
   else if (cardPage == 5) renderCardMedals();
   else if (cardPage == 6) renderCardProgress();
-  else renderCardExpedition();
+  else if (cardPage == 7) renderCardExpedition();
+  else renderCardRecords();
 
   // Pages remontées + vrai bouton RETOUR.
-  int navY = (cardPage == 2 || cardPage == 5 || cardPage == 6) ? 370 : 394;
-  uint16_t navInk = cardPage == 2 ? UI_INK : uiInk();
-  uint16_t navSub = cardPage == 2 ? UI_INK : uiSub();
+  int navY = cardPage == 3 ? 394 : 360;
+  uint16_t navInk = cardPage == 2 ? dailyTextColor() : uiInk();
+  uint16_t navSub = cardPage == 2 ? dailyTextColor() : uiSub();
   uint16_t prevCol = cardPage > 0 ? navInk : navSub;
   uint16_t nextCol = cardPage + 1 < CARD_COUNT ? navInk : navSub;
   gfx->fillRoundRect(76, navY, 56, 42, 12, uiPanel());
@@ -5839,7 +5855,8 @@ void drawPetPMD() {
     if (!pmd.has(act)) act = PMD_IDLE;
   }
 
-  drawPmdAct(act, (int)beh.x, PET_GROUND, now - beh.t0, loop || act == PMD_IDLE, false, 5);
+  // Meme plafond d'echelle que le portrait de la fiche profil.
+  drawPmdAct(act, (int)beh.x, PET_GROUND, now - beh.t0, loop || act == PMD_IDLE, false, 4);
 
   if (pet.showHeart()) drawMap(SPR_HEART, 32, (int)beh.x + 50, PET_GROUND - 190, 2, false);
 }

@@ -1,25 +1,25 @@
 {
-  "name": "PokeTama Moretro3D - V9.25",
-  "version": "1.46.5-moretro3d-v9.25-polished-pages",
+  "name": "PokeTama Moretro3D - V9.26",
+  "version": "1.46.6-moretro3d-v9.26-round-ui",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/poketama-1.46.5-moretro3d-v9.25-polished-pages-bootloader.bin",
+          "path": "firmware/poketama-1.46.6-moretro3d-v9.26-round-ui-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/poketama-1.46.5-moretro3d-v9.25-polished-pages-partitions.bin",
+          "path": "firmware/poketama-1.46.6-moretro3d-v9.26-round-ui-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/poketama-1.46.5-moretro3d-v9.25-polished-pages-boot_app0.bin",
+          "path": "firmware/poketama-1.46.6-moretro3d-v9.26-round-ui-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/poketama-1.46.5-moretro3d-v9.25-polished-pages-app.bin",
+          "path": "firmware/poketama-1.46.6-moretro3d-v9.26-round-ui-app.bin",
           "offset": 65536
         }
       ]

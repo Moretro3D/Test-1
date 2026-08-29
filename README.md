@@ -21,7 +21,14 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.25
+## Version V9.26
+
+- interface des fiches recomposee pour l'ecran rond 1,75 pouce ;
+- Pokemon anime de l'accueil reduit a la taille du portrait de profil ;
+- page Records separee de la page Caractere ;
+- Quotidien en texte blanc en mode sombre ;
+- PDS retire de la page Combat et contenu remonte ;
+- Retour et fleches remontes sur Profil, Caractere, Quotidien, Combat, Medailles, Progres, Expedition et Records.
 
 - page Quotidien lisible en noir et recompense unique apres les trois objectifs ;
 - textes des medailles centres ;

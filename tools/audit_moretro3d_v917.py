@@ -14,7 +14,7 @@ build = (root / "tools" / "build_web.sh").read_text(encoding="utf-8")
 
 def check(value, label):
     if not value:
-        raise SystemExit("ECHEC V9.25: " + label)
+        raise SystemExit("ECHEC V9.26: " + label)
     print("OK  ", label)
 
 all_public = "\n".join((ino, dex, pet, html, readme, build, json.dumps(manifest)))
@@ -71,9 +71,9 @@ check("speciesId == 133 && caughtTotal <= 1" in pet,
       "ancienne sauvegarde Evoli reparee")
 check("case 252: case 255: case 258:" in (root / "pet.h").read_text(encoding="utf-8") and
       "case 133" not in (root / "pet.h").read_text(encoding="utf-8"), "Evoli refuse comme starter")
-check(manifest["name"] == "PokeTama Moretro3D - V9.25", "manifest Moretro3D")
-check(manifest["version"] == "1.46.5-moretro3d-v9.25-polished-pages", "version Web coherente")
-check('VERSION="1.46.5-moretro3d-v9.25-polished-pages"' in build, "version de compilation coherente")
+check(manifest["name"] == "PokeTama Moretro3D - V9.26", "manifest Moretro3D")
+check(manifest["version"] == "1.46.6-moretro3d-v9.26-round-ui", "version Web coherente")
+check('VERSION="1.46.6-moretro3d-v9.26-round-ui"' in build, "version de compilation coherente")
 check('if (!powerSave) return 110;' in ino, "cadence AMOLED anti-chevauchement")
 check('dotsX' not in ino and 'cardPage--;' in ino and 'cardPage++;' in ino,
       "fleches tactiles remplacent les billes de pages")
@@ -83,19 +83,37 @@ check('(void)dex;' in ino and 'return 92;' in ino and
 check('drawCollectionFrame(CX, 146, 98' in ino, "cadre centre sur la silhouette")
 check('snprintf(bonus' not in ino and 'rewardWasComplete' in pet,
       "recompense quotidienne unique apres trois objectifs")
-check('x + (196 - (int)strlen(desc) * 12) / 2' in ino,
+check('x + (186 - (int)strlen(desc) * 12) / 2' in ino,
       "textes des medailles centres")
+check('int x = 42 + (i % 2) * 196' in ino and
+      'fillRoundRect(x, y, 186, 44' in ino,
+      "cases Medailles dans la zone circulaire sure")
 check('uint16_t evoCol = darkMode ? UI_WHITE : UI_INK;' in ino and
       'S_MISTAKES_FMT' not in ino,
       "progres sombre lisible et negligences masquees")
 check('bool Pet::canRunawayNow() const {\n  return false;' in pet and
       'line == "ABANDON"' not in ino and 'line == "RUN"' not in ino,
       "aucun depart par negligence")
-check('cardPage == 2 || cardPage == 5 || cardPage == 6' in ino and
-      '? 370 : 394' in ino,
-      "retour et fleches remontes sur les trois pages")
+check('#define CARD_COUNT 9' in ino and 'renderCardRecords();' in ino and
+      'drawPersonalityRecord(68,94' in ino,
+      "records separes sur une neuvieme page")
+check('drawCardStat(226,T(S_BAR_JOY)' in ino and
+      'drawPersonalityRecord(52,276' not in ino,
+      "page Caractere allegee sans records")
+check('return darkMode ? UI_WHITE : UI_INK;' in ino and
+      'cardPage == 2 ? dailyTextColor()' in ino,
+      "Quotidien blanc complet en mode sombre")
+check('T(S_STAT_WGT)' not in ino and 'drawCardStat(102, T(S_STAT_ATK)' in ino and
+      'gfx->fillRoundRect(96, 264, 274, 40' in ino,
+      "Combat sans PDS et contenu remonte")
+check('int navY = cardPage == 3 ? 394 : 360;' in ino and
+      'int cardNavY = cardPage == 3 ? 388 : 354;' in ino,
+      "navigation remontee dans la zone sure du cercle")
+check('drawPmdAct(act, (int)beh.x, PET_GROUND, now - beh.t0, loop || act == PMD_IDLE, false, 4);' in ino and
+      'drawPmdAct(PMD_IDLE, CX, 206, millis(), true, false, 4);' in ino,
+      "accueil et portrait utilisent le meme plafond de sprite")
 check("PokeTama Moretro3D" in html and "Installer le firmware Moretro3D" in html,
       "page firmware Moretro3D")
 check("Moretro3D/Test-1" in readme, "page GitHub Moretro3D/Test-1")
 check(not re.search(r"\b(Care for|Could not|Connect the board|Done \()", html), "page utilisateur entierement en francais")
-print("AUDIT MORETRO3D V9.25 OK")
+print("AUDIT MORETRO3D V9.26 OK")
