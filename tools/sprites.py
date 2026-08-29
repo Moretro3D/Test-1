@@ -404,13 +404,14 @@ def heart():
 # ------------------------------------------------------------ iconos botones
 
 def icon_food():
-    g = G(16)
-    g.disk(8, 9.5, 5.2, 4.8, 'r', 'R')
-    g.px(8, 3, 'C'); g.px(8, 4, 'C')
-    g.px(10, 3, 'g'); g.px(11, 3, 'g'); g.px(11, 2, 'g')
-    g.outline()
-    g.px(6, 7, 'w'); g.px(5, 8, 'w')
-    return g.rows()
+    # Baie rouge originale, style inventaire GBA : silhouette en poire,
+    # feuilles lisibles, reflet et petits grains dores.
+    return [
+        "................", ".......g........", "......ggg.......", ".....gGg........",
+        "......kk........", ".....krrk.......", "....krrrrk......", "...krrwrrrk.....",
+        "...krrrrrRk.....", "..krryrrrRRk....", "..krrrrrrRRk....", "...krrrrRRk.....",
+        "....krrRRk......", ".....kkkk.......", "................", "................",
+    ]
 
 
 def icon_play():
@@ -435,35 +436,33 @@ def icon_light():
 
 
 def icon_berry_blue():
-    g = G(16)
-    g.disk(8, 9.5, 5.2, 4.8, 'b', 'B')
-    g.px(8, 3, 'C'); g.px(8, 4, 'C')
-    g.px(10, 3, 'g'); g.px(11, 2, 'g')
-    g.outline()
-    g.px(6, 7, 'w'); g.px(5, 8, 'w')
-    return g.rows()
+    # Baie bleue ronde avec calice etoile et deux tons, distincte de la rouge.
+    return [
+        "................", "......g.g.......", ".......g........", ".....ggggg......",
+        "......kkk.......", "....kkbbbkk.....", "...kbbbwbbBk....", "..kbbbbbbbBBk...",
+        "..kbbNbbbbBBk...", "..kbbbNbbbBBk...", "...kbbbbbBBk....", "...kbbbbBBk.....",
+        "....kkBBBBk.....", "......kkkk......", "................", "................",
+    ]
 
 
 def icon_berry_green():
-    g = G(16)
-    g.disk(8, 9.5, 5.2, 4.8, 'g', 'G')
-    g.px(8, 3, 'C'); g.px(8, 4, 'C')
-    g.px(10, 3, 't'); g.px(11, 2, 't')
-    g.outline()
-    g.px(6, 7, 'w'); g.px(5, 8, 'w')
-    return g.rows()
+    # Baie verte nervuree, forme plus allongee pour la reconnaitre instantanement.
+    return [
+        "................", ".......t........", ".....ttTtt......", "......tkt.......",
+        ".....kgggk......", "....kggwggk.....", "...kgggGgggk....", "...kgggGgggk....",
+        "..kggggGggGGk...", "..kggggGggGGk...", "...kgggGgGGk....", "...kgggGGGGk....",
+        "....kggGGGk.....", ".....kkkkk......", "................", "................",
+    ]
 
 
 def icon_candy():
-    g = G(16)
-    g.disk(8, 8, 4.4, 3.6, 'p', 'P')
-    # envoltorio: picos a los lados
-    g.px(2, 6, 'p'); g.px(2, 8, 'p'); g.px(2, 10, 'p'); g.rect(3, 7, 3, 9, 'p')
-    g.px(13, 6, 'p'); g.px(13, 8, 'p'); g.px(13, 10, 'p'); g.rect(12, 7, 12, 9, 'p')
-    g.outline()
-    g.px(7, 6, 'w'); g.px(6, 7, 'w')
-    g.px(8, 8, 'P'); g.px(9, 9, 'P')
-    return g.rows()
+    # Super Bonbon : emballage bleu, coeur dore et eclat blanc façon objet rare.
+    return [
+        "................", "................", "..kk........kk..", ".kbbk......kbbk.",
+        "kbbBk.kkkk.kBbbk", ".kBBkkbwwbkkBBk.", "..kkbbyyyybkk...", "...kbyyfyBbk....",
+        "...kbyfffBbk....", "...kbByfBBBk....", "..kkbbBBBBbkk...", ".kbbkkbbbbkkBbk.",
+        "kbbk..kkkk..kBbk", ".kk..........kk.", "................", "................",
+    ]
 
 
 def icon_clean():

@@ -11,10 +11,11 @@ html = (root / "web" / "index.html").read_text(encoding="utf-8")
 readme = (root / "README.md").read_text(encoding="utf-8")
 manifest = json.loads((root / "web" / "manifest.json").read_text(encoding="utf-8"))
 build = (root / "tools" / "build_web.sh").read_text(encoding="utf-8")
+sprites_src = (root / "tools" / "sprites.py").read_text(encoding="utf-8")
 
 def check(value, label):
     if not value:
-        raise SystemExit("ECHEC V9.27: " + label)
+        raise SystemExit("ECHEC V9.28: " + label)
     print("OK  ", label)
 
 all_public = "\n".join((ino, dex, pet, html, readme, build, json.dumps(manifest)))
@@ -71,9 +72,9 @@ check("speciesId == 133 && caughtTotal <= 1" in pet,
       "ancienne sauvegarde Evoli reparee")
 check("case 252: case 255: case 258:" in (root / "pet.h").read_text(encoding="utf-8") and
       "case 133" not in (root / "pet.h").read_text(encoding="utf-8"), "Evoli refuse comme starter")
-check(manifest["name"] == "PokeTama Moretro3D - V9.27", "manifest Moretro3D")
-check(manifest["version"] == "1.46.7-moretro3d-v9.27-box-sprites", "version Web coherente")
-check('VERSION="1.46.7-moretro3d-v9.27-box-sprites"' in build, "version de compilation coherente")
+check(manifest["name"] == "PokeTama Moretro3D - V9.28", "manifest Moretro3D")
+check(manifest["version"] == "1.46.8-moretro3d-v9.28-gba-food", "version Web coherente")
+check('VERSION="1.46.8-moretro3d-v9.28-gba-food"' in build, "version de compilation coherente")
 check('if (!powerSave) return 110;' in ino, "cadence AMOLED anti-chevauchement")
 check('dotsX' not in ino and 'cardPage--;' in ino and 'cardPage++;' in ino,
       "fleches tactiles remplacent les billes de pages")
@@ -124,8 +125,15 @@ check('fillRoundRect(76, 292, 94, 38' in ino and
       "pagination Boite remontee et tactile")
 check('snprintf(name, sizeof(name), "#%03u %s"' not in ino,
       "ancienne liste de noms de la Boite supprimee")
+check('style inventaire GBA' in sprites_src and
+      'Baie bleue ronde avec calice etoile' in sprites_src and
+      'Baie verte nervuree' in sprites_src,
+      "trois nourritures GBA originales et distinctes")
+check('Super Bonbon : emballage bleu' in sprites_src and
+      '"...kbyyfyBbk...."' in sprites_src,
+      "Super Bonbon pixel-art integre")
 check("PokeTama Moretro3D" in html and "Installer le firmware Moretro3D" in html,
       "page firmware Moretro3D")
 check("Moretro3D/Test-1" in readme, "page GitHub Moretro3D/Test-1")
 check(not re.search(r"\b(Care for|Could not|Connect the board|Done \()", html), "page utilisateur entierement en francais")
-print("AUDIT MORETRO3D V9.27 OK")
+print("AUDIT MORETRO3D V9.28 OK")

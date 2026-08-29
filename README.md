@@ -21,7 +21,12 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.27
+## Version V9.28
+
+- nouvelles baies rouge, bleue et verte en pixel-art inspire de l'esthetique GBA ;
+- silhouettes et couleurs distinctes pour une lecture immediate ;
+- nouveau Super Bonbon avec emballage bleu et coeur dore ;
+- icones integrees au firmware, sans rechargement de la microSD.
 
 - navigation de la page Aide remontee dans la zone circulaire sure ;
 - Boite transformee en grille 4x2 de mini-sprites captures ;
