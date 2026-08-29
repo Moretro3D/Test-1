@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.6-moretro3d-v9.26-round-ui"
+#define FW_VERSION "1.46.7-moretro3d-v9.27-box-sprites"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -1155,7 +1155,7 @@ void onTap(int16_t x, int16_t y) {
   if (pet.ceremony) return;  // durante la despedida no hay botones
   if (cardOpen) {
     // Fleches tactiles en complement du glissement horizontal.
-    int cardNavY = cardPage == 3 ? 388 : 354;
+    int cardNavY = 354;
     if (y >= cardNavY && y <= cardNavY + 58 && x >= 76 && x <= 132) {
       if (cardPage > 0) {
         cardPage--;
@@ -1190,17 +1190,20 @@ void onTap(int16_t x, int16_t y) {
         boxPage = 0;
         cardDirty = true;
         sfxPlay(SFX_TAP);
-      } else if (x >= 76 && x <= 170 && y >= 348 && y <= 386) {
+      } else if (x >= 76 && x <= 170 && y >= 286 && y <= 334) {
         if (boxPage > 0) { boxPage--; cardDirty = true; }
         sfxPlay(SFX_TAP);
-      } else if (x >= 296 && x <= 390 && y >= 348 && y <= 386) {
+      } else if (x >= 296 && x <= 390 && y >= 286 && y <= 334) {
         uint8_t pages = boxPageCount();
         if (boxPage + 1 < pages) { boxPage++; cardDirty = true; }
         sfxPlay(SFX_TAP);
       } else {
-        int row = (y - 122) / 42;
-        if (row >= 0 && row < 5 && x >= 58 && x <= 408 && y >= 122 + row * 42 && y <= 156 + row * 42) {
-          int16_t dex = boxDexAt((uint16_t)boxPage * 5 + row);
+        int col = (x - 68) / 84;
+        int row = (y - 112) / 84;
+        if (col >= 0 && col < 4 && row >= 0 && row < 2 &&
+            x >= 68 + col * 84 && x <= 146 + col * 84 &&
+            y >= 112 + row * 84 && y <= 190 + row * 84) {
+          int16_t dex = boxDexAt((uint16_t)boxPage * 8 + row * 4 + col);
           if (dex > 0) {
             cardOpen = false;
             galleryOpen = true;
@@ -3600,24 +3603,24 @@ void renderHelp() {
   gfx->print(pg);
 
   if (helpPage > 0) {
-    gfx->fillRoundRect(48, 398, 82, 42, 12, uiPanel());
-    gfx->drawRoundRect(48, 398, 82, 42, 12, uiInk());
+    gfx->fillRoundRect(84, 370, 62, 42, 12, uiPanel());
+    gfx->drawRoundRect(84, 370, 62, 42, 12, uiInk());
     gfx->setTextColor(uiInk());
     gfx->setTextSize(2);
-    gfx->setCursor(72, 412);
+    gfx->setCursor(103, 384);
     gfx->print("<<");
   }
-  gfx->fillRoundRect(154, 398, 158, 42, 12, UI_BAR_OK);
+  gfx->fillRoundRect(154, 370, 158, 42, 12, UI_BAR_OK);
   gfx->setTextColor(uiContrastText(UI_BAR_OK));
   gfx->setTextSize(2);
   const char *ok = HELP_OK[lang];
-  gfx->setCursor(154 + (158 - (int)strlen(ok) * 12) / 2, 412);
+  gfx->setCursor(154 + (158 - (int)strlen(ok) * 12) / 2, 384);
   gfx->print(ok);
   if (helpPage + 1 < HELP_PAGE_COUNT) {
-    gfx->fillRoundRect(336, 398, 82, 42, 12, uiPanel());
-    gfx->drawRoundRect(336, 398, 82, 42, 12, uiInk());
+    gfx->fillRoundRect(320, 370, 62, 42, 12, uiPanel());
+    gfx->drawRoundRect(320, 370, 62, 42, 12, uiInk());
     gfx->setTextColor(uiInk());
-    gfx->setCursor(360, 412);
+    gfx->setCursor(339, 384);
     gfx->print(">>");
   }
   gfx->flush();
@@ -3633,14 +3636,14 @@ void openHelp() {
 }
 
 void helpTap(int16_t x, int16_t y) {
-  if (y >= 392 && y <= 448) {
-    if (x >= 48 && x <= 130 && helpPage > 0) {
+  if (y >= 364 && y <= 420) {
+    if (x >= 84 && x <= 146 && helpPage > 0) {
       helpPage--;
       helpDirty = true;
       sfxPlay(SFX_MENU);
       return;
     }
-    if (x >= 336 && x <= 418 && helpPage + 1 < HELP_PAGE_COUNT) {
+    if (x >= 320 && x <= 382 && helpPage + 1 < HELP_PAGE_COUNT) {
       helpPage++;
       helpDirty = true;
       sfxPlay(SFX_MENU);
@@ -4450,7 +4453,7 @@ void renderCardDaily() {
   }
 }
 
-#define BOX_ROWS 5
+#define BOX_ROWS 8
 
 bool boxComesBefore(int16_t a, int16_t b) {
   if (boxSort == 1) {
@@ -4541,49 +4544,40 @@ void renderCardBox() {
     return;
   }
 
+  // Grille 4x2 de mini-sprites captures, adaptee au cercle 1,75 pouce.
   for (uint8_t i = 0; i < BOX_ROWS; i++) {
     int16_t dex = boxDexAt((uint16_t)boxPage * BOX_ROWS + i);
     if (dex <= 0) break;
     const DexEntry &d = DEX_TBL[dex];
-    int y = 122 + i * 42;
-    bool raised = pet.isRegistered(dex);
-    gfx->fillRoundRect(58, y, 350, 34, 9, uiPanel());
-    gfx->drawRoundRect(58, y, 350, 34, 9, d.accent);
-    char name[24];
-    snprintf(name, sizeof(name), "#%03u %s", displayedDexNumber(dex), dexName(dex));
-    int ts = strlen(name) <= 16 ? 2 : 1;
-    gfx->setTextSize(ts);
-    gfx->setTextColor(uiInk());
-    gfx->setCursor(72, y + (ts == 2 ? 7 : 5));
-    gfx->print(name);
-    char types[22];
-    typeText(types, sizeof(types), d);
-    gfx->setTextSize(1);
-    gfx->setTextColor(battleTypeColor(d.type1));
-    gfx->setCursor(72, y + 24);
-    gfx->print(types);
-    if (raised) {
-      gfx->setTextColor(UI_BAR_OK);
-      gfx->setCursor(330, y + 15);
-      gfx->print(T(S_RAISED_MARK));
+    int col = i % 4, row = i / 4;
+    int x = 68 + col * 84, y = 112 + row * 84;
+    gfx->fillRoundRect(x, y, 78, 78, 12, uiPanel());
+    gfx->drawRoundRect(x, y, 78, 78, 12, d.accent);
+    const uint8_t *thumb = thumbs.get(dex);
+    if (thumb) drawStarterThumbCentered(thumb, dex, x + 39, y + 37, 2);
+    if (pet.isShinyRegistered(dex)) {
+      gfx->setTextColor(UI_BAR_WARN);
+      gfx->setTextSize(1);
+      gfx->setCursor(x + 62, y + 7);
+      gfx->print("*");
     }
   }
   uint16_t prevBg = boxPage > 0 ? UI_TRACK : C565(0xe4, 0xe8, 0xee);
   uint16_t nextBg = boxPage + 1 < pages ? UI_TRACK : C565(0xe4, 0xe8, 0xee);
-  gfx->fillRoundRect(76, 348, 94, 38, 11, prevBg);
-  gfx->fillRoundRect(296, 348, 94, 38, 11, nextBg);
+  gfx->fillRoundRect(76, 292, 94, 38, 11, prevBg);
+  gfx->fillRoundRect(296, 292, 94, 38, 11, nextBg);
   gfx->setTextSize(3);
   gfx->setTextColor(uiContrastText(prevBg));
-  gfx->setCursor(111, 357);
+  gfx->setCursor(111, 301);
   gfx->print("<");
   gfx->setTextColor(uiContrastText(nextBg));
-  gfx->setCursor(331, 357);
+  gfx->setCursor(331, 301);
   gfx->print(">");
   char pg[12];
   snprintf(pg, sizeof(pg), T(S_PAGE_FMT), boxPage + 1, pages);
   gfx->setTextColor(UI_TRACK);
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(pg) * 6, 360);
+  gfx->setCursor(CX - strlen(pg) * 6, 304);
   gfx->print(pg);
 }
 
@@ -4963,7 +4957,7 @@ void renderCard() {
   else renderCardRecords();
 
   // Pages remontées + vrai bouton RETOUR.
-  int navY = cardPage == 3 ? 394 : 360;
+  int navY = 360;
   uint16_t navInk = cardPage == 2 ? dailyTextColor() : uiInk();
   uint16_t navSub = cardPage == 2 ? dailyTextColor() : uiSub();
   uint16_t prevCol = cardPage > 0 ? navInk : navSub;

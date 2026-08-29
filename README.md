@@ -21,7 +21,12 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.26
+## Version V9.27
+
+- navigation de la page Aide remontee dans la zone circulaire sure ;
+- Boite transformee en grille 4x2 de mini-sprites captures ;
+- noms retires de la liste pour un rendu plus visuel ;
+- pagination interne de la Boite remontee et Retour aligne avec les autres fiches.
 
 - interface des fiches recomposee pour l'ecran rond 1,75 pouce ;
 - Pokemon anime de l'accueil reduit a la taille du portrait de profil ;

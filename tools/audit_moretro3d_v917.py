@@ -14,7 +14,7 @@ build = (root / "tools" / "build_web.sh").read_text(encoding="utf-8")
 
 def check(value, label):
     if not value:
-        raise SystemExit("ECHEC V9.26: " + label)
+        raise SystemExit("ECHEC V9.27: " + label)
     print("OK  ", label)
 
 all_public = "\n".join((ino, dex, pet, html, readme, build, json.dumps(manifest)))
@@ -71,9 +71,9 @@ check("speciesId == 133 && caughtTotal <= 1" in pet,
       "ancienne sauvegarde Evoli reparee")
 check("case 252: case 255: case 258:" in (root / "pet.h").read_text(encoding="utf-8") and
       "case 133" not in (root / "pet.h").read_text(encoding="utf-8"), "Evoli refuse comme starter")
-check(manifest["name"] == "PokeTama Moretro3D - V9.26", "manifest Moretro3D")
-check(manifest["version"] == "1.46.6-moretro3d-v9.26-round-ui", "version Web coherente")
-check('VERSION="1.46.6-moretro3d-v9.26-round-ui"' in build, "version de compilation coherente")
+check(manifest["name"] == "PokeTama Moretro3D - V9.27", "manifest Moretro3D")
+check(manifest["version"] == "1.46.7-moretro3d-v9.27-box-sprites", "version Web coherente")
+check('VERSION="1.46.7-moretro3d-v9.27-box-sprites"' in build, "version de compilation coherente")
 check('if (!powerSave) return 110;' in ino, "cadence AMOLED anti-chevauchement")
 check('dotsX' not in ino and 'cardPage--;' in ino and 'cardPage++;' in ino,
       "fleches tactiles remplacent les billes de pages")
@@ -106,14 +106,26 @@ check('return darkMode ? UI_WHITE : UI_INK;' in ino and
 check('T(S_STAT_WGT)' not in ino and 'drawCardStat(102, T(S_STAT_ATK)' in ino and
       'gfx->fillRoundRect(96, 264, 274, 40' in ino,
       "Combat sans PDS et contenu remonte")
-check('int navY = cardPage == 3 ? 394 : 360;' in ino and
-      'int cardNavY = cardPage == 3 ? 388 : 354;' in ino,
+check('int navY = 360;' in ino and 'int cardNavY = 354;' in ino,
       "navigation remontee dans la zone sure du cercle")
 check('drawPmdAct(act, (int)beh.x, PET_GROUND, now - beh.t0, loop || act == PMD_IDLE, false, 4);' in ino and
       'drawPmdAct(PMD_IDLE, CX, 206, millis(), true, false, 4);' in ino,
       "accueil et portrait utilisent le meme plafond de sprite")
+check('fillRoundRect(84, 370, 62, 42' in ino and
+      'fillRoundRect(154, 370, 158, 42' in ino and
+      'if (y >= 364 && y <= 420)' in ino,
+      "Aide OK et fleches remontes dans le cercle")
+check('#define BOX_ROWS 8' in ino and
+      'Grille 4x2 de mini-sprites captures' in ino and
+      'drawStarterThumbCentered(thumb, dex, x + 39, y + 37, 2)' in ino,
+      "Boite visuelle avec huit mini-sprites captures")
+check('fillRoundRect(76, 292, 94, 38' in ino and
+      'x >= 76 && x <= 170 && y >= 286 && y <= 334' in ino,
+      "pagination Boite remontee et tactile")
+check('snprintf(name, sizeof(name), "#%03u %s"' not in ino,
+      "ancienne liste de noms de la Boite supprimee")
 check("PokeTama Moretro3D" in html and "Installer le firmware Moretro3D" in html,
       "page firmware Moretro3D")
 check("Moretro3D/Test-1" in readme, "page GitHub Moretro3D/Test-1")
 check(not re.search(r"\b(Care for|Could not|Connect the board|Done \()", html), "page utilisateur entierement en francais")
-print("AUDIT MORETRO3D V9.26 OK")
+print("AUDIT MORETRO3D V9.27 OK")
