@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.9-moretro3d-v9.29-pokeball-pixel"
+#define FW_VERSION "1.46.10-moretro3d-v9.30-pokeball-coeur-pixel"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 

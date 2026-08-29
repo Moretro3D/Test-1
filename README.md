@@ -21,7 +21,10 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.29
+## Version V9.30
+
+- La vraie Poke Ball pixel-art est affichee sur l'accueil a cote des baies et dans le choix du starter.
+- Le coeur de reaction a ete entierement redessine en pixel art 32x32 : contour net, creux central, reflet et ombre, sans effet Mickey.
 
 - nouvelle Poke Ball 16x16 entierement redessinee en pixel-art ;
 - coque rouge ombree, reflet, separation centrale et bouton blanc ;

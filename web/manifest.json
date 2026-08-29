@@ -1,25 +1,25 @@
 {
-  "name": "PokeTama Moretro3D - V9.29",
-  "version": "1.46.9-moretro3d-v9.29-pokeball-pixel",
+  "name": "PokeTama Moretro3D - V9.30",
+  "version": "1.46.10-moretro3d-v9.30-pokeball-coeur-pixel",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/poketama-1.46.9-moretro3d-v9.29-pokeball-pixel-bootloader.bin",
+          "path": "firmware/poketama-1.46.10-moretro3d-v9.30-pokeball-coeur-pixel-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/poketama-1.46.9-moretro3d-v9.29-pokeball-pixel-partitions.bin",
+          "path": "firmware/poketama-1.46.10-moretro3d-v9.30-pokeball-coeur-pixel-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/poketama-1.46.9-moretro3d-v9.29-pokeball-pixel-boot_app0.bin",
+          "path": "firmware/poketama-1.46.10-moretro3d-v9.30-pokeball-coeur-pixel-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/poketama-1.46.9-moretro3d-v9.29-pokeball-pixel-app.bin",
+          "path": "firmware/poketama-1.46.10-moretro3d-v9.30-pokeball-coeur-pixel-app.bin",
           "offset": 65536
         }
       ]
