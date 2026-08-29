@@ -21,7 +21,11 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.30
+## Version V9.31
+
+- L'accueil utilise desormais exactement la meme Poke Ball que le choix du starter, en 48 px.
+- L'ancien sprite REC_BALL n'est plus utilise pour le bouton Jouer.
+- Le coeur est redessine comme une icone d'affection Pokemon compacte, avec reflet et ombre.
 
 - La vraie Poke Ball pixel-art est affichee sur l'accueil a cote des baies et dans le choix du starter.
 - Le coeur de reaction a ete entierement redessine en pixel art 32x32 : contour net, creux central, reflet et ombre, sans effet Mickey.
