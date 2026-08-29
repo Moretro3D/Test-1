@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.2-moretro3d-v9.22-anti-flash"
+#define FW_VERSION "1.46.4-moretro3d-v9.24-uniform-sprites"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -205,16 +205,12 @@ bool hasPreEvolution(int16_t dex) {
   return false;
 }
 
-// Echelle coherente entre les 386 especes : base legerement plus petite,
-// evolution intermediaire normale, forme finale legerement plus grande.
+// Une seule configuration visuelle pour les 386 especes. Le cadrage se fait
+// toujours sur la silhouette visible, puis cette reduction uniforme evite les
+// gros sprites qui donnaient un rendu irregulier selon l'evolution.
 uint8_t spriteSizePercent(int16_t dex) {
-  if (dex < 1 || dex > DEX_COUNT) return 100;
-  bool pre = hasPreEvolution(dex);
-  bool next = DEX_TBL[dex].evolvesTo != 0;
-  if (!pre && next) return 92;
-  if (pre && next) return 100;
-  if (pre && !next) return 108;
-  return 100;
+  (void)dex;
+  return 92;
 }
 
 #define CX 233  // centro de la pantalla redonda
@@ -1170,7 +1166,28 @@ void onTap(int16_t x, int16_t y) {
   }
   if (pet.ceremony) return;  // durante la despedida no hay botones
   if (cardOpen) {
-    if (x >= 120 && x <= 346 && y >= 388 && y <= 446) {
+    // Fleches tactiles en complement du glissement horizontal.
+    if (y >= 388 && y <= 446 && x >= 76 && x <= 132) {
+      if (cardPage > 0) {
+        cardPage--;
+        expeditionTrainChoiceOpen = false;
+        cardDirty = true;
+        sfxPlay(SFX_MENU);
+      } else sfxPlay(SFX_DENY);
+      lockTouchBrief();
+      return;
+    }
+    if (y >= 388 && y <= 446 && x >= 334 && x <= 390) {
+      if (cardPage + 1 < CARD_COUNT) {
+        cardPage++;
+        expeditionTrainChoiceOpen = false;
+        cardDirty = true;
+        sfxPlay(SFX_MENU);
+      } else sfxPlay(SFX_DENY);
+      lockTouchBrief();
+      return;
+    }
+    if (x >= 136 && x <= 330 && y >= 388 && y <= 446) {
       cardOpen=false;
       markUiDirty();
       lockTouchBrief();
@@ -4962,11 +4979,17 @@ void renderCard() {
   else renderCardExpedition();
 
   // Pages remontées + vrai bouton RETOUR.
-  int dotsX = CX - ((CARD_COUNT - 1) * 20) / 2;
-  for (int i = 0; i < CARD_COUNT; i++) {
-    if (i == cardPage) gfx->fillCircle(dotsX + i * 20, 374, 4, uiInk());
-    else gfx->drawCircle(dotsX + i * 20, 374, 3, uiSub());
-  }
+  uint16_t prevCol = cardPage > 0 ? uiInk() : uiSub();
+  uint16_t nextCol = cardPage + 1 < CARD_COUNT ? uiInk() : uiSub();
+  gfx->fillRoundRect(76, 394, 56, 42, 12, uiPanel());
+  gfx->drawRoundRect(76, 394, 56, 42, 12, prevCol);
+  gfx->fillRoundRect(334, 394, 56, 42, 12, uiPanel());
+  gfx->drawRoundRect(334, 394, 56, 42, 12, nextCol);
+  gfx->setTextSize(3);
+  gfx->setTextColor(prevCol);
+  gfx->setCursor(96, 405); gfx->print("<");
+  gfx->setTextColor(nextCol);
+  gfx->setCursor(354, 405); gfx->print(">");
 
   gfx->fillRoundRect(136, 394, 194, 42, 12, uiPanel());
   gfx->drawRoundRect(136, 394, 194, 42, 12, uiLine());

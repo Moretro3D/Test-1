@@ -1,10 +1,10 @@
 @echo off
 chcp 65001 >nul
-title PokeTama Moretro3D V9.22 - Envoi Test-1
+title PokeTama Moretro3D V9.24 - Envoi Test-1
 cd /d "%~dp0"
 
 echo ============================================================
-echo   PokeTama Moretro3D V9.22
+echo   PokeTama Moretro3D V9.24
 echo ============================================================
 echo Depot : https://github.com/Moretro3D/Test-1
 echo.
@@ -38,7 +38,7 @@ echo [2/4] Ajout des fichiers...
 git add -A
 
 echo [3/4] Commit...
-git commit -m "PokeTama Moretro3D V9.22 anti flash AMOLED"
+git commit -m "PokeTama Moretro3D V9.24 sprites uniformes"
 if errorlevel 1 echo Aucun nouveau changement a committer, poursuite...
 
 echo [4/4] Push GitHub...

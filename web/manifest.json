@@ -1,25 +1,25 @@
 {
-  "name": "PokeTama Moretro3D - V9.22",
-  "version": "1.46.2-moretro3d-v9.22-anti-flash",
+  "name": "PokeTama Moretro3D - V9.24",
+  "version": "1.46.4-moretro3d-v9.24-uniform-sprites",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/poketama-1.46.2-moretro3d-v9.22-anti-flash-bootloader.bin",
+          "path": "firmware/poketama-1.46.4-moretro3d-v9.24-uniform-sprites-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/poketama-1.46.2-moretro3d-v9.22-anti-flash-partitions.bin",
+          "path": "firmware/poketama-1.46.4-moretro3d-v9.24-uniform-sprites-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/poketama-1.46.2-moretro3d-v9.22-anti-flash-boot_app0.bin",
+          "path": "firmware/poketama-1.46.4-moretro3d-v9.24-uniform-sprites-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/poketama-1.46.2-moretro3d-v9.22-anti-flash-app.bin",
+          "path": "firmware/poketama-1.46.4-moretro3d-v9.24-uniform-sprites-app.bin",
           "offset": 65536
         }
       ]

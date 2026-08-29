@@ -21,7 +21,13 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.22
+## Version V9.24
+
+- une seule configuration de taille pour les 386 Pokemon ;
+- sprites uniformement reduits et centres sur leur silhouette pour un rendu plus propre.
+
+- petites billes de pagination supprimees sur les fiches coulissantes ;
+- fleches gauche et droite propres, visibles et tactiles de chaque cote du bouton Retour.
 
 - cadence d'affichage securisee pendant le lavage, le repas et les interactions sur l'accueil ;
 - suppression du chevauchement entre deux transferts complets vers l'AMOLED afin d'eviter les petits flashs noirs.
