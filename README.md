@@ -21,7 +21,11 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.33
+## Version V9.34
+
+- Ecran de demarrage recentre optiquement sur le disque 466x466.
+- Logo place a Y=96, PokeTama a Y=284 et Moretro3D a Y=326.
+- Affichage prolonge de 1,5 seconde apres l'initialisation, sans frame noire.
 
 - Chaque bouton d'accueil possede maintenant sa position, son cadre, sa taille de sprite, son decalage et sa zone tactile.
 - La Poke Ball est reglee independamment a 28 px ; les autres icones restent a 32 px.

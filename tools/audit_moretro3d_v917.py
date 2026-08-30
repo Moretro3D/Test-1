@@ -15,7 +15,7 @@ sprites_src = (root / "tools" / "sprites.py").read_text(encoding="utf-8")
 
 def check(value, label):
     if not value:
-        raise SystemExit("ECHEC V9.33: " + label)
+        raise SystemExit("ECHEC V9.34: " + label)
     print("OK  ", label)
 
 all_public = "\n".join((ino, dex, pet, html, readme, build, json.dumps(manifest)))
@@ -32,13 +32,13 @@ check("STARTER_COLORS[3]" in ino and "// plante" in ino and "// feu" in ino and 
       "couleurs Plante vert, Feu rouge, Eau bleu")
 check("drawStarterCentered(T(S_TOUCH_POKEBALL), 330, 1, 0x0000)" in ino,
       "instruction Pokeball noire")
-check('gfx->setCursor(CX - 72, 238); gfx->print("PokeTama")' in ino and
-      'gfx->setCursor(CX - 81, 280); gfx->print("Moretro3D")' in ino and
+check('gfx->setCursor(CX - 70, 284); gfx->print("PokeTama")' in ino and
+      'gfx->setCursor(CX - 79, 326); gfx->print("Moretro3D")' in ino and
       'drawStarterCentered("PokeTama", 48, 3' in ino and
       'drawStarterCentered("Moretro3D", 86, 2' in ino,
       "marque centree au demarrage et sur la langue")
 check('#include "brand_logo.h"' in ino and
-      'drawBrandLogo(CX - BRAND_LOGO_W / 2, 36)' in ino and
+      'drawBrandLogo(CX - BRAND_LOGO_W / 2 + 1, 96)' in ino and
       (root / "brand_logo.h").is_file() and
       (root / "assets" / "moretro3d-logo-transparent.png").is_file(),
       "logo Moretro3D transparent embarque au demarrage")
@@ -72,9 +72,9 @@ check("speciesId == 133 && caughtTotal <= 1" in pet,
       "ancienne sauvegarde Evoli reparee")
 check("case 252: case 255: case 258:" in (root / "pet.h").read_text(encoding="utf-8") and
       "case 133" not in (root / "pet.h").read_text(encoding="utf-8"), "Evoli refuse comme starter")
-check(manifest["name"] == "PokeTama Moretro3D - V9.33", "manifest Moretro3D")
-check(manifest["version"] == "1.46.13-moretro3d-v9.33-boutons-independants", "version Web coherente")
-check('VERSION="1.46.13-moretro3d-v9.33-boutons-independants"' in build, "version de compilation coherente")
+check(manifest["name"] == "PokeTama Moretro3D - V9.34", "manifest Moretro3D")
+check(manifest["version"] == "1.46.14-moretro3d-v9.34-demarrage-centre", "version Web coherente")
+check('VERSION="1.46.14-moretro3d-v9.34-demarrage-centre"' in build, "version de compilation coherente")
 check('if (!powerSave) return 110;' in ino, "cadence AMOLED anti-chevauchement")
 check('dotsX' not in ino and 'cardPage--;' in ino and 'cardPage++;' in ino,
       "fleches tactiles remplacent les billes de pages")
@@ -144,8 +144,14 @@ check('uint8_t frameSize' in ino and 'uint8_t iconSize' in ino and
       '{ 202, 404, SPR_ICON_PLAY,  52, 28, 36, 0, 0 }' in ino and
       'drawMapSized(buttons[i].icon' in ino,
       "reglage independant des quatre boutons au pixel pres")
+check('drawBrandLogo(CX - BRAND_LOGO_W / 2 + 1, 96)' in ino and
+      'setCursor(CX - 70, 284)' in ino and
+      'setCursor(CX - 79, 326)' in ino,
+      "logo et textes de demarrage centres optiquement")
+check('delay(1500);' in ino and "aucun flash noir" in ino,
+      "demarrage prolonge de 1,5 seconde sans flash")
 check("PokeTama Moretro3D" in html and "Installer le firmware Moretro3D" in html,
       "page firmware Moretro3D")
 check("Moretro3D/Test-1" in readme, "page GitHub Moretro3D/Test-1")
 check(not re.search(r"\b(Care for|Could not|Connect the board|Done \()", html), "page utilisateur entierement en francais")
-print("AUDIT MORETRO3D V9.33 OK")
+print("AUDIT MORETRO3D V9.34 OK")

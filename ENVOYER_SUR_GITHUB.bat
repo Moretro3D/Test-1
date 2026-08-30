@@ -1,29 +1,29 @@
 @echo off
 chcp 65001 >nul
-title PokeTama Moretro3D V9.33 - Envoi Test-1
+title PokeTama Moretro3D V9.34 - Envoi Test-1
 cd /d "%~dp0"
 
 echo ============================================================
-echo   PokeTama Moretro3D V9.33
+echo   PokeTama Moretro3D V9.34
 echo ============================================================
 echo Depot : https://github.com/Moretro3D/Test-1
 echo.
 
 rem Refuse immediatement un ancien dossier V9.30 ouvert par erreur.
-findstr /C:"Version V9.33" "web\index.html" >nul 2>nul
+findstr /C:"Version V9.34" "web\index.html" >nul 2>nul
 if errorlevel 1 (
-  echo [ERREUR] Ce dossier n'est pas la V9.33.
+  echo [ERREUR] Ce dossier n'est pas la V9.34.
   echo Extrais le nouveau ZIP dans un dossier vide puis relance ce fichier.
   pause
   exit /b 1
 )
 findstr /C:"SPR_ICON_PLAY,  52, 28, 36" "TamaPoke.ino" >nul 2>nul
 if errorlevel 1 (
-  echo [ERREUR] Reglage independant Poke Ball V9.33 absent.
+  echo [ERREUR] Reglage independant Poke Ball absent.
   pause
   exit /b 1
 )
-echo [OK] Dossier local V9.33 et Poke Ball 28 px verifies.
+echo [OK] Dossier local V9.34 et demarrage centre verifies.
 echo.
 
 where git >nul 2>nul
@@ -55,7 +55,7 @@ echo [2/4] Ajout des fichiers...
 git add -A
 
 echo [3/4] Commit...
-git commit -m "PokeTama Moretro3D V9.33 boutons independants"
+git commit -m "PokeTama Moretro3D V9.34 demarrage centre et audite"
 if errorlevel 1 echo Aucun nouveau changement a committer, poursuite...
 
 echo [4/4] Push GitHub...
@@ -69,20 +69,20 @@ if errorlevel 1 (
 
 echo Verification de la version reellement recue par GitHub...
 git fetch origin main >nul 2>nul
-git show origin/main:web/index.html | findstr /C:"Version V9.33" >nul 2>nul
+git show origin/main:web/index.html | findstr /C:"Version V9.34" >nul 2>nul
 if errorlevel 1 (
   echo.
-  echo [ERREUR] GitHub ne contient toujours pas la V9.33.
+  echo [ERREUR] GitHub ne contient toujours pas la V9.34.
   echo Le message PUSH TERMINE ne sera pas affiche.
   pause
   exit /b 1
 )
-echo [OK] GitHub origin/main contient bien la V9.33.
+echo [OK] GitHub origin/main contient bien la V9.34.
 
 echo.
 echo ============================================================
 echo PUSH TERMINE
-echo VERSION DISTANTE VERIFIEE : V9.33
+echo VERSION DISTANTE VERIFIEE : V9.34
 echo ============================================================
 echo.
 echo IMPORTANT - UNE SEULE FOIS POUR CE NOUVEAU DEPOT :

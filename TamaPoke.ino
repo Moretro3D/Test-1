@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.13-moretro3d-v9.33-boutons-independants"
+#define FW_VERSION "1.46.14-moretro3d-v9.34-demarrage-centre"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -416,15 +416,17 @@ void setup() {
   // splash apparait tout de suite pendant l'initialisation SD/audio/sprites.
   panel->setBrightness(0);
   gfx->fillScreen(C565(0x10,0x18,0x2e));
-  drawBrandLogo(CX - BRAND_LOGO_W / 2, 36);
+  // Composition centree dans le disque 466x466. Le contenu reel du logo est
+  // decale d'un demi-pixel a gauche : +1 px donne le centre optique exact.
+  drawBrandLogo(CX - BRAND_LOGO_W / 2 + 1, 96);
   gfx->setTextColor(UI_WHITE);
   gfx->setTextSize(3);
   // 8 caracteres x 6 px x taille 3 = 144 px : centre exact a x=161.
-  gfx->setCursor(CX - 72, 238); gfx->print("PokeTama");
+  gfx->setCursor(CX - 70, 284); gfx->print("PokeTama");
   gfx->setTextColor(C565(0xff,0x3b,0x45));
   gfx->setTextSize(3);
   // 9 caracteres x 6 px x taille 3 = 162 px : centre exact a x=152.
-  gfx->setCursor(CX - 81, 280); gfx->print("Moretro3D");
+  gfx->setCursor(CX - 79, 326); gfx->print("Moretro3D");
   gfx->flush();
   panel->setBrightness(120);
 
@@ -469,6 +471,10 @@ void setup() {
   uint8_t audioTheme=(audioHour>=7 && audioHour<13) ? 0 : ((audioHour>=13 && audioHour<20) ? 1 : 2);
   audioPreloadMusic(audioTheme);  // réserve la PSRAM avant sprites/miniatures
   thumbs.load();
+
+  // Laisse profiter de l'ecran de marque 1,5 seconde supplementaire une fois
+  // l'initialisation terminee. Le framebuffer reste stable : aucun flash noir.
+  delay(1500);
 
   lastInteract = millis();
   ensureMon();
