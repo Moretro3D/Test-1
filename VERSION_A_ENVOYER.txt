@@ -1,6 +1,9 @@
-POKETAMA MORETRO3D V9.42
+POKETAMA MORETRO3D V9.43
 
 CORRECTIONS VERIFIEES :
+- page Shopify intégrable sans header ni footer PokeTama ;
+- Custom Liquid fourni dans le dossier shopify ;
+- hauteur synchronisée automatiquement sur PC et téléphone ;
 - six drapeaux chargés comme images SVG locales, sans emoji ;
 - compatibilité Chrome, Edge, Google Pages et mobile ;
 - visuel limité à l'écran rond avec contour transparent ;

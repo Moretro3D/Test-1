@@ -36,19 +36,15 @@
 </head>
 <body>
 <div class="wrap">
-  <header class="topbar">
-    <div class="brand"><img src="moretro3d-logo.png" alt="Logo MoRetro3D"><span>MoRetro3D</span></div>
-    <div class="header-actions"><nav class="languages" aria-label="Choix de la langue">
+  <div class="embed-toolbar"><nav class="languages" aria-label="Choix de la langue">
       <button type="button" class="lang" data-lang="fr" title="Français" aria-label="Français"><img src="flags/fr.svg" alt="France" draggable="false"></button>
       <button type="button" class="lang" data-lang="en" title="English" aria-label="English"><img src="flags/gb.svg" alt="United Kingdom" draggable="false"></button>
       <button type="button" class="lang" data-lang="es" title="Español" aria-label="Español"><img src="flags/es.svg" alt="España" draggable="false"></button>
       <button type="button" class="lang" data-lang="de" title="Deutsch" aria-label="Deutsch"><img src="flags/de.svg" alt="Deutschland" draggable="false"></button>
       <button type="button" class="lang" data-lang="it" title="Italiano" aria-label="Italiano"><img src="flags/it.svg" alt="Italia" draggable="false"></button>
       <button type="button" class="lang" data-lang="pt" title="Português" aria-label="Português"><img src="flags/pt.svg" alt="Portugal" draggable="false"></button>
-    </nav><div class="version">Firmware V9.43</div></div>
-  </header>
-
-  <section class="hero">
+    </nav></div>
+<section class="hero">
     <div>
       <div class="eyebrow" data-i18n="eyebrow">Compagnon Pokémon de poche</div>
       <h1>PokeTama<br><span class="gradient">Moretro3D</span></h1>
@@ -95,10 +91,7 @@
     <div class="info"><strong data-i18n="firstTitle">Premier démarrage</strong><p data-i18n="firstDesc">Choisis la langue, la génération 1, 2 ou 3, puis ton Pokémon de départ.</p></div>
     <div class="info"><strong data-i18n="safeTitle">Mise à jour sûre</strong><p data-i18n="safeDesc">Ta sauvegarde reste intacte avec une installation sans effacement.</p></div>
     <div class="info"><strong data-i18n="compatibleTitle">Navigateur compatible</strong><p data-i18n="compatibleDesc">Utilise Chrome ou Edge sur ordinateur avec un câble USB de données.</p></div>
-  </div>
-
-  <footer><span data-i18n="footer1">Projet communautaire gratuit et non commercial par MoRetro3D.</span><span data-i18n="footer2">Pokémon appartient à Nintendo, Game Freak et The Pokémon Company. Sprites : PMD SpriteCollab.</span></footer>
-</div>
+  </div></div>
 
 <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js"></script>
 <script>
@@ -282,5 +275,16 @@ document.getElementById('auto').onclick = async () => {
 };
 
 </script>
-</body>
+<script>
+(function(){
+  function sendHeight(){
+    var h=Math.max(document.body.scrollHeight,document.documentElement.scrollHeight);
+    parent.postMessage({type:'poketama-shopify-height',height:h},'*');
+  }
+  addEventListener('load',sendHeight);
+  addEventListener('resize',sendHeight);
+  new MutationObserver(sendHeight).observe(document.documentElement,{subtree:true,childList:true,attributes:true});
+  setTimeout(sendHeight,300); setTimeout(sendHeight,1200);
+})();
+</script></body>
 </html>

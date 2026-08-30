@@ -1,25 +1,25 @@
 {
-  "name": "PokeTama Moretro3D - V9.42",
-  "version": "1.46.22-moretro3d-v9.42-drapeaux-images",
+  "name": "PokeTama Moretro3D - V9.43",
+  "version": "1.46.23-moretro3d-v9.43-shopify-embed",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/poketama-1.46.22-moretro3d-v9.42-drapeaux-images-bootloader.bin",
+          "path": "firmware/poketama-1.46.23-moretro3d-v9.43-shopify-embed-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/poketama-1.46.22-moretro3d-v9.42-drapeaux-images-partitions.bin",
+          "path": "firmware/poketama-1.46.23-moretro3d-v9.43-shopify-embed-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/poketama-1.46.22-moretro3d-v9.42-drapeaux-images-boot_app0.bin",
+          "path": "firmware/poketama-1.46.23-moretro3d-v9.43-shopify-embed-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/poketama-1.46.22-moretro3d-v9.42-drapeaux-images-app.bin",
+          "path": "firmware/poketama-1.46.23-moretro3d-v9.43-shopify-embed-app.bin",
           "offset": 65536
         }
       ]

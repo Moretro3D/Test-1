@@ -1,0 +1,64 @@
+{% comment %}
+  PokeTama Moretro3D — bloc Custom Liquid Shopify
+  À coller dans une section « Liquid personnalisé » de la page /pages/poketama.
+  Le header et le footer restent ceux du thème Shopify.
+{% endcomment %}
+
+<section id="poketama-shopify-page" class="poketama-shopify-page" aria-label="PokeTama Moretro3D">
+  <iframe
+    id="poketama-shopify-frame"
+    class="poketama-shopify-frame"
+    src="https://moretro3d.github.io/Test-1/shopify.html"
+    title="PokeTama Moretro3D — Installation"
+    loading="eager"
+    allow="serial; usb"
+    referrerpolicy="strict-origin-when-cross-origin">
+  </iframe>
+  <noscript>
+    <p class="poketama-shopify-fallback">
+      JavaScript est nécessaire. <a href="https://moretro3d.github.io/Test-1/" target="_blank" rel="noopener">Ouvrir la page PokeTama</a>.
+    </p>
+  </noscript>
+</section>
+
+<style>
+  #poketama-shopify-page {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #090b18;
+  }
+  #poketama-shopify-frame {
+    display: block;
+    width: 100%;
+    min-height: 1500px;
+    border: 0;
+    background: #090b18;
+  }
+  .poketama-shopify-fallback {
+    max-width: 720px;
+    margin: 40px auto;
+    padding: 20px;
+    color: #f7f8ff;
+    text-align: center;
+  }
+  .poketama-shopify-fallback a { color: #36d9ff; }
+  @media (max-width: 760px) {
+    #poketama-shopify-frame { min-height: 2500px; }
+  }
+</style>
+
+<script>
+  (function () {
+    var frame = document.getElementById('poketama-shopify-frame');
+    if (!frame) return;
+    window.addEventListener('message', function (event) {
+      if (event.origin !== 'https://moretro3d.github.io') return;
+      if (!event.data || event.data.type !== 'poketama-shopify-height') return;
+      var height = Number(event.data.height);
+      if (!Number.isFinite(height)) return;
+      frame.style.height = Math.max(900, Math.min(height + 4, 5000)) + 'px';
+    });
+  })();
+</script>

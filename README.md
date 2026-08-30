@@ -21,7 +21,12 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.42
+## Version V9.43
+
+- Nouvelle page `shopify.html` dédiée à l'intégration dans Moretro3D.fr.
+- Contenu central uniquement : aucun header ni footer ajouté par PokeTama.
+- Custom Liquid Shopify fourni avec hauteur responsive automatique.
+- Page GitHub normale conservée telle quelle.
 
 - Emojis des langues remplacés par six véritables drapeaux SVG locaux.
 - Affichage des langues indépendant des polices emoji de Chrome et Google.

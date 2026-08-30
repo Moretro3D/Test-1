@@ -1,18 +1,18 @@
 @echo off
 chcp 65001 >nul
-title PokeTama Moretro3D V9.42 - Envoi Test-1
+title PokeTama Moretro3D V9.43 - Envoi Test-1
 cd /d "%~dp0"
 
 echo ============================================================
-echo   PokeTama Moretro3D V9.42
+echo   PokeTama Moretro3D V9.43
 echo ============================================================
 echo Depot : https://github.com/Moretro3D/Test-1
 echo.
 
 rem Refuse immediatement un ancien dossier V9.30 ouvert par erreur.
-findstr /C:"Firmware V9.42" "web\index.html" >nul 2>nul
+findstr /C:"Firmware V9.43" "web\index.html" >nul 2>nul
 if errorlevel 1 (
-  echo [ERREUR] Ce dossier n'est pas la V9.42.
+  echo [ERREUR] Ce dossier n'est pas la V9.43.
   echo Extrais le nouveau ZIP dans un dossier vide puis relance ce fichier.
   pause
   exit /b 1
@@ -23,7 +23,7 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-echo [OK] Dossier local V9.42 et Drapeaux images compatibles Google verifies.
+echo [OK] Dossier local V9.43 et Integration Shopify sans header footer verifies.
 echo.
 
 where git >nul 2>nul
@@ -55,7 +55,7 @@ echo [2/4] Ajout des fichiers...
 git add -A
 
 echo [3/4] Commit...
-git commit -m "PokeTama Moretro3D V9.42 drapeaux images compatibles Google"
+git commit -m "PokeTama Moretro3D V9.43 integration Shopify sans header footer"
 if errorlevel 1 echo Aucun nouveau changement a committer, poursuite...
 
 echo [4/4] Push GitHub...
@@ -69,20 +69,20 @@ if errorlevel 1 (
 
 echo Verification de la version reellement recue par GitHub...
 git fetch origin main >nul 2>nul
-git show origin/main:web/index.html | findstr /C:"Firmware V9.42" >nul 2>nul
+git show origin/main:web/index.html | findstr /C:"Firmware V9.43" >nul 2>nul
 if errorlevel 1 (
   echo.
-  echo [ERREUR] GitHub ne contient toujours pas la V9.42.
+  echo [ERREUR] GitHub ne contient toujours pas la V9.43.
   echo Le message PUSH TERMINE ne sera pas affiche.
   pause
   exit /b 1
 )
-echo [OK] GitHub origin/main contient bien la V9.42.
+echo [OK] GitHub origin/main contient bien la V9.43.
 
 echo.
 echo ============================================================
 echo PUSH TERMINE
-echo VERSION DISTANTE VERIFIEE : V9.42
+echo VERSION DISTANTE VERIFIEE : V9.43
 echo ============================================================
 echo.
 echo IMPORTANT - UNE SEULE FOIS POUR CE NOUVEAU DEPOT :

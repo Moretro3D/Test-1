@@ -15,7 +15,7 @@ sprites_src = (root / "tools" / "sprites.py").read_text(encoding="utf-8")
 
 def check(value, label):
     if not value:
-        raise SystemExit("ECHEC V9.42: " + label)
+        raise SystemExit("ECHEC V9.43: " + label)
     print("OK  ", label)
 
 all_public = "\n".join((ino, dex, pet, html, readme, build, json.dumps(manifest)))
@@ -72,9 +72,9 @@ check("speciesId == 133 && caughtTotal <= 1" in pet,
       "ancienne sauvegarde Evoli reparee")
 check("case 252: case 255: case 258:" in (root / "pet.h").read_text(encoding="utf-8") and
       "case 133" not in (root / "pet.h").read_text(encoding="utf-8"), "Evoli refuse comme starter")
-check(manifest["name"] == "PokeTama Moretro3D - V9.42", "manifest Moretro3D")
-check(manifest["version"] == "1.46.22-moretro3d-v9.42-drapeaux-images", "version Web coherente")
-check('VERSION="1.46.22-moretro3d-v9.42-drapeaux-images"' in build, "version de compilation coherente")
+check(manifest["name"] == "PokeTama Moretro3D - V9.43", "manifest Moretro3D")
+check(manifest["version"] == "1.46.23-moretro3d-v9.43-shopify-embed", "version Web coherente")
+check('VERSION="1.46.23-moretro3d-v9.43-shopify-embed"' in build, "version de compilation coherente")
 check('if (!powerSave) return 110;' in ino, "cadence AMOLED anti-chevauchement")
 check('dotsX' not in ino and 'cardPage--;' in ino and 'cardPage++;' in ino,
       "fleches tactiles remplacent les billes de pages")
@@ -192,12 +192,12 @@ check('int visibleW=maxC>=minC ? maxC-minC+1' in ino and
       'uint8_t sBase = visibleMax ? targetDim / visibleMax : 5' in ino,
       "sprites accueil uniformises sur largeur et hauteur visibles")
 web_css=(root / 'web' / 'moretro.css').read_text(encoding='utf-8')
-check('moretro3d-logo.png' in html and 'moretro.css?v=9.42' in html and
+check('moretro3d-logo.png' in html and 'moretro.css?v=9.43' in html and
       'class="hero"' in html and 'class="steps"' in html and
       all(f'id="{button_id}"' in html for button_id in ('connect','auto','music','bar','log')) and
       '@media(max-width:760px)' in web_css and
       (root / 'web' / 'moretro3d-logo.png').is_file(),
-      "drapeaux images compatibles Google responsive et fonctions USB conservees")
+      "integration Shopify sans header footer responsive et fonctions USB conservees")
 check(all(f'data-lang="{lang}"' in html for lang in ('fr','en','es','de','it','pt')) and
       all(f'{lang}:' in html for lang in ('fr','en','es','de','it','pt')) and
       "localStorage.getItem('poketama-web-lang')" in html and
@@ -208,6 +208,16 @@ check(all(f'flags/{flag}' in html for flag in flag_files) and
       all((root / 'web' / 'flags' / flag).is_file() for flag in flag_files) and
       not any(flag in html for flag in ('🇫🇷','🇬🇧','🇪🇸','🇩🇪','🇮🇹','🇵🇹')),
       "six drapeaux SVG locaux sans emoji pour compatibilite Google")
+shopify_html=(root / 'web' / 'shopify.html').read_text(encoding='utf-8')
+shopify_liquid=(root / 'shopify' / 'poketama-custom-liquid.liquid').read_text(encoding='utf-8')
+check('<header class="topbar">' not in shopify_html and '<footer>' not in shopify_html and
+      'class="embed-toolbar"' in shopify_html and
+      "type:'poketama-shopify-height'" in shopify_html,
+      "page Shopify sans header/footer et hauteur automatique")
+check('https://moretro3d.github.io/Test-1/shopify.html' in shopify_liquid and
+      'allow="serial; usb"' in shopify_liquid and
+      "event.origin !== 'https://moretro3d.github.io'" in shopify_liquid,
+      "Custom Liquid Shopify securise et compatible installation")
 check('poketama-screen-ectoplasma-niv75-transparent.png' in html and
       (root / 'web' / 'poketama-screen-ectoplasma-niv75-transparent.png').is_file() and
       'ECTOPLASMA' not in ino,
@@ -218,4 +228,4 @@ check("Moretro3D/Test-1" in readme, "page GitHub Moretro3D/Test-1")
 check('fr:{eyebrow:"Compagnon Pokémon de poche"' in html and
       'document.documentElement.lang=lang' in html,
       "francais complet disponible et applique au document")
-print("AUDIT MORETRO3D V9.42 OK")
+print("AUDIT MORETRO3D V9.43 OK")
