@@ -9,7 +9,7 @@
   * { box-sizing: border-box; }
   body { margin:0; font-family: system-ui, -apple-system, sans-serif; background:var(--bg);
          color:var(--ink); line-height:1.6; }
-  .wrap { max-width: 680px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 2rem 1.25rem 1rem; }
   h1 { font-size: 2rem; margin: 0 0 .25rem; }
   h2 { font-size: 1.25rem; margin: 2.5rem 0 .5rem; }
   .sub { color:#6b6b76; margin: 0 0 1.5rem; }
@@ -278,7 +278,8 @@ document.getElementById('auto').onclick = async () => {
 <script>
 (function(){
   function sendHeight(){
-    var h=Math.max(document.body.scrollHeight,document.documentElement.scrollHeight);
+    var wrap=document.querySelector('.wrap');
+    var h=wrap ? Math.ceil(wrap.getBoundingClientRect().bottom) : document.body.scrollHeight;
     parent.postMessage({type:'poketama-shopify-height',height:h},'*');
   }
   addEventListener('load',sendHeight);

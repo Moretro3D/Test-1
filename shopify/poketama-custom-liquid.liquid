@@ -22,9 +22,15 @@
 </section>
 
 <style>
+  /* Shopify ajoute sinon 40 px au-dessus et 52 px sous le Liquid personnalisé. */
+  .shopify-section:has(#poketama-shopify-page) > * > [class$="-padding"] {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
   #poketama-shopify-page {
     width: 100%;
-    margin: 0;
+    margin: 0 !important;
     padding: 0;
     overflow: hidden;
     background: #090b18;
@@ -32,7 +38,8 @@
   #poketama-shopify-frame {
     display: block;
     width: 100%;
-    min-height: 1500px;
+    height: 900px;
+    min-height: 0;
     border: 0;
     background: #090b18;
   }
@@ -45,7 +52,7 @@
   }
   .poketama-shopify-fallback a { color: #36d9ff; }
   @media (max-width: 760px) {
-    #poketama-shopify-frame { min-height: 2500px; }
+    #poketama-shopify-frame { height: 1500px; min-height: 0; }
   }
 </style>
 

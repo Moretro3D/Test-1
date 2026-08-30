@@ -13,5 +13,5 @@ Installation dans Shopify :
 La page embarquée provient de :
 https://moretro3d.github.io/Test-1/shopify.html
 
-Le fichier shopify.html doit donc être publié sur GitHub avec la V9.43 avant
+Le fichier shopify.html corrigé doit donc être publié sur GitHub avant
 d'afficher la page Shopify.
