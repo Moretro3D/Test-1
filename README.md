@@ -21,7 +21,12 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.38
+## Version V9.39
+
+- Nouvelle page d'installation sombre aux couleurs MoRetro3D.
+- Présentation claire en deux cartes : firmware puis préparation de la microSD.
+- Logo officiel, aperçu rond du PokeTama et mise en page responsive téléphone.
+- Boutons USB et journal de transfert conservés avec leurs identifiants d'origine.
 
 - Taille des sprites animes de l'accueil uniformisee sur leur silhouette visible.
 - La largeur et la hauteur sont maintenant prises en compte : Kaiminus et les

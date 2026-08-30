@@ -1,6 +1,9 @@
-POKETAMA MORETRO3D V9.38
+POKETAMA MORETRO3D V9.39
 
 CORRECTIONS VERIFIEES :
+- page firmware entièrement refondue aux couleurs MoRetro3D ;
+- affichage responsive sur ordinateur et téléphone ;
+- parcours firmware puis microSD séparé en deux cartes lisibles ;
 - sprites de l'accueil uniformises d'apres la largeur et la hauteur visibles ;
 - Kaiminus et les autres silhouettes larges ne sont plus surdimensionnes ;
 - aucune croix/fleche en haut a gauche des sous-pages Reglages ;

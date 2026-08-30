@@ -32,52 +32,65 @@
   a { color:var(--accent); }
   .note { font-size:.9rem; color:#6b6b76; }
 </style>
+<link rel="stylesheet" href="moretro.css?v=9.39">
 </head>
 <body>
 <div class="wrap">
-  <h1>PokeTama Moretro3D</h1>
-  <p class="sub">Version V9.38. Sprites d'accueil uniformes, y compris les silhouettes larges.</p>
+  <header class="topbar">
+    <div class="brand"><img src="moretro3d-logo.png" alt="Logo MoRetro3D"><span>MoRetro3D</span></div>
+    <div class="version">Firmware V9.39</div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Compagnon Pokémon de poche</div>
+      <h1>PokeTama<br><span class="gradient">Moretro3D</span></h1>
+      <p class="lead">Installe le firmware, prépare ta microSD et démarre ton aventure depuis une seule page sécurisée.</p>
+      <div class="hero-tags"><span class="tag">386 Pokémon</span><span class="tag">3 générations</span><span class="tag">AMOLED rond</span><span class="tag">Mise à jour USB</span></div>
+    </div>
+    <div class="device"><img src="moretro3d-logo.png" alt=""><span>POKETAMA</span></div>
+  </section>
 
   <p class="unsupported" id="unsupported">
-    ⚠️ Ton navigateur ne prend pas en charge Web Serial. Utilise <b>Chrome</b> ou <b>Edge</b> sur ordinateur.
+    ⚠️ Ton navigateur ne prend pas en charge la connexion USB. Utilise <b>Chrome</b> ou <b>Edge</b> sur ordinateur.
   </p>
 
-  <h2><span class="num">1</span>Flasher le firmware</h2>
-  <div class="step">
+  <h2 class="section-title">Installation en deux étapes</h2>
+  <div class="steps">
+  <section class="step">
+    <div class="step-head"><span class="num">1</span><h2>Installer le firmware</h2></div>
     <p>Branche le PokeTama en USB-C, clique sur Installer, sélectionne son port puis attends la fin.</p>
-    <esp-web-install-button manifest="manifest.json?v=1.46.18-moretro3d-v9.38-sprites-accueil-uniformes1">
+    <esp-web-install-button manifest="manifest.json?v=1.46.19-moretro3d-v9.39-page-firmware1">
       <button slot="activate">Installer le firmware Moretro3D</button>
-      <span slot="unsupported">Navigateur non compatible (utilise Chrome/Edge).</span>
-      <span slot="not-allowed">HTTPS requis.</span>
+      <span slot="unsupported">Navigateur non compatible : utilise Chrome ou Edge.</span>
+      <span slot="not-allowed">La connexion HTTPS est requise.</span>
     </esp-web-install-button>
-    <p class="note">🔄 <b>Pour mettre à jour ton PokeTama, installe <u>sans effacer</u></b> afin de conserver
-       ton Pokémon et ta sauvegarde. Seules les parties du firmware sont mises à jour.
-       Un <b>effacement complet</b> supprime la sauvegarde. Sur une carte neuve, tu peux effacer,
-       sans problème.</p>
-  </div>
+    <p class="note callout"><b>Mise à jour :</b> choisis l'installation <u>sans effacer</u> pour conserver ton Pokémon et ta sauvegarde. L'effacement complet est réservé à une installation neuve.</p>
+  </section>
 
-  <h2><span class="num">2</span>Installer automatiquement la microSD</h2>
-  <div class="step">
-    <p>Insère une microSD dans le PokeTama, clique sur <b>Connecter</b>, puis sur
-       <b>Tout installer</b>. Les 386 sprites, les décors et les trois OST sont
-       téléchargés et copiés automatiquement par USB. Ne retire pas la carte.</p>
+  <section class="step">
+    <div class="step-head"><span class="num">2</span><h2>Préparer la microSD</h2></div>
+    <p>Insère la microSD, connecte le PokeTama puis installe automatiquement les 386 sprites, les décors et les trois musiques.</p>
     <p class="note">Ferme d'abord la fenêtre d'installation de l'étape 1 : un seul programme peut utiliser le port USB.</p>
     <div class="row">
-      <button id="connect">🔌 Connecter le PokeTama</button>
-      <button id="auto" disabled>⬇️ Tout installer sur la microSD</button>
-      <button id="music" disabled>🎵 Réparer uniquement les musiques</button>
+      <button id="connect">Connecter le PokeTama</button>
+      <button id="auto" disabled>Tout installer sur la microSD</button>
+      <button id="music" disabled>Réparer uniquement les musiques</button>
     </div>
-    <p class="note"><b>Sprites deja installes :</b> utilise « Reparer uniquement les musiques » pour remplacer les trois OST sans toucher au reste de la carte.</p>
+    <p class="note"><b>Sprites déjà installés ?</b> Le dernier bouton remplace uniquement les trois OST sans toucher aux autres fichiers.</p>
     <div class="bar" id="bar"><div></div></div>
     <pre id="log"></pre>
+  </section>
   </div>
 
-  <h2>Premier demarrage</h2>
-  <div class="step">
-    <p>Choisis la generation 1, 2 ou 3, puis ton starter parmi les trois Pokeballs. Les noms suivent la langue choisie : Plante en vert, Feu en rouge et Eau en bleu.</p>
+  <h2 class="section-title">Avant de commencer</h2>
+  <div class="info-grid">
+    <div class="info"><strong>Premier démarrage</strong><p>Choisis la langue, la génération 1, 2 ou 3, puis ton Pokémon de départ.</p></div>
+    <div class="info"><strong>Mise à jour sûre</strong><p>Ta sauvegarde reste intacte avec une installation sans effacement.</p></div>
+    <div class="info"><strong>Navigateur compatible</strong><p>Utilise Chrome ou Edge sur ordinateur avec un câble USB de données.</p></div>
   </div>
 
-  <p class="note">Projet Moretro3D gratuit et non commercial. Pokemon appartient a Nintendo, Game Freak et The Pokemon Company. Sprites PMD : PMD SpriteCollab.</p>
+  <footer><span>Projet communautaire gratuit et non commercial par MoRetro3D.</span><span>Pokémon appartient à Nintendo, Game Freak et The Pokémon Company. Sprites : PMD SpriteCollab.</span></footer>
 </div>
 
 <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js"></script>
@@ -192,7 +205,7 @@ document.getElementById('music').onclick = async () => {
   log('Téléchargement des trois OST propres...');
   let items;
   try {
-    const resp = await fetch('music.pak?v=1.46.18-moretro3d-v9.38-sprites-accueil-uniformes1', { cache: 'no-store' });
+    const resp = await fetch('music.pak?v=1.46.19-moretro3d-v9.39-page-firmware1', { cache: 'no-store' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     items = parsePak(await resp.arrayBuffer()).filter(it => it.name.startsWith('music/') && it.name.endsWith('.wav'));
     if (items.length !== 3) throw new Error('le paquet ne contient pas exactement trois OST');
@@ -224,7 +237,7 @@ document.getElementById('auto').onclick = async () => {
   let items;
   try {
     // Bundle complet servi depuis GitHub Pages : sprites, decors et OST.
-    const resp = await fetch('sprites.pak?v=1.46.18-moretro3d-v9.38-sprites-accueil-uniformes1', { cache: 'no-store' });
+    const resp = await fetch('sprites.pak?v=1.46.19-moretro3d-v9.39-page-firmware1', { cache: 'no-store' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     items = parsePak(await resp.arrayBuffer());
   } catch (e) { log('Telechargement de sprites.pak impossible : ' + e.message); return; }
