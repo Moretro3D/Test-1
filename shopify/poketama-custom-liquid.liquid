@@ -65,7 +65,9 @@
       if (!event.data || event.data.type !== 'poketama-shopify-height') return;
       var height = Number(event.data.height);
       if (!Number.isFinite(height)) return;
-      frame.style.height = Math.max(900, Math.min(height + 4, 5000)) + 'px';
+      var maximum = window.innerWidth <= 760 ? 2800 : 1600;
+      if (height < 700 || height > maximum) return;
+      frame.style.height = Math.ceil(height + 4) + 'px';
     });
   })();
 </script>

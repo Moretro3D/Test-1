@@ -283,9 +283,8 @@ document.getElementById('auto').onclick = async () => {
     parent.postMessage({type:'poketama-shopify-height',height:h},'*');
   }
   addEventListener('load',sendHeight);
-  addEventListener('resize',sendHeight);
-  new MutationObserver(sendHeight).observe(document.documentElement,{subtree:true,childList:true,attributes:true});
-  setTimeout(sendHeight,300); setTimeout(sendHeight,1200);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(sendHeight);
+  setTimeout(sendHeight,250); setTimeout(sendHeight,1000);
 })();
 </script></body>
 </html>
