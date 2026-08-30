@@ -1,25 +1,25 @@
 {
-  "name": "PokeTama Moretro3D - V9.37",
-  "version": "1.46.17-moretro3d-v9.37-reglages-sans-croix",
+  "name": "PokeTama Moretro3D - V9.38",
+  "version": "1.46.18-moretro3d-v9.38-sprites-accueil-uniformes",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/poketama-1.46.17-moretro3d-v9.37-reglages-sans-croix-bootloader.bin",
+          "path": "firmware/poketama-1.46.18-moretro3d-v9.38-sprites-accueil-uniformes-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/poketama-1.46.17-moretro3d-v9.37-reglages-sans-croix-partitions.bin",
+          "path": "firmware/poketama-1.46.18-moretro3d-v9.38-sprites-accueil-uniformes-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/poketama-1.46.17-moretro3d-v9.37-reglages-sans-croix-boot_app0.bin",
+          "path": "firmware/poketama-1.46.18-moretro3d-v9.38-sprites-accueil-uniformes-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/poketama-1.46.17-moretro3d-v9.37-reglages-sans-croix-app.bin",
+          "path": "firmware/poketama-1.46.18-moretro3d-v9.38-sprites-accueil-uniformes-app.bin",
           "offset": 65536
         }
       ]

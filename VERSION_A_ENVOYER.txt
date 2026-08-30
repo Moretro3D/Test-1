@@ -1,6 +1,8 @@
-POKETAMA MORETRO3D V9.37
+POKETAMA MORETRO3D V9.38
 
 CORRECTIONS VERIFIEES :
+- sprites de l'accueil uniformises d'apres la largeur et la hauteur visibles ;
+- Kaiminus et les autres silhouettes larges ne sont plus surdimensionnes ;
 - aucune croix/fleche en haut a gauche des sous-pages Reglages ;
 - page Heure descendue et textes noirs en mode clair ;
 - valeurs Affichage en gris fonce ;

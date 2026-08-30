@@ -15,7 +15,7 @@ sprites_src = (root / "tools" / "sprites.py").read_text(encoding="utf-8")
 
 def check(value, label):
     if not value:
-        raise SystemExit("ECHEC V9.37: " + label)
+        raise SystemExit("ECHEC V9.38: " + label)
     print("OK  ", label)
 
 all_public = "\n".join((ino, dex, pet, html, readme, build, json.dumps(manifest)))
@@ -72,9 +72,9 @@ check("speciesId == 133 && caughtTotal <= 1" in pet,
       "ancienne sauvegarde Evoli reparee")
 check("case 252: case 255: case 258:" in (root / "pet.h").read_text(encoding="utf-8") and
       "case 133" not in (root / "pet.h").read_text(encoding="utf-8"), "Evoli refuse comme starter")
-check(manifest["name"] == "PokeTama Moretro3D - V9.37", "manifest Moretro3D")
-check(manifest["version"] == "1.46.17-moretro3d-v9.37-reglages-sans-croix", "version Web coherente")
-check('VERSION="1.46.17-moretro3d-v9.37-reglages-sans-croix"' in build, "version de compilation coherente")
+check(manifest["name"] == "PokeTama Moretro3D - V9.38", "manifest Moretro3D")
+check(manifest["version"] == "1.46.18-moretro3d-v9.38-sprites-accueil-uniformes", "version Web coherente")
+check('VERSION="1.46.18-moretro3d-v9.38-sprites-accueil-uniformes"' in build, "version de compilation coherente")
 check('if (!powerSave) return 110;' in ino, "cadence AMOLED anti-chevauchement")
 check('dotsX' not in ino and 'cardPage--;' in ino and 'cardPage++;' in ino,
       "fleches tactiles remplacent les billes de pages")
@@ -186,8 +186,13 @@ check('drawSettingsBack' not in ino and
       'setCursor(49,38)' not in ino and
       'x>=20 && x<=94 && y>=18 && y<=72' not in ino,
       "aucun symbole ni zone tactile en haut a gauche des Reglages")
+check('int visibleW=maxC>=minC ? maxC-minC+1' in ino and
+      'int visibleH=maxR>=minR ? maxR-minR+1' in ino and
+      'int visibleMax=max(visibleW,visibleH)' in ino and
+      'uint8_t sBase = visibleMax ? targetDim / visibleMax : 5' in ino,
+      "sprites accueil uniformises sur largeur et hauteur visibles")
 check("PokeTama Moretro3D" in html and "Installer le firmware Moretro3D" in html,
       "page firmware Moretro3D")
 check("Moretro3D/Test-1" in readme, "page GitHub Moretro3D/Test-1")
 check(not re.search(r"\b(Care for|Could not|Connect the board|Done \()", html), "page utilisateur entierement en francais")
-print("AUDIT MORETRO3D V9.37 OK")
+print("AUDIT MORETRO3D V9.38 OK")

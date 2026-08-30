@@ -21,7 +21,12 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.37
+## Version V9.38
+
+- Taille des sprites animes de l'accueil uniformisee sur leur silhouette visible.
+- La largeur et la hauteur sont maintenant prises en compte : Kaiminus et les
+  autres Pokemon larges ne paraissent plus surdimensionnes.
+- Meme regle automatique pour les 386 Pokemon, sans correction fragile par espece.
 
 - Suppression du symbole/cadre en haut a gauche de toutes les sous-pages Reglages.
 - Suppression des zones tactiles invisibles correspondantes.

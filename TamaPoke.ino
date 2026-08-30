@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.17-moretro3d-v9.37-reglages-sans-croix"
+#define FW_VERSION "1.46.18-moretro3d-v9.38-sprites-accueil-uniformes"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -5818,15 +5818,23 @@ void drawPmdActM(PmdMon &m, uint8_t actId, int cx, int groundY, uint32_t t, bool
   const PmdAct &a = m.acts[actId];
   if (!a.frames) return;
   const PmdAct &idle=m.acts[PMD_IDLE];
-  int minR=idle.h, maxR=-1;
+  int minC=idle.w, maxC=-1, minR=idle.h, maxR=-1;
   if (idle.frames) {
     const uint8_t *idleFrame=idle.data;
     for (int r=0;r<idle.h;r++) for (int c=0;c<idle.w;c++)
-      if (idleFrame[r*idle.w+c] != 0xFF) { minR=min(minR,r); maxR=max(maxR,r); }
+      if (idleFrame[r*idle.w+c] != 0xFF) {
+        minC=min(minC,c); maxC=max(maxC,c);
+        minR=min(minR,r); maxR=max(maxR,r);
+      }
   }
+  int visibleW=maxC>=minC ? maxC-minC+1 : idle.w;
   int visibleH=maxR>=minR ? maxR-minR+1 : idle.h;
-  int targetH=170*spriteSizePercent(dex)/100;
-  uint8_t sBase = visibleH ? targetH / visibleH : 5;
+  // Uniformite d'accueil : l'ancienne formule ne regardait que la hauteur.
+  // Un Pokemon large comme Kaiminus paraissait donc beaucoup plus gros. On
+  // borne maintenant la plus grande dimension de la silhouette visible.
+  int targetDim=170*spriteSizePercent(dex)/100;
+  int visibleMax=max(visibleW,visibleH);
+  uint8_t sBase = visibleMax ? targetDim / visibleMax : 5;
   if (sBase < 2) sBase = 2;
   if (sBase > maxS) sBase = maxS;
   uint8_t s = sBase;
