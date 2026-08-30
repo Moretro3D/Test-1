@@ -21,7 +21,12 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.35
+## Version V9.36
+
+- Page Heure descendue et alignee sur une grille symetrique.
+- Tous les textes de l'heure sont noirs en mode clair et blancs en mode sombre.
+- Langue et economie d'energie utilisent un gris fonce lisible en mode clair.
+- Zones tactiles recalees sur les nouvelles positions.
 
 - Reglages reorganises en menu compact avec chevrons, inspire d'iOS.
 - Sous-pages dediees : Heure, Affichage, Son et Reinitialisation.

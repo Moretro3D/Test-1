@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.15-moretro3d-v9.35-reglages-organises"
+#define FW_VERSION "1.46.16-moretro3d-v9.36-heure-affichage"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -3684,11 +3684,13 @@ void drawSettingsRow(int x, int y, int w, int h, const char *label, const char *
   gfx->print(label);
   if (value && value[0]) {
     int vw=(int)strlen(value)*6*textScale;
-    gfx->setTextColor(selected ? UI_WHITE : uiSub());
+    uint16_t valueInk=darkMode ? C565(0xd8,0xdf,0xf2) : C565(0x32,0x38,0x44);
+    gfx->setTextColor(selected ? UI_WHITE : valueInk);
     gfx->setCursor(x+w-vw-14,textY);
     gfx->print(value);
   } else {
-    gfx->setTextColor(selected ? UI_WHITE : uiSub());
+    uint16_t valueInk=darkMode ? C565(0xd8,0xdf,0xf2) : C565(0x32,0x38,0x44);
+    gfx->setTextColor(selected ? UI_WHITE : valueInk);
     gfx->setCursor(x+w-18*textScale,textY);
     gfx->print(">");
   }
@@ -3787,18 +3789,21 @@ void drawSettingsTitle(const char *title) {
 
 void renderTimeSettings() {
   clockDirty=false; gfx->fillScreen(uiBg());
-  drawSettingsBack(); drawSettingsTitle(T(S_SET_TIME));
+  drawSettingsBack();
+  uint16_t timeInk=darkMode ? UI_WHITE : UI_INK;
+  gfx->setTextColor(timeInk); gfx->setTextSize(3);
+  gfx->setCursor(CX-(int)strlen(T(S_SET_TIME))*9,62); gfx->print(T(S_SET_TIME));
   char t[8]; snprintf(t,sizeof(t),"%02d:%02d",clockH,clockM);
-  gfx->setTextColor(uiInk()); gfx->setTextSize(5);
-  gfx->setCursor(CX-75,104); gfx->print(t);
-  gfx->setTextColor(uiSub()); gfx->setTextSize(1);
-  gfx->setCursor(122,170); gfx->print(T(S_HOUR));
-  gfx->setCursor(292,170); gfx->print(T(S_MIN));
-  drawClockBtn(94,190,"-"); drawClockBtn(160,190,"+");
-  drawClockBtn(248,190,"-"); drawClockBtn(314,190,"+");
-  gfx->fillRoundRect(108,330,250,50,14,UI_BAR_OK);
+  gfx->setTextColor(timeInk); gfx->setTextSize(5);
+  gfx->setCursor(CX-75,120); gfx->print(t);
+  gfx->setTextColor(timeInk); gfx->setTextSize(1);
+  gfx->setCursor(116,196); gfx->print(T(S_HOUR));
+  gfx->setCursor(290,196); gfx->print(T(S_MIN));
+  drawClockBtn(90,216,"-"); drawClockBtn(158,216,"+");
+  drawClockBtn(248,216,"-"); drawClockBtn(316,216,"+");
+  gfx->fillRoundRect(108,342,250,50,14,UI_BAR_OK);
   gfx->setTextColor(UI_WHITE); gfx->setTextSize(2);
-  gfx->setCursor(CX-(int)strlen(T(S_VALIDATE))*6,346); gfx->print(T(S_VALIDATE));
+  gfx->setCursor(CX-(int)strlen(T(S_VALIDATE))*6,358); gfx->print(T(S_VALIDATE));
   gfx->flush();
 }
 
@@ -3895,14 +3900,14 @@ void clockTap(int16_t x,int16_t y) {
     if (x>=20 && x<=94 && y>=18 && y<=72) {
       settingsPage=0; clockDirty=true; sfxPlay(SFX_TAP); lockTouchBrief(); return;
     }
-    if (y>=180 && y<=268) {
-      if (x>=84 && x<152) clockH=(clockH+23)%24;
-      else if (x>=152 && x<230) clockH=(clockH+1)%24;
-      else if (x>=238 && x<306) clockM=(clockM+59)%60;
-      else if (x>=306 && x<382) clockM=(clockM+1)%60;
+    if (y>=204 && y<=286) {
+      if (x>=80 && x<154) clockH=(clockH+23)%24;
+      else if (x>=154 && x<232) clockH=(clockH+1)%24;
+      else if (x>=238 && x<312) clockM=(clockM+59)%60;
+      else if (x>=312 && x<386) clockM=(clockM+1)%60;
       clockDirty=true; return;
     }
-    if (x>=96 && x<=370 && y>=318 && y<=392) { applyClock(); return; }
+    if (x>=96 && x<=370 && y>=330 && y<=404) { applyClock(); return; }
     return;
   }
   if (settingsPage==4) {

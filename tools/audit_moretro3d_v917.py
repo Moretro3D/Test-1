@@ -15,7 +15,7 @@ sprites_src = (root / "tools" / "sprites.py").read_text(encoding="utf-8")
 
 def check(value, label):
     if not value:
-        raise SystemExit("ECHEC V9.35: " + label)
+        raise SystemExit("ECHEC V9.36: " + label)
     print("OK  ", label)
 
 all_public = "\n".join((ino, dex, pet, html, readme, build, json.dumps(manifest)))
@@ -72,9 +72,9 @@ check("speciesId == 133 && caughtTotal <= 1" in pet,
       "ancienne sauvegarde Evoli reparee")
 check("case 252: case 255: case 258:" in (root / "pet.h").read_text(encoding="utf-8") and
       "case 133" not in (root / "pet.h").read_text(encoding="utf-8"), "Evoli refuse comme starter")
-check(manifest["name"] == "PokeTama Moretro3D - V9.35", "manifest Moretro3D")
-check(manifest["version"] == "1.46.15-moretro3d-v9.35-reglages-organises", "version Web coherente")
-check('VERSION="1.46.15-moretro3d-v9.35-reglages-organises"' in build, "version de compilation coherente")
+check(manifest["name"] == "PokeTama Moretro3D - V9.36", "manifest Moretro3D")
+check(manifest["version"] == "1.46.16-moretro3d-v9.36-heure-affichage", "version Web coherente")
+check('VERSION="1.46.16-moretro3d-v9.36-heure-affichage"' in build, "version de compilation coherente")
 check('if (!powerSave) return 110;' in ino, "cadence AMOLED anti-chevauchement")
 check('dotsX' not in ino and 'cardPage--;' in ino and 'cardPage++;' in ino,
       "fleches tactiles remplacent les billes de pages")
@@ -171,8 +171,17 @@ check('darkMode ? UI_WHITE' in ino and
       'setTextColor(UI_TRACK)' not in ino and
       'setTextColor(UI_BG_DAY)' not in ino,
       "tous les textes utilisent un contraste adapte au mode sombre")
+check('uint16_t timeInk=darkMode ? UI_WHITE : UI_INK' in ino and
+      'setCursor(CX-(int)strlen(T(S_SET_TIME))*9,62)' in ino and
+      'drawClockBtn(90,216,"-")' in ino and
+      'drawClockBtn(316,216,"+")' in ino,
+      "page Heure descendue, alignee et noire en mode clair")
+check('C565(0x32,0x38,0x44)' in ino and
+      'drawSettingsRow(64,352,164,38,T(S_LANG_LABEL)' in ino and
+      'drawSettingsRow(238,352,164,38,T(S_POWER_SAVE_LABEL)' in ino,
+      "langue et economie en gris fonce dans Affichage")
 check("PokeTama Moretro3D" in html and "Installer le firmware Moretro3D" in html,
       "page firmware Moretro3D")
 check("Moretro3D/Test-1" in readme, "page GitHub Moretro3D/Test-1")
 check(not re.search(r"\b(Care for|Could not|Connect the board|Done \()", html), "page utilisateur entierement en francais")
-print("AUDIT MORETRO3D V9.35 OK")
+print("AUDIT MORETRO3D V9.36 OK")

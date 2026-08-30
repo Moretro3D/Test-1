@@ -1,6 +1,8 @@
-POKETAMA MORETRO3D V9.35
+POKETAMA MORETRO3D V9.36
 
 CORRECTIONS VERIFIEES :
+- page Heure descendue et textes noirs en mode clair ;
+- valeurs Affichage en gris fonce ;
 - reglages repartis en quatre sous-pages traduites ;
 - ecran de demarrage recentre et prolonge de 1,5 seconde ;
 - meme Poke Ball SPR_ICON_PLAY sur l'accueil et le choix des starters ;
