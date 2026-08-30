@@ -21,7 +21,11 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.36
+## Version V9.37
+
+- Suppression du symbole/cadre en haut a gauche de toutes les sous-pages Reglages.
+- Suppression des zones tactiles invisibles correspondantes.
+- Navigation uniquement avec OK, Valider ou Annuler en bas de page.
 
 - Page Heure descendue et alignee sur une grille symetrique.
 - Tous les textes de l'heure sont noirs en mode clair et blancs en mode sombre.

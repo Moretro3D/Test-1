@@ -1,25 +1,25 @@
 {
-  "name": "PokeTama Moretro3D - V9.36",
-  "version": "1.46.16-moretro3d-v9.36-heure-affichage",
+  "name": "PokeTama Moretro3D - V9.37",
+  "version": "1.46.17-moretro3d-v9.37-reglages-sans-croix",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/poketama-1.46.16-moretro3d-v9.36-heure-affichage-bootloader.bin",
+          "path": "firmware/poketama-1.46.17-moretro3d-v9.37-reglages-sans-croix-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/poketama-1.46.16-moretro3d-v9.36-heure-affichage-partitions.bin",
+          "path": "firmware/poketama-1.46.17-moretro3d-v9.37-reglages-sans-croix-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/poketama-1.46.16-moretro3d-v9.36-heure-affichage-boot_app0.bin",
+          "path": "firmware/poketama-1.46.17-moretro3d-v9.37-reglages-sans-croix-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/poketama-1.46.16-moretro3d-v9.36-heure-affichage-app.bin",
+          "path": "firmware/poketama-1.46.17-moretro3d-v9.37-reglages-sans-croix-app.bin",
           "offset": 65536
         }
       ]

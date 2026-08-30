@@ -15,7 +15,7 @@ sprites_src = (root / "tools" / "sprites.py").read_text(encoding="utf-8")
 
 def check(value, label):
     if not value:
-        raise SystemExit("ECHEC V9.36: " + label)
+        raise SystemExit("ECHEC V9.37: " + label)
     print("OK  ", label)
 
 all_public = "\n".join((ino, dex, pet, html, readme, build, json.dumps(manifest)))
@@ -72,9 +72,9 @@ check("speciesId == 133 && caughtTotal <= 1" in pet,
       "ancienne sauvegarde Evoli reparee")
 check("case 252: case 255: case 258:" in (root / "pet.h").read_text(encoding="utf-8") and
       "case 133" not in (root / "pet.h").read_text(encoding="utf-8"), "Evoli refuse comme starter")
-check(manifest["name"] == "PokeTama Moretro3D - V9.36", "manifest Moretro3D")
-check(manifest["version"] == "1.46.16-moretro3d-v9.36-heure-affichage", "version Web coherente")
-check('VERSION="1.46.16-moretro3d-v9.36-heure-affichage"' in build, "version de compilation coherente")
+check(manifest["name"] == "PokeTama Moretro3D - V9.37", "manifest Moretro3D")
+check(manifest["version"] == "1.46.17-moretro3d-v9.37-reglages-sans-croix", "version Web coherente")
+check('VERSION="1.46.17-moretro3d-v9.37-reglages-sans-croix"' in build, "version de compilation coherente")
 check('if (!powerSave) return 110;' in ino, "cadence AMOLED anti-chevauchement")
 check('dotsX' not in ino and 'cardPage--;' in ino and 'cardPage++;' in ino,
       "fleches tactiles remplacent les billes de pages")
@@ -159,7 +159,8 @@ check('S_RESET, S_RESET_WARNING, S_RESET_CONFIRM' in (root / 'i18n.h').read_text
       'EFFACER ET REDEMARRER' in (root / 'i18n.cpp').read_text(encoding='utf-8') and
       'LOESCHEN UND NEUSTART' in (root / 'i18n.cpp').read_text(encoding='utf-8'),
       "remise a zero traduite dans les six langues")
-display_fn=ino[ino.index('void renderDisplaySettings()'):ino.index('void drawSettingsBack()')]
+display_start=ino.index('void renderDisplaySettings()')
+display_fn=ino[display_start:ino.index('void drawSettingsTitle(', display_start)]
 reset_fn=ino[ino.index('void renderResetSettings()'):ino.index('void renderClock()')]
 check('warning' not in display_fn and
       reset_fn.index('const char *warning') < reset_fn.index('strlen(warning)') and
@@ -180,8 +181,13 @@ check('C565(0x32,0x38,0x44)' in ino and
       'drawSettingsRow(64,352,164,38,T(S_LANG_LABEL)' in ino and
       'drawSettingsRow(238,352,164,38,T(S_POWER_SAVE_LABEL)' in ino,
       "langue et economie en gris fonce dans Affichage")
+check('drawSettingsBack' not in ino and
+      'fillRoundRect(30,28,54,36' not in ino and
+      'setCursor(49,38)' not in ino and
+      'x>=20 && x<=94 && y>=18 && y<=72' not in ino,
+      "aucun symbole ni zone tactile en haut a gauche des Reglages")
 check("PokeTama Moretro3D" in html and "Installer le firmware Moretro3D" in html,
       "page firmware Moretro3D")
 check("Moretro3D/Test-1" in readme, "page GitHub Moretro3D/Test-1")
 check(not re.search(r"\b(Care for|Could not|Connect the board|Done \()", html), "page utilisateur entierement en francais")
-print("AUDIT MORETRO3D V9.36 OK")
+print("AUDIT MORETRO3D V9.37 OK")

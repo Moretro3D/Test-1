@@ -1,6 +1,7 @@
-POKETAMA MORETRO3D V9.36
+POKETAMA MORETRO3D V9.37
 
 CORRECTIONS VERIFIEES :
+- aucune croix/fleche en haut a gauche des sous-pages Reglages ;
 - page Heure descendue et textes noirs en mode clair ;
 - valeurs Affichage en gris fonce ;
 - reglages repartis en quatre sous-pages traduites ;

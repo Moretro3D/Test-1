@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.16-moretro3d-v9.36-heure-affichage"
+#define FW_VERSION "1.46.17-moretro3d-v9.37-reglages-sans-croix"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -3706,14 +3706,6 @@ void renderDisplaySettings() {
   gfx->setCursor(CX-(int)strlen(title)*9,38);
   gfx->print(title);
 
-  // Retour
-  gfx->fillRoundRect(30,28,54,36,10,uiPanel());
-  gfx->drawRoundRect(30,28,54,36,10,uiLine());
-  gfx->setTextColor(uiInk());
-  gfx->setTextSize(2);
-  gfx->setCursor(49,38);
-  gfx->print("<");
-
   // MODE : rouge coordonné à la Poké Ball en thème sombre.
   uint16_t modeFill = darkMode ? C565(0x8f,0x0f,0x19) : uiPanel();
   uint16_t modeLine = darkMode ? C565(0xff,0x28,0x38) : uiLine();
@@ -3775,13 +3767,6 @@ void renderDisplaySettings() {
   gfx->flush();
 }
 
-void drawSettingsBack() {
-  gfx->fillRoundRect(30,28,54,36,10,uiPanel());
-  gfx->drawRoundRect(30,28,54,36,10,uiLine());
-  gfx->setTextColor(uiInk()); gfx->setTextSize(2);
-  gfx->setCursor(49,38); gfx->print("<");
-}
-
 void drawSettingsTitle(const char *title) {
   gfx->setTextColor(uiInk()); gfx->setTextSize(3);
   gfx->setCursor(CX-(int)strlen(title)*9,38); gfx->print(title);
@@ -3789,7 +3774,6 @@ void drawSettingsTitle(const char *title) {
 
 void renderTimeSettings() {
   clockDirty=false; gfx->fillScreen(uiBg());
-  drawSettingsBack();
   uint16_t timeInk=darkMode ? UI_WHITE : UI_INK;
   gfx->setTextColor(timeInk); gfx->setTextSize(3);
   gfx->setCursor(CX-(int)strlen(T(S_SET_TIME))*9,62); gfx->print(T(S_SET_TIME));
@@ -3809,7 +3793,7 @@ void renderTimeSettings() {
 
 void renderSoundSettings() {
   clockDirty=false; gfx->fillScreen(uiBg());
-  drawSettingsBack(); drawSettingsTitle(T(S_SOUND_LABEL));
+  drawSettingsTitle(T(S_SOUND_LABEL));
   static const StrId modes[4]={S_SND_FULL,S_SND_MED,S_SND_LOW,S_SND_OFF};
   static const uint8_t values[4]={SOUND_FULL,SOUND_MED,SOUND_LOW,SOUND_OFF};
   for(uint8_t i=0;i<4;i++) {
@@ -3824,7 +3808,7 @@ void renderSoundSettings() {
 
 void renderResetSettings() {
   clockDirty=false; gfx->fillScreen(uiBg());
-  drawSettingsBack(); drawSettingsTitle(T(S_RESET));
+  drawSettingsTitle(T(S_RESET));
   gfx->fillRoundRect(58,104,350,156,18,darkMode ? C565(0x42,0x0d,0x14) : C565(0xff,0xe6,0xe8));
   gfx->drawRoundRect(58,104,350,156,18,C565(0xff,0x35,0x45));
   gfx->setTextColor(darkMode ? UI_WHITE : C565(0x75,0x08,0x12));
@@ -3886,7 +3870,7 @@ void renderClock() {
 
 void clockTap(int16_t x,int16_t y) {
   if (settingsPage==2) {
-    if ((x>=20 && x<=94 && y>=18 && y<=72) || (y>=350 && y<=420)) {
+    if (y>=350 && y<=420) {
       settingsPage=0; clockDirty=true; sfxPlay(SFX_TAP); lockTouchBrief(); return;
     }
     if (x>=54 && x<=412 && y>=82 && y<=342) {
@@ -3897,9 +3881,6 @@ void clockTap(int16_t x,int16_t y) {
     return;
   }
   if (settingsPage==3) {
-    if (x>=20 && x<=94 && y>=18 && y<=72) {
-      settingsPage=0; clockDirty=true; sfxPlay(SFX_TAP); lockTouchBrief(); return;
-    }
     if (y>=204 && y<=286) {
       if (x>=80 && x<154) clockH=(clockH+23)%24;
       else if (x>=154 && x<232) clockH=(clockH+1)%24;
@@ -3911,7 +3892,7 @@ void clockTap(int16_t x,int16_t y) {
     return;
   }
   if (settingsPage==4) {
-    if ((x>=20 && x<=94 && y>=18 && y<=72) || (x>=116 && x<=350 && y>=364 && y<=430)) {
+    if (x>=116 && x<=350 && y>=364 && y<=430) {
       settingsPage=0; clockDirty=true; sfxPlay(SFX_TAP); lockTouchBrief(); return;
     }
     if (x>=60 && x<=406 && y>=286 && y<=366) {
@@ -3920,7 +3901,7 @@ void clockTap(int16_t x,int16_t y) {
     return;
   }
   if (settingsPage==1) {
-    if ((x>=20 && x<=94 && y>=18 && y<=72) || (x>=118 && x<=348 && y>=388 && y<=448)) {
+    if (x>=118 && x<=348 && y>=388 && y<=448) {
       settingsPage=0; clockDirty=true; sfxPlay(SFX_TAP); lockTouchBrief(); return;
     }
     if (x>=54 && x<=412 && y>=78 && y<=144) {
