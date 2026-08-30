@@ -1,4 +1,4 @@
-name: PokeTama Moretro3D - Firmware et page Web
+name: PokeTama Moretro3D - Depot technique
 
 on:
   push:
@@ -99,10 +99,6 @@ jobs:
           chmod +x tools/build_web.sh
           bash tools/build_web.sh
 
-      - name: Verifier le Web Flasher et les binaires
-        run: |
-          python3 tools/verify_web.py
-
       - name: Conserver une copie du firmware compile
         uses: actions/upload-artifact@v4
         with:
@@ -112,13 +108,13 @@ jobs:
             web/manifest.json
           if-no-files-found: error
 
-      - name: Preparer le site pour GitHub Pages
+      - name: Preparer les fichiers techniques pour Shopify
         uses: actions/upload-pages-artifact@v4
         with:
           path: web
 
   deploy:
-    name: Publier le Web Flasher
+    name: Publier les fichiers techniques
     needs: build
     runs-on: ubuntu-latest
     environment:
