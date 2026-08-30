@@ -3708,8 +3708,7 @@ void renderDisplaySettings() {
   gfx->fillRoundRect(30,28,54,36,10,uiPanel());
   gfx->drawRoundRect(30,28,54,36,10,uiLine());
   gfx->setTextColor(uiInk());
-  uint8_t warnScale=strlen(warning)>28 ? 1 : 2;
-  gfx->setTextSize(warnScale);
+  gfx->setTextSize(2);
   gfx->setCursor(49,38);
   gfx->print("<");
 
@@ -3824,8 +3823,9 @@ void renderResetSettings() {
   gfx->fillRoundRect(58,104,350,156,18,darkMode ? C565(0x42,0x0d,0x14) : C565(0xff,0xe6,0xe8));
   gfx->drawRoundRect(58,104,350,156,18,C565(0xff,0x35,0x45));
   gfx->setTextColor(darkMode ? UI_WHITE : C565(0x75,0x08,0x12));
-  gfx->setTextSize(2);
   const char *warning=T(S_RESET_WARNING);
+  uint8_t warnScale=strlen(warning)>28 ? 1 : 2;
+  gfx->setTextSize(warnScale);
   gfx->setCursor(CX-(int)strlen(warning)*3*warnScale,136); gfx->print(warning);
   gfx->setTextSize(1); gfx->setTextColor(darkMode ? UI_WHITE : uiInk());
   gfx->setCursor(196,184); gfx->print("microSD OK");

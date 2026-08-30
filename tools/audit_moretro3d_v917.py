@@ -159,6 +159,12 @@ check('S_RESET, S_RESET_WARNING, S_RESET_CONFIRM' in (root / 'i18n.h').read_text
       'EFFACER ET REDEMARRER' in (root / 'i18n.cpp').read_text(encoding='utf-8') and
       'LOESCHEN UND NEUSTART' in (root / 'i18n.cpp').read_text(encoding='utf-8'),
       "remise a zero traduite dans les six langues")
+display_fn=ino[ino.index('void renderDisplaySettings()'):ino.index('void drawSettingsBack()')]
+reset_fn=ino[ino.index('void renderResetSettings()'):ino.index('void renderClock()')]
+check('warning' not in display_fn and
+      reset_fn.index('const char *warning') < reset_fn.index('strlen(warning)') and
+      reset_fn.index('uint8_t warnScale') < reset_fn.index('*warnScale'),
+      "variables de l'avertissement declarees dans la bonne portee")
 check('darkMode ? UI_WHITE' in ino and
       'gfx->setTextColor(selected ? UI_WHITE : uiInk())' in ino and
       'gfx->setTextColor(uiInk())' in ino and
