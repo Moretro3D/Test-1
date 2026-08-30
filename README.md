@@ -21,7 +21,16 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.39
+## Version V9.41
+
+- Visuel du site limité à la partie affichage circulaire, sans appareil ni main.
+- Ectoplasma affiché au niveau 75 avec les quatre jauges entièrement vertes.
+- Contour extérieur rendu transparent sans toucher aux éléments blancs de l'écran.
+
+- Page Web traduite intégralement en français, anglais, espagnol, allemand,
+  italien et portugais avec six drapeaux de sélection.
+- Langue mémorisée dans le navigateur et messages USB traduits en direct.
+- Véritable photo du PokeTama intégrée avec Ectoplasma affiché à l'écran.
 
 - Nouvelle page d'installation sombre aux couleurs MoRetro3D.
 - Présentation claire en deux cartes : firmware puis préparation de la microSD.

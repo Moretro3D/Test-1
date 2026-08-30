@@ -15,7 +15,7 @@ sprites_src = (root / "tools" / "sprites.py").read_text(encoding="utf-8")
 
 def check(value, label):
     if not value:
-        raise SystemExit("ECHEC V9.39: " + label)
+        raise SystemExit("ECHEC V9.41: " + label)
     print("OK  ", label)
 
 all_public = "\n".join((ino, dex, pet, html, readme, build, json.dumps(manifest)))
@@ -72,9 +72,9 @@ check("speciesId == 133 && caughtTotal <= 1" in pet,
       "ancienne sauvegarde Evoli reparee")
 check("case 252: case 255: case 258:" in (root / "pet.h").read_text(encoding="utf-8") and
       "case 133" not in (root / "pet.h").read_text(encoding="utf-8"), "Evoli refuse comme starter")
-check(manifest["name"] == "PokeTama Moretro3D - V9.39", "manifest Moretro3D")
-check(manifest["version"] == "1.46.19-moretro3d-v9.39-page-firmware", "version Web coherente")
-check('VERSION="1.46.19-moretro3d-v9.39-page-firmware"' in build, "version de compilation coherente")
+check(manifest["name"] == "PokeTama Moretro3D - V9.41", "manifest Moretro3D")
+check(manifest["version"] == "1.46.21-moretro3d-v9.41-ecran-ectoplasma-niv75", "version Web coherente")
+check('VERSION="1.46.21-moretro3d-v9.41-ecran-ectoplasma-niv75"' in build, "version de compilation coherente")
 check('if (!powerSave) return 110;' in ino, "cadence AMOLED anti-chevauchement")
 check('dotsX' not in ino and 'cardPage--;' in ino and 'cardPage++;' in ino,
       "fleches tactiles remplacent les billes de pages")
@@ -192,14 +192,25 @@ check('int visibleW=maxC>=minC ? maxC-minC+1' in ino and
       'uint8_t sBase = visibleMax ? targetDim / visibleMax : 5' in ino,
       "sprites accueil uniformises sur largeur et hauteur visibles")
 web_css=(root / 'web' / 'moretro.css').read_text(encoding='utf-8')
-check('moretro3d-logo.png' in html and 'moretro.css?v=9.39' in html and
+check('moretro3d-logo.png' in html and 'moretro.css?v=9.41' in html and
       'class="hero"' in html and 'class="steps"' in html and
       all(f'id="{button_id}"' in html for button_id in ('connect','auto','music','bar','log')) and
       '@media(max-width:760px)' in web_css and
       (root / 'web' / 'moretro3d-logo.png').is_file(),
-      "nouvelle page firmware Moretro3D responsive et fonctions USB conservees")
+      "ecran Ectoplasma niveau 75 transparent responsive et fonctions USB conservees")
+check(all(f'data-lang="{lang}"' in html for lang in ('fr','en','es','de','it','pt')) and
+      all(f'{lang}:' in html for lang in ('fr','en','es','de','it','pt')) and
+      "localStorage.getItem('poketama-web-lang')" in html and
+      'function applyLanguage(lang)' in html and 'function status(index' in html,
+      "page Web et journal USB traduits dans les six langues avec drapeaux")
+check('poketama-screen-ectoplasma-niv75-transparent.png' in html and
+      (root / 'web' / 'poketama-screen-ectoplasma-niv75-transparent.png').is_file() and
+      'ECTOPLASMA' not in ino,
+      "ecran transparent Ectoplasma niveau 75 reserve a la page Web")
 check("PokeTama Moretro3D" in html and "Installer le firmware Moretro3D" in html,
       "page firmware Moretro3D")
 check("Moretro3D/Test-1" in readme, "page GitHub Moretro3D/Test-1")
-check(not re.search(r"\b(Care for|Could not|Connect the board|Done \()", html), "page utilisateur entierement en francais")
-print("AUDIT MORETRO3D V9.39 OK")
+check('fr:{eyebrow:"Compagnon Pokémon de poche"' in html and
+      'document.documentElement.lang=lang' in html,
+      "francais complet disponible et applique au document")
+print("AUDIT MORETRO3D V9.41 OK")

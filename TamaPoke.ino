@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.19-moretro3d-v9.39-page-firmware"
+#define FW_VERSION "1.46.21-moretro3d-v9.41-ecran-ectoplasma-niv75"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 

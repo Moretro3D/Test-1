@@ -1,6 +1,11 @@
-POKETAMA MORETRO3D V9.39
+POKETAMA MORETRO3D V9.41
 
 CORRECTIONS VERIFIEES :
+- visuel limité à l'écran rond avec contour transparent ;
+- Ectoplasma niveau 75 et quatre jauges entièrement vertes ;
+- page Web disponible dans les six langues du firmware avec drapeaux ;
+- boutons, avertissements et journal USB traduits ;
+- visuel réel du PokeTama avec Ectoplasma intégré à l'accueil du site ;
 - page firmware entièrement refondue aux couleurs MoRetro3D ;
 - affichage responsive sur ordinateur et téléphone ;
 - parcours firmware puis microSD séparé en deux cartes lisibles ;
