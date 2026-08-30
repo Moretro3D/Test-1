@@ -1,30 +1,16 @@
-POKETAMA MORETRO3D V9.43
+POKETAMA MORETRO3D V9.61
 
-CORRECTIONS VERIFIEES :
-- page Shopify intégrable sans header ni footer PokeTama ;
-- Custom Liquid fourni dans le dossier shopify ;
-- hauteur synchronisée automatiquement sur PC et téléphone ;
-- six drapeaux chargés comme images SVG locales, sans emoji ;
-- compatibilité Chrome, Edge, Google Pages et mobile ;
-- visuel limité à l'écran rond avec contour transparent ;
-- Ectoplasma niveau 75 et quatre jauges entièrement vertes ;
-- page Web disponible dans les six langues du firmware avec drapeaux ;
-- boutons, avertissements et journal USB traduits ;
-- visuel réel du PokeTama avec Ectoplasma intégré à l'accueil du site ;
-- page firmware entièrement refondue aux couleurs MoRetro3D ;
-- affichage responsive sur ordinateur et téléphone ;
-- parcours firmware puis microSD séparé en deux cartes lisibles ;
-- sprites de l'accueil uniformises d'apres la largeur et la hauteur visibles ;
-- Kaiminus et les autres silhouettes larges ne sont plus surdimensionnes ;
-- aucune croix/fleche en haut a gauche des sous-pages Reglages ;
-- page Heure descendue et textes noirs en mode clair ;
-- valeurs Affichage en gris fonce ;
-- reglages repartis en quatre sous-pages traduites ;
-- ecran de demarrage recentre et prolonge de 1,5 seconde ;
-- meme Poke Ball SPR_ICON_PLAY sur l'accueil et le choix des starters ;
-- boutons d'accueil entierement independants ;
-- Poke Ball d'accueil ajustee a 28 px dans son cadre de 52 px ;
-- nouveau coeur d'affection pixel-art.
+PUBLICATION GITHUB :
+- utiliser ENVOYER_SUR_GITHUB.bat depuis ce dossier extrait ;
+- le lanceur vérifie le configurateur V9.61 et le Liquid V9.61 avant le push ;
+- le lanceur vérifie ensuite les deux fichiers directement dans origin/main.
 
-UTILISER UNIQUEMENT : ENVOYER_SUR_GITHUB.bat
-Le lanceur controle maintenant la version locale et la version recue par GitHub.
+CONTENU PUBLIC AJOUTÉ AU DÉPÔT :
+- configurateur et retour à l’accueil sur les deux parcours ;
+- communication sécurisée du parcours actif vers Shopify ;
+- 16 modèles GLB contrôlés face par face contre leurs 3MF ;
+- aucun Liquid Shopify, aucun CSV produit, aucun prix et aucun code panier.
+
+IMPORTANT :
+La fiche latérale, les prix et le panier restent exclusivement dans le ZIP
+Shopify privé PokeTama-SHOPIFY-CUSTOM-LIQUID-V9.61.zip.
