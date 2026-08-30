@@ -21,7 +21,11 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.32
+## Version V9.33
+
+- Chaque bouton d'accueil possede maintenant sa position, son cadre, sa taille de sprite, son decalage et sa zone tactile.
+- La Poke Ball est reglee independamment a 28 px ; les autres icones restent a 32 px.
+- Les tailles ne sont plus limitees aux multiples 16/32/48 px.
 
 - La Poke Ball de l'accueil est reduite de 48 px a 32 px et recentree dans son cadre de 52 px.
 - Le sprite reste strictement identique a celui du choix des starters.

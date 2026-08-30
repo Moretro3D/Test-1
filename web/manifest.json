@@ -1,25 +1,25 @@
 {
-  "name": "PokeTama Moretro3D - V9.32",
-  "version": "1.46.12-moretro3d-v9.32-pokeball-ajustee",
+  "name": "PokeTama Moretro3D - V9.33",
+  "version": "1.46.13-moretro3d-v9.33-boutons-independants",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/poketama-1.46.12-moretro3d-v9.32-pokeball-ajustee-bootloader.bin",
+          "path": "firmware/poketama-1.46.13-moretro3d-v9.33-boutons-independants-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/poketama-1.46.12-moretro3d-v9.32-pokeball-ajustee-partitions.bin",
+          "path": "firmware/poketama-1.46.13-moretro3d-v9.33-boutons-independants-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/poketama-1.46.12-moretro3d-v9.32-pokeball-ajustee-boot_app0.bin",
+          "path": "firmware/poketama-1.46.13-moretro3d-v9.33-boutons-independants-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/poketama-1.46.12-moretro3d-v9.32-pokeball-ajustee-app.bin",
+          "path": "firmware/poketama-1.46.13-moretro3d-v9.33-boutons-independants-app.bin",
           "offset": 65536
         }
       ]

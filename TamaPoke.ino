@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.12-moretro3d-v9.32-pokeball-ajustee"
+#define FW_VERSION "1.46.13-moretro3d-v9.33-boutons-independants"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -277,15 +277,19 @@ uint16_t uiContrastText(uint16_t bg) {
 struct Btn {
   int16_t cx, cy;
   const char *const *icon;
+  uint8_t frameSize;
+  uint8_t iconSize;
+  uint8_t hitRadius;
+  int8_t iconDx;
+  int8_t iconDy;
 };
 Btn buttons[4] = {
-  { 140, 390, SPR_ICON_FOOD },   // comer
-  { 202, 404, SPR_ICON_PLAY },   // jugar
-  { 264, 404, SPR_ICON_LIGHT },  // luz
-  { 326, 390, SPR_ICON_CLEAN },  // bano
+  // cx, cy, sprite, cadre, icone, tactile, dx, dy
+  { 140, 390, SPR_ICON_FOOD,  52, 32, 36, 0, 0 },
+  { 202, 404, SPR_ICON_PLAY,  52, 28, 36, 0, 0 },
+  { 264, 404, SPR_ICON_LIGHT, 52, 32, 36, 0, 0 },
+  { 326, 390, SPR_ICON_CLEAN, 52, 32, 36, 0, 0 },
 };
-#define BTN_HALF 26  // boton de 52x52
-#define BTN_HIT 36   // radio tactil (un poco mas generoso)
 
 // grietas del huevo (pixeles 'k' sobre el sprite)
 static const uint8_t CRACK1[][2] = { {15,8},{16,9},{15,10} };
@@ -1322,7 +1326,8 @@ void onTap(int16_t x, int16_t y) {
   }
   for (int i = 0; i < 4; i++) {
     int dx = x - buttons[i].cx, dy = y - buttons[i].cy;
-    if (dx * dx + dy * dy <= BTN_HIT * BTN_HIT) {
+    int hit = buttons[i].hitRadius;
+    if (dx * dx + dy * dy <= hit * hit) {
       Serial.printf("BTN %d\n", i);
       sfxPlay(SFX_TAP);
       if (i == 0) {
@@ -5920,14 +5925,17 @@ void drawBar(int x, int y, const char *label, uint8_t val) {
 void drawButtons() {
   for (int i = 0; i < 4; i++) {
     bool off = pet.sleeping && i != 2;  // durmiendo solo funciona LUZ
-    int bx = buttons[i].cx - BTN_HALF, by = buttons[i].cy - BTN_HALF;
-    if (!pet.sleeping) gfx->fillRoundRect(bx, by, 2 * BTN_HALF, 2 * BTN_HALF, 14, uiPanel());
-    gfx->drawRoundRect(bx, by, 2 * BTN_HALF, 2 * BTN_HALF, 14, inkColor());
+    int frame = buttons[i].frameSize;
+    int bx = buttons[i].cx - frame / 2, by = buttons[i].cy - frame / 2;
+    if (!pet.sleeping) gfx->fillRoundRect(bx, by, frame, frame, 14, uiPanel());
+    gfx->drawRoundRect(bx, by, frame, frame, 14, inkColor());
     if (!off) {
       // Bouton JOUER de l'accueil : même vraie Poké Ball pixel-art que la page RECORDS.
       // Les autres boutons conservent leurs sprites d'origine.
-      if (i == 1) drawMap(SPR_ICON_PLAY, 16, buttons[i].cx - 16, buttons[i].cy - 16, 2, false);
-      else drawMap(buttons[i].icon, 16, buttons[i].cx - 16, buttons[i].cy - 16, 2, false);
+      drawMapSized(buttons[i].icon, 16,
+                   buttons[i].cx + buttons[i].iconDx,
+                   buttons[i].cy + buttons[i].iconDy,
+                   buttons[i].iconSize, false);
     }
   }
 }
@@ -5961,6 +5969,21 @@ void drawMap(const char *const *map, int n, int x, int y, int s, bool silhouette
       char ch = map[r][c];
       if (ch == '.') continue;
       gfx->fillRect(x + c * s, y + r * s, s, s, silhouette ? INK_K : spriteColor(ch));
+    }
+  }
+}
+
+// Mise a l'echelle independante au pixel pres pour les boutons d'accueil.
+void drawMapSized(const char *const *map, int n, int cx, int cy, int target, bool silhouette) {
+  int left = cx - target / 2;
+  int top = cy - target / 2;
+  for (int dy = 0; dy < target; dy++) {
+    int sy = dy * n / target;
+    for (int dx = 0; dx < target; dx++) {
+      int sx = dx * n / target;
+      char ch = map[sy][sx];
+      if (ch == '.') continue;
+      gfx->drawPixel(left + dx, top + dy, silhouette ? INK_K : spriteColor(ch));
     }
   }
 }

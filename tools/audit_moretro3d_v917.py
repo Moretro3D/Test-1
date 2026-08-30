@@ -15,7 +15,7 @@ sprites_src = (root / "tools" / "sprites.py").read_text(encoding="utf-8")
 
 def check(value, label):
     if not value:
-        raise SystemExit("ECHEC V9.32: " + label)
+        raise SystemExit("ECHEC V9.33: " + label)
     print("OK  ", label)
 
 all_public = "\n".join((ino, dex, pet, html, readme, build, json.dumps(manifest)))
@@ -72,9 +72,9 @@ check("speciesId == 133 && caughtTotal <= 1" in pet,
       "ancienne sauvegarde Evoli reparee")
 check("case 252: case 255: case 258:" in (root / "pet.h").read_text(encoding="utf-8") and
       "case 133" not in (root / "pet.h").read_text(encoding="utf-8"), "Evoli refuse comme starter")
-check(manifest["name"] == "PokeTama Moretro3D - V9.32", "manifest Moretro3D")
-check(manifest["version"] == "1.46.12-moretro3d-v9.32-pokeball-ajustee", "version Web coherente")
-check('VERSION="1.46.12-moretro3d-v9.32-pokeball-ajustee"' in build, "version de compilation coherente")
+check(manifest["name"] == "PokeTama Moretro3D - V9.33", "manifest Moretro3D")
+check(manifest["version"] == "1.46.13-moretro3d-v9.33-boutons-independants", "version Web coherente")
+check('VERSION="1.46.13-moretro3d-v9.33-boutons-independants"' in build, "version de compilation coherente")
 check('if (!powerSave) return 110;' in ino, "cadence AMOLED anti-chevauchement")
 check('dotsX' not in ino and 'cardPage--;' in ino and 'cardPage++;' in ino,
       "fleches tactiles remplacent les billes de pages")
@@ -139,11 +139,13 @@ check('Poke Ball 16x16 originale' in sprites_src and
 check("Coeur d'affection Pokemon" in sprites_src and
       'g.rect(lx * 2, ly * 2' in sprites_src,
       "coeur d'affection pixel-art compact")
-check('drawMap(SPR_ICON_PLAY, 16, buttons[i].cx - 16, buttons[i].cy - 16, 2' in ino and
-      'if (i == 1) drawRecordSprite' not in ino,
-      "meme Poke Ball ajustee a 32 px sur accueil")
+check('uint8_t frameSize' in ino and 'uint8_t iconSize' in ino and
+      'uint8_t hitRadius' in ino and 'int8_t iconDx' in ino and
+      '{ 202, 404, SPR_ICON_PLAY,  52, 28, 36, 0, 0 }' in ino and
+      'drawMapSized(buttons[i].icon' in ino,
+      "reglage independant des quatre boutons au pixel pres")
 check("PokeTama Moretro3D" in html and "Installer le firmware Moretro3D" in html,
       "page firmware Moretro3D")
 check("Moretro3D/Test-1" in readme, "page GitHub Moretro3D/Test-1")
 check(not re.search(r"\b(Care for|Could not|Connect the board|Done \()", html), "page utilisateur entierement en francais")
-print("AUDIT MORETRO3D V9.32 OK")
+print("AUDIT MORETRO3D V9.33 OK")
