@@ -21,7 +21,13 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.34
+## Version V9.35
+
+- Reglages reorganises en menu compact avec chevrons, inspire d'iOS.
+- Sous-pages dediees : Heure, Affichage, Son et Reinitialisation.
+- Affichage regroupe mode sombre, cadres, langue et economie d'energie.
+- Remise a zero securisee sur une page rouge dediee, sans toucher a la microSD.
+- Trois nouveaux textes traduits dans les six langues.
 
 - Ecran de demarrage recentre optiquement sur le disque 466x466.
 - Logo place a Y=96, PokeTama a Y=284 et Moretro3D a Y=326.

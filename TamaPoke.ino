@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.14-moretro3d-v9.34-demarrage-centre"
+#define FW_VERSION "1.46.15-moretro3d-v9.35-reglages-organises"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -3147,7 +3147,7 @@ void drawWildPrompt() {
   gfx->setTextColor(UI_WHITE);
   gfx->setCursor(CX - strlen(T(S_FIGHT)) * 6, 240);
   gfx->print(T(S_FIGHT));
-  gfx->setTextColor(UI_BG_DAY);
+  gfx->setTextColor(uiContrastText(UI_TRACK));
   gfx->setCursor(CX - strlen(T(S_LATER)) * 6, 292);
   gfx->print(T(S_LATER));
 }
@@ -3428,6 +3428,7 @@ void openClock() {
   clockH = (e / 3600) % 24;
   clockM = (e / 60) % 60;
   clockOpen = true;
+  settingsPage = 0;
   clockDirty = true;
   lockTouchBrief();
   sfxPlay(SFX_MENU);
@@ -3439,6 +3440,7 @@ void applyClock() {
   rtcSetEpoch(e);
   pet.setClock(e);
   clockOpen = false;
+  settingsPage = 0;
   markUiDirty();
   lockTouchBrief();
 }
@@ -3487,7 +3489,7 @@ const char *powerSaveLabel() {
 
 void drawStatusLine(int y, const char *label, const char *value, uint16_t valueColor) {
   gfx->setTextSize(1);
-  gfx->setTextColor(UI_TRACK);
+  gfx->setTextColor(uiSub());
   gfx->setCursor(94, y);
   gfx->print(label);
   gfx->setTextColor(valueColor);
@@ -3597,7 +3599,7 @@ void renderHelp() {
 
   char pg[12];
   snprintf(pg, sizeof(pg), "%u/%u", helpPage + 1, HELP_PAGE_COUNT);
-  gfx->setTextColor(UI_TRACK);
+  gfx->setTextColor(uiSub());
   gfx->setCursor(CX - strlen(pg) * 6, 340);
   gfx->print(pg);
 
@@ -3673,15 +3675,22 @@ void drawSettingsRow(int x, int y, int w, int h, const char *label, const char *
   uint16_t fill = selected ? C565(0x43,0x2f,0x75) : uiPanel();
   gfx->fillRoundRect(x,y,w,h,12,fill);
   gfx->drawRoundRect(x,y,w,h,12, selected ? C565(0xa8,0x7d,0xff) : uiLine());
+  int valueLen=(value && value[0]) ? (int)strlen(value) : 1;
+  uint8_t textScale=((int)strlen(label)*12 + valueLen*12 + 46 <= w) ? 2 : 1;
+  int textY=y+(h-8*textScale)/2;
   gfx->setTextColor(selected ? UI_WHITE : uiInk());
-  gfx->setTextSize(2);
-  gfx->setCursor(x+14,y+12);
+  gfx->setTextSize(textScale);
+  gfx->setCursor(x+14,textY);
   gfx->print(label);
   if (value && value[0]) {
-    int vw=(int)strlen(value)*12;
+    int vw=(int)strlen(value)*6*textScale;
     gfx->setTextColor(selected ? UI_WHITE : uiSub());
-    gfx->setCursor(x+w-vw-14,y+12);
+    gfx->setCursor(x+w-vw-14,textY);
     gfx->print(value);
+  } else {
+    gfx->setTextColor(selected ? UI_WHITE : uiSub());
+    gfx->setCursor(x+w-18*textScale,textY);
+    gfx->print(">");
   }
 }
 
@@ -3699,7 +3708,8 @@ void renderDisplaySettings() {
   gfx->fillRoundRect(30,28,54,36,10,uiPanel());
   gfx->drawRoundRect(30,28,54,36,10,uiLine());
   gfx->setTextColor(uiInk());
-  gfx->setTextSize(2);
+  uint8_t warnScale=strlen(warning)>28 ? 1 : 2;
+  gfx->setTextSize(warnScale);
   gfx->setCursor(49,38);
   gfx->print("<");
 
@@ -3751,22 +3761,90 @@ void renderDisplaySettings() {
   gfx->setCursor(98,229); gfx->print("<");
   gfx->setCursor(348,229); gfx->print(">");
 
-  gfx->setTextColor(uiSub());
-  gfx->setTextSize(1);
-  const char *hint=T(S_FRAME_UNLOCK_HINT);
-  gfx->setCursor(CX-(int)strlen(hint)*3,368);
-  gfx->print(hint);
+  char langVal[10];
+  snprintf(langVal,sizeof(langVal),"%s",LANG_CODES[gLang]);
+  drawSettingsRow(64,352,164,38,T(S_LANG_LABEL),langVal,false);
+  drawSettingsRow(238,352,164,38,T(S_POWER_SAVE_LABEL),powerSave ? T(S_ON) : T(S_OFF),powerSave);
 
-  gfx->fillRoundRect(128,394,210,44,14,UI_BAR_OK);
+  gfx->fillRoundRect(128,398,210,40,14,UI_BAR_OK);
   gfx->setTextColor(UI_WHITE);
   gfx->setTextSize(2);
-  gfx->setCursor(CX-12,408);
+  gfx->setCursor(CX-12,410);
   gfx->print("OK");
+  gfx->flush();
+}
+
+void drawSettingsBack() {
+  gfx->fillRoundRect(30,28,54,36,10,uiPanel());
+  gfx->drawRoundRect(30,28,54,36,10,uiLine());
+  gfx->setTextColor(uiInk()); gfx->setTextSize(2);
+  gfx->setCursor(49,38); gfx->print("<");
+}
+
+void drawSettingsTitle(const char *title) {
+  gfx->setTextColor(uiInk()); gfx->setTextSize(3);
+  gfx->setCursor(CX-(int)strlen(title)*9,38); gfx->print(title);
+}
+
+void renderTimeSettings() {
+  clockDirty=false; gfx->fillScreen(uiBg());
+  drawSettingsBack(); drawSettingsTitle(T(S_SET_TIME));
+  char t[8]; snprintf(t,sizeof(t),"%02d:%02d",clockH,clockM);
+  gfx->setTextColor(uiInk()); gfx->setTextSize(5);
+  gfx->setCursor(CX-75,104); gfx->print(t);
+  gfx->setTextColor(uiSub()); gfx->setTextSize(1);
+  gfx->setCursor(122,170); gfx->print(T(S_HOUR));
+  gfx->setCursor(292,170); gfx->print(T(S_MIN));
+  drawClockBtn(94,190,"-"); drawClockBtn(160,190,"+");
+  drawClockBtn(248,190,"-"); drawClockBtn(314,190,"+");
+  gfx->fillRoundRect(108,330,250,50,14,UI_BAR_OK);
+  gfx->setTextColor(UI_WHITE); gfx->setTextSize(2);
+  gfx->setCursor(CX-(int)strlen(T(S_VALIDATE))*6,346); gfx->print(T(S_VALIDATE));
+  gfx->flush();
+}
+
+void renderSoundSettings() {
+  clockDirty=false; gfx->fillScreen(uiBg());
+  drawSettingsBack(); drawSettingsTitle(T(S_SOUND_LABEL));
+  static const StrId modes[4]={S_SND_FULL,S_SND_MED,S_SND_LOW,S_SND_OFF};
+  static const uint8_t values[4]={SOUND_FULL,SOUND_MED,SOUND_LOW,SOUND_OFF};
+  for(uint8_t i=0;i<4;i++) {
+    bool active=audioMode()==values[i];
+    drawSettingsRow(64,92+i*62,338,48,T(modes[i]),active ? T(S_ACTIVE) : "",active);
+  }
+  gfx->fillRoundRect(128,358,210,46,14,UI_BAR_OK);
+  gfx->setTextColor(UI_WHITE); gfx->setTextSize(2);
+  gfx->setCursor(CX-12,372); gfx->print("OK");
+  gfx->flush();
+}
+
+void renderResetSettings() {
+  clockDirty=false; gfx->fillScreen(uiBg());
+  drawSettingsBack(); drawSettingsTitle(T(S_RESET));
+  gfx->fillRoundRect(58,104,350,156,18,darkMode ? C565(0x42,0x0d,0x14) : C565(0xff,0xe6,0xe8));
+  gfx->drawRoundRect(58,104,350,156,18,C565(0xff,0x35,0x45));
+  gfx->setTextColor(darkMode ? UI_WHITE : C565(0x75,0x08,0x12));
+  gfx->setTextSize(2);
+  const char *warning=T(S_RESET_WARNING);
+  gfx->setCursor(CX-(int)strlen(warning)*3*warnScale,136); gfx->print(warning);
+  gfx->setTextSize(1); gfx->setTextColor(darkMode ? UI_WHITE : uiInk());
+  gfx->setCursor(196,184); gfx->print("microSD OK");
+  gfx->fillRoundRect(72,300,322,54,15,C565(0xd8,0x18,0x2b));
+  gfx->setTextColor(UI_WHITE); gfx->setTextSize(2);
+  const char *confirm=T(S_RESET_CONFIRM);
+  gfx->setCursor(CX-(int)strlen(confirm)*6,318); gfx->print(confirm);
+  gfx->fillRoundRect(128,374,210,44,14,uiPanel());
+  gfx->drawRoundRect(128,374,210,44,14,uiLine());
+  gfx->setTextColor(uiInk());
+  gfx->setCursor(CX-(int)strlen(T(S_LAN_CANCEL))*6,388); gfx->print(T(S_LAN_CANCEL));
   gfx->flush();
 }
 
 void renderClock() {
   if (settingsPage==1) { renderDisplaySettings(); return; }
+  if (settingsPage==2) { renderSoundSettings(); return; }
+  if (settingsPage==3) { renderTimeSettings(); return; }
+  if (settingsPage==4) { renderResetSettings(); return; }
 
   clockDirty=false;
   gfx->fillScreen(uiBg());
@@ -3778,52 +3856,75 @@ void renderClock() {
   gfx->print(title);
 
   // Heure compacte.
-  char t[8];
-  snprintf(t,sizeof(t),"%02d:%02d",clockH,clockM);
-  gfx->setTextColor(uiSub());
-  gfx->setTextSize(4);
-  gfx->setCursor(CX-60,76);
-  gfx->print(t);
-
-  drawClockBtn(104,126,"-");
-  drawClockBtn(170,126,"+");
-  drawClockBtn(252,126,"-");
-  drawClockBtn(318,126,"+");
+  drawSettingsRow(58,88,350,50,T(S_SET_TIME),"",false);
 
   // Paramètres principaux sous forme de cartes propres.
-  const char *sl=soundModeLabel();
-  drawSettingsRow(58,198,350,46,T(S_SOUND_LABEL),sl,false);
+  drawSettingsRow(58,148,350,50,T(S_DISPLAY_LABEL),"",false);
+  drawSettingsRow(58,208,350,50,T(S_SOUND_LABEL),"",false);
+  drawSettingsRow(58,268,350,50,T(S_RESET),"",false);
 
-  drawSettingsRow(58,250,350,46,T(S_POWER_SAVE_LABEL),powerSave ? T(S_ON) : T(S_OFF),powerSave);
-
-  char langVal[10];
-  snprintf(langVal,sizeof(langVal),"%s",LANG_CODES[gLang]);
-  drawSettingsRow(58,302,168,46,T(S_LANG_LABEL),langVal,false);
-  drawSettingsRow(240,302,168,46,T(S_DISPLAY_LABEL),"",true);
-
-  gfx->fillRoundRect(58,364,154,46,14,uiPanel());
-  gfx->drawRoundRect(58,364,154,46,14,uiLine());
+  gfx->fillRoundRect(58,342,154,46,14,uiPanel());
+  gfx->drawRoundRect(58,342,154,46,14,uiLine());
   gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
   const char *hw=HELP_WORD[gLang];
-  gfx->setCursor(58+(154-(int)strlen(hw)*12)/2,378);
+  gfx->setCursor(58+(154-(int)strlen(hw)*12)/2,356);
   gfx->print(hw);
 
-  gfx->fillRoundRect(226,364,182,46,14,UI_BAR_OK);
+  gfx->fillRoundRect(226,342,182,46,14,UI_BAR_OK);
   gfx->setTextColor(UI_WHITE);
   gfx->setTextSize(3);
-  gfx->setCursor(299,374);
+  gfx->setCursor(299,352);
   gfx->print("OK");
   gfx->flush();
 }
 
 void clockTap(int16_t x,int16_t y) {
+  if (settingsPage==2) {
+    if ((x>=20 && x<=94 && y>=18 && y<=72) || (y>=350 && y<=420)) {
+      settingsPage=0; clockDirty=true; sfxPlay(SFX_TAP); lockTouchBrief(); return;
+    }
+    if (x>=54 && x<=412 && y>=82 && y<=342) {
+      uint8_t row=(uint8_t)((y-82)/62);
+      static const uint8_t values[4]={SOUND_FULL,SOUND_MED,SOUND_LOW,SOUND_OFF};
+      if(row<4) { audioSetMode(values[row]); clockDirty=true; if(audioEnabled()) sfxPlay(SFX_LEVEL); return; }
+    }
+    return;
+  }
+  if (settingsPage==3) {
+    if (x>=20 && x<=94 && y>=18 && y<=72) {
+      settingsPage=0; clockDirty=true; sfxPlay(SFX_TAP); lockTouchBrief(); return;
+    }
+    if (y>=180 && y<=268) {
+      if (x>=84 && x<152) clockH=(clockH+23)%24;
+      else if (x>=152 && x<230) clockH=(clockH+1)%24;
+      else if (x>=238 && x<306) clockM=(clockM+59)%60;
+      else if (x>=306 && x<382) clockM=(clockM+1)%60;
+      clockDirty=true; return;
+    }
+    if (x>=96 && x<=370 && y>=318 && y<=392) { applyClock(); return; }
+    return;
+  }
+  if (settingsPage==4) {
+    if ((x>=20 && x<=94 && y>=18 && y<=72) || (x>=116 && x<=350 && y>=364 && y<=430)) {
+      settingsPage=0; clockDirty=true; sfxPlay(SFX_TAP); lockTouchBrief(); return;
+    }
+    if (x>=60 && x<=406 && y>=286 && y<=366) {
+      pet.factoryReset(); delay(120); ESP.restart(); return;
+    }
+    return;
+  }
   if (settingsPage==1) {
     if ((x>=20 && x<=94 && y>=18 && y<=72) || (x>=118 && x<=348 && y>=388 && y<=448)) {
       settingsPage=0; clockDirty=true; sfxPlay(SFX_TAP); lockTouchBrief(); return;
     }
     if (x>=54 && x<=412 && y>=78 && y<=144) {
       setDarkMode(!darkMode); clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
+    }
+    if (y>=342 && y<=398) {
+      if (x>=54 && x<=232) setLang((Lang)((gLang+1)%LANG_COUNT));
+      else if (x>=232 && x<=412) setPowerSave(!powerSave);
+      clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
     }
     uint8_t count=pet.unlockedCollectionFrameCount();
     if (y>=204 && y<=282 && count>0) {
@@ -3839,29 +3940,12 @@ void clockTap(int16_t x,int16_t y) {
     return;
   }
 
-  if (y>=120 && y<=184) {
-    if (x>=104 && x<162) clockH=(clockH+23)%24;
-    else if (x>=170 && x<228) clockH=(clockH+1)%24;
-    else if (x>=252 && x<310) clockM=(clockM+59)%60;
-    else if (x>=318 && x<376) clockM=(clockM+1)%60;
-    clockDirty=true; return;
-  }
-  if (x>=48 && x<=418 && y>=188 && y<=244) {
-    audioSetMode(nextSoundMode()); clockDirty=true;
-    if (audioEnabled()) sfxPlay(SFX_LEVEL);
-    return;
-  }
-  if (x>=48 && x<=418 && y>=242 && y<=300) {
-    setPowerSave(!powerSave); clockDirty=true; sfxPlay(SFX_MENU); return;
-  }
-  if (x>=48 && x<=232 && y>=294 && y<=354) {
-    setLang((Lang)((gLang+1)%LANG_COUNT)); clockDirty=true; sfxPlay(SFX_TAP); return;
-  }
-  if (x>=232 && x<=418 && y>=294 && y<=354) {
-    settingsPage=1; clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
-  }
-  if (x>=48 && x<=220 && y>=354 && y<=420) { openHelp(); return; }
-  if (x>=220 && x<=420 && y>=354 && y<=420) { applyClock(); return; }
+  if (x>=48 && x<=418 && y>=78 && y<=142) { settingsPage=3; clockDirty=true; sfxPlay(SFX_MENU); return; }
+  if (x>=48 && x<=418 && y>=142 && y<=202) { settingsPage=1; clockDirty=true; sfxPlay(SFX_MENU); return; }
+  if (x>=48 && x<=418 && y>=202 && y<=262) { settingsPage=2; clockDirty=true; sfxPlay(SFX_MENU); return; }
+  if (x>=48 && x<=418 && y>=262 && y<=326) { settingsPage=4; clockDirty=true; sfxPlay(SFX_MENU); return; }
+  if (x>=48 && x<=220 && y>=332 && y<=400) { openHelp(); return; }
+  if (x>=220 && x<=420 && y>=332 && y<=400) { clockOpen=false; settingsPage=0; markUiDirty(); lockTouchBrief(); return; }
 }
 
 // llama + numero de racha arriba a la izquierda
@@ -4109,7 +4193,7 @@ void renderCardProfile() {
   gfx->setCursor(CX - hlen * (hts == 3 ? 9 : 6), hts == 3 ? 34 : 40);
   gfx->print(head);
   if (pet.nick[0]) {  // especie real bajo el apodo
-    gfx->setTextColor(UI_TRACK);
+    gfx->setTextColor(uiSub());
     gfx->setTextSize(2);
     const char *speciesName = dexName(pet.speciesId);
     gfx->setCursor(CX - (strlen(speciesName) + 2) * 6, 64);
@@ -4146,7 +4230,7 @@ void renderCardProfile() {
   gfx->setCursor(CX - strlen(info) * 6, 296);
   gfx->print(info);
 
-  gfx->setTextColor(UI_TRACK);
+  gfx->setTextColor(uiSub());
   gfx->setCursor(CX - strlen(T(S_RENAME_HINT)) * 6, 326);
   gfx->print(T(S_RENAME_HINT));
 
@@ -4363,7 +4447,7 @@ void drawPersonalityRecord(int x,int y,const char *label,uint16_t val,uint16_t c
 void renderCardPersonality() {
   PetPersonality pers=pet.personality(); const char *title=T(S_PERSONALITY); const char *name=T(personalityNameId(pers)); const char *hint=T(personalityHintId(pers)); uint16_t col=personalityColor(pers);
   gfx->setTextColor(uiInk()); gfx->setTextSize(3); gfx->setCursor(CX-strlen(title)*9,38); gfx->print(title);
-  gfx->fillRoundRect(62,78,342,70,16,col); gfx->setTextColor(UI_BG_DAY); int nts=(strlen(name)<=10)?3:2; gfx->setTextSize(nts); gfx->setCursor(CX-strlen(name)*(nts==3?9:6),nts==3?96:103); gfx->print(name); gfx->setTextSize(2); gfx->setCursor(CX-strlen(hint)*6,128); gfx->print(hint);
+  gfx->fillRoundRect(62,78,342,70,16,col); gfx->setTextColor(uiContrastText(col)); int nts=(strlen(name)<=10)?3:2; gfx->setTextSize(nts); gfx->setCursor(CX-strlen(name)*(nts==3?9:6),nts==3?96:103); gfx->print(name); gfx->setTextSize(2); gfx->setCursor(CX-strlen(hint)*6,128); gfx->print(hint);
   drawCardStat(180,T(S_VIN),pet.bond,100,C565(0xd4,0x52,0x7e));
   drawCardStat(226,T(S_BAR_JOY),pet.joy,100,UI_BAR_WARN);
 }
@@ -4527,7 +4611,7 @@ void renderCardBox() {
   gfx->setTextColor(uiInk());
   gfx->setCursor(72, 70);
   gfx->print(caught);
-  gfx->setTextColor(UI_TRACK);
+  gfx->setTextColor(uiSub());
   gfx->setCursor(72, 92);
   gfx->print(known);
   gfx->setCursor(258, 92);
@@ -4536,7 +4620,7 @@ void renderCardBox() {
   if (pet.caughtCount() == 0) {
     gfx->fillRoundRect(82, 178, 302, 72, 16, uiPanel());
     gfx->drawRoundRect(82, 178, 302, 72, 16, UI_TRACK);
-    gfx->setTextColor(UI_TRACK);
+    gfx->setTextColor(uiSub());
     gfx->setTextSize(2);
     gfx->setCursor(CX - strlen(T(S_NO_CATCHES)) * 6, 207);
     gfx->print(T(S_NO_CATCHES));
@@ -4574,7 +4658,7 @@ void renderCardBox() {
   gfx->print(">");
   char pg[12];
   snprintf(pg, sizeof(pg), T(S_PAGE_FMT), boxPage + 1, pages);
-  gfx->setTextColor(UI_TRACK);
+  gfx->setTextColor(uiSub());
   gfx->setTextSize(2);
   gfx->setCursor(CX - strlen(pg) * 6, 304);
   gfx->print(pg);
@@ -4672,7 +4756,7 @@ void renderCardProgress() {
   gfx->print(nx);
 
   // estado de evolucion
-  gfx->setTextColor(UI_TRACK);
+  gfx->setTextColor(uiSub());
   gfx->setCursor(CX - strlen(T(S_EVO_LABEL)) * 6, 230);
   gfx->print(T(S_EVO_LABEL));
   char evoBuf[28];
@@ -4783,7 +4867,7 @@ void renderExpeditionTrainChoice() {
       gfx->print(maxed);
     }
   }
-  gfx->setTextColor(UI_TRACK);
+  gfx->setTextColor(uiSub());
   gfx->setTextSize(2);
   gfx->setCursor(CX - strlen(T(S_BACK)) * 6, 268);
   gfx->print(T(S_BACK));
@@ -4812,11 +4896,11 @@ void renderCardExpedition() {
     uint32_t left = (pet.expeditionEndEpoch - nowEpoch + 59UL) / 60UL;
     char back[28];
     snprintf(back, sizeof(back), T(S_EXP_IN_FMT), (unsigned)left);
-    gfx->setTextColor(0x4C98);
+    gfx->setTextColor(darkMode ? UI_WHITE : 0x4C98);
     gfx->setTextSize(3);
     gfx->setCursor(CX - strlen(back) * 9, 86);
     gfx->print(back);
-    gfx->setTextColor(UI_TRACK);
+    gfx->setTextColor(uiSub());
     gfx->setTextSize(1);
     gfx->setCursor(CX - 90, 116);
     gfx->print(T(S_WAIT));
@@ -5240,7 +5324,7 @@ void renderGallery() {
       } else {
         char num[6];
         snprintf(num, sizeof(num), "%d", dex);
-        gfx->setTextColor(UI_TRACK);
+        gfx->setTextColor(uiSub());
         gfx->setTextSize(2);
         gfx->setCursor(x + 24, y + 32);
         gfx->print(num);

@@ -1,25 +1,25 @@
 {
-  "name": "PokeTama Moretro3D - V9.34",
-  "version": "1.46.14-moretro3d-v9.34-demarrage-centre",
+  "name": "PokeTama Moretro3D - V9.35",
+  "version": "1.46.15-moretro3d-v9.35-reglages-organises",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/poketama-1.46.14-moretro3d-v9.34-demarrage-centre-bootloader.bin",
+          "path": "firmware/poketama-1.46.15-moretro3d-v9.35-reglages-organises-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/poketama-1.46.14-moretro3d-v9.34-demarrage-centre-partitions.bin",
+          "path": "firmware/poketama-1.46.15-moretro3d-v9.35-reglages-organises-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/poketama-1.46.14-moretro3d-v9.34-demarrage-centre-boot_app0.bin",
+          "path": "firmware/poketama-1.46.15-moretro3d-v9.35-reglages-organises-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/poketama-1.46.14-moretro3d-v9.34-demarrage-centre-app.bin",
+          "path": "firmware/poketama-1.46.15-moretro3d-v9.35-reglages-organises-app.bin",
           "offset": 65536
         }
       ]

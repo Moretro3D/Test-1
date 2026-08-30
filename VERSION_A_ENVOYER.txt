@@ -1,6 +1,7 @@
-POKETAMA MORETRO3D V9.34
+POKETAMA MORETRO3D V9.35
 
 CORRECTIONS VERIFIEES :
+- reglages repartis en quatre sous-pages traduites ;
 - ecran de demarrage recentre et prolonge de 1,5 seconde ;
 - meme Poke Ball SPR_ICON_PLAY sur l'accueil et le choix des starters ;
 - boutons d'accueil entierement independants ;
