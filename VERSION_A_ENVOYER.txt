@@ -1,6 +1,8 @@
-POKETAMA MORETRO3D V9.41
+POKETAMA MORETRO3D V9.42
 
 CORRECTIONS VERIFIEES :
+- six drapeaux chargés comme images SVG locales, sans emoji ;
+- compatibilité Chrome, Edge, Google Pages et mobile ;
 - visuel limité à l'écran rond avec contour transparent ;
 - Ectoplasma niveau 75 et quatre jauges entièrement vertes ;
 - page Web disponible dans les six langues du firmware avec drapeaux ;

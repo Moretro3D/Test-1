@@ -21,7 +21,11 @@ Choisis librement une generation :
 
 Les noms suivent la langue selectionnee. Plante est affiche en vert, Feu en rouge et Eau en bleu.
 
-## Version V9.41
+## Version V9.42
+
+- Emojis des langues remplacés par six véritables drapeaux SVG locaux.
+- Affichage des langues indépendant des polices emoji de Chrome et Google.
+- Drapeaux nets sur ordinateur et mobile avec état actif visible.
 
 - Visuel du site limité à la partie affichage circulaire, sans appareil ni main.
 - Ectoplasma affiché au niveau 75 avec les quatre jauges entièrement vertes.
