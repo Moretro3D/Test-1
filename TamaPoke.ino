@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.24-moretro3d-v9.62-fuite-sans-abandon"
+#define FW_VERSION "1.46.25-moretro3d-v9.63-bandeau-combat"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -2974,24 +2974,24 @@ void battleTap(int16_t x, int16_t y) {
   }
   if (battleAttackMenuUntil) {
     if (y >= 344 && y <= 410) {
-      if (x >= 62 && x <= 174) { performBattleAction(BATTLE_ATTACK_QUICK); return; }
-      if (x >= 174 && x <= 292) { performBattleAction(BATTLE_ATTACK); return; }
-      if (x >= 292 && x <= 410) { performBattleAction(BATTLE_ATTACK_HEAVY); return; }
+      if (x >= 82 && x <= 178) { performBattleAction(BATTLE_ATTACK_QUICK); return; }
+      if (x >= 190 && x <= 286) { performBattleAction(BATTLE_ATTACK); return; }
+      if (x >= 298 && x <= 394) { performBattleAction(BATTLE_ATTACK_HEAVY); return; }
     }
     battleAttackMenuUntil=0;
     battleDirty=true;
     sfxPlay(SFX_TAP);
     return;
   }
-  if (x >= 54 && x <= 132 && y >= 344 && y <= 410) {
+  if (x >= 72 && x <= 148 && y >= 344 && y <= 410) {
     battleAttackMenuUntil = 1;
     battleDirty=true;
     sfxPlay(SFX_TAP);
-  } else if (x >= 138 && x <= 216 && y >= 344 && y <= 410) {
+  } else if (x >= 154 && x <= 230 && y >= 344 && y <= 410) {
     performBattleAction(BATTLE_DODGE);
-  } else if (x >= 222 && x <= 300 && y >= 344 && y <= 410) {
+  } else if (x >= 236 && x <= 312 && y >= 344 && y <= 410) {
     performBattleAction(BATTLE_REST);
-  } else if (x >= 306 && x <= 384 && y >= 344 && y <= 410) {
+  } else if (x >= 318 && x <= 394 && y >= 344 && y <= 410) {
     // Sortie neutre : finishBattle() n'est pas appele, donc aucun gain ni malus.
     sfxPlay(SFX_TAP);
     closeBattle();
@@ -3339,9 +3339,11 @@ void renderBattle() {
       gfx->print(T(S_OK));
     }
   } else {
-    // Bandeau d'action sombre intégré au décor : aucun grand fond gris.
-    gfx->fillRoundRect(62, 326, 342, 88, 18, C565(0x0c,0x16,0x2c));
-    gfx->drawRoundRect(62, 326, 342, 88, 18, C565(0x50,0x64,0x8c));
+    // Bandeau continu jusqu'aux bords : l'ecran rond masque naturellement ses
+    // extremites et evite l'effet de petite boite posee sur le combat.
+    gfx->fillRect(0, 326, 466, 90, C565(0x0c,0x16,0x2c));
+    gfx->drawFastHLine(0, 326, 466, C565(0x50,0x64,0x8c));
+    gfx->drawFastHLine(0, 415, 466, C565(0x28,0x38,0x5c));
 
     if (battleMsg[0]) {
       gfx->setTextColor(UI_WHITE);
@@ -3353,38 +3355,38 @@ void renderBattle() {
 
     if (battleAttackMenuUntil) {
       // Trois attaques fiables directement reliées au moteur existant.
-      gfx->fillRoundRect(70, 350, 96, 52, 12, C565(0x1a,0x54,0x9a));
-      gfx->fillRoundRect(185, 350, 96, 52, 12, UI_BAR_BAD);
-      gfx->fillRoundRect(300, 350, 96, 52, 12, UI_BAR_WARN);
+      gfx->fillRoundRect(82, 350, 96, 52, 12, C565(0x1a,0x54,0x9a));
+      gfx->fillRoundRect(190, 350, 96, 52, 12, UI_BAR_BAD);
+      gfx->fillRoundRect(298, 350, 96, 52, 12, UI_BAR_WARN);
 
       gfx->setTextColor(uiContrastText(C565(0x1a,0x54,0x9a)));
-      drawBattleButtonLabel(70,363,96,T(S_QUICK_ATTACK));
+      drawBattleButtonLabel(82,363,96,T(S_QUICK_ATTACK));
       gfx->setTextColor(uiContrastText(UI_BAR_BAD));
-      drawBattleButtonLabel(185,363,96,T(S_NORMAL_ATTACK));
+      drawBattleButtonLabel(190,363,96,T(S_NORMAL_ATTACK));
       gfx->setTextColor(uiContrastText(UI_BAR_WARN));
-      drawBattleButtonLabel(300,363,96,T(S_HEAVY_ATTACK));
+      drawBattleButtonLabel(298,363,96,T(S_HEAVY_ATTACK));
 
       gfx->setTextSize(1);
       gfx->setTextColor(UI_WHITE);
-      gfx->setCursor(105,387); gfx->print("85%");
-      gfx->setCursor(218,387); gfx->print("100%");
-      gfx->setCursor(330,387); gfx->print("125%");
+      gfx->setCursor(117,387); gfx->print("85%");
+      gfx->setCursor(223,387); gfx->print("100%");
+      gfx->setCursor(328,387); gfx->print("125%");
     } else {
-      gfx->fillRoundRect(54, 350, 78, 52, 12, UI_BAR_BAD);
-      gfx->fillRoundRect(138, 350, 78, 52, 12, C565(0x2d,0x73,0xb9));
-      gfx->fillRoundRect(222, 350, 78, 52, 12, UI_BAR_OK);
-      gfx->fillRoundRect(306, 350, 78, 52, 12, UI_BAR_WARN);
+      gfx->fillRoundRect(72, 350, 76, 52, 12, UI_BAR_BAD);
+      gfx->fillRoundRect(154, 350, 76, 52, 12, C565(0x2d,0x73,0xb9));
+      gfx->fillRoundRect(236, 350, 76, 52, 12, UI_BAR_OK);
+      gfx->fillRoundRect(318, 350, 76, 52, 12, UI_BAR_WARN);
 
       gfx->setTextColor(uiContrastText(UI_BAR_BAD));
-      drawBattleButtonLabel(54,367,78,T(S_ATTACK));
+      drawBattleButtonLabel(72,367,76,T(S_ATTACK));
       gfx->setTextColor(uiContrastText(C565(0x2d,0x73,0xb9)));
-      drawBattleButtonLabel(138,367,78,T(S_DODGE));
+      drawBattleButtonLabel(154,367,76,T(S_DODGE));
       char restLabel[18];
       snprintf(restLabel,sizeof(restLabel),"%s %u",T(S_REST),battleRun.restUsesLeft);
       gfx->setTextColor(uiContrastText(UI_BAR_OK));
-      drawBattleButtonLabel(222,367,78,restLabel);
+      drawBattleButtonLabel(236,367,76,restLabel);
       gfx->setTextColor(uiContrastText(UI_BAR_WARN));
-      drawBattleButtonLabel(306,367,78,T(S_RUN_BATTLE));
+      drawBattleButtonLabel(318,367,76,T(S_RUN_BATTLE));
     }
   }
 

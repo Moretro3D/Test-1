@@ -100,10 +100,14 @@ forbidden_departure = (
 check(all(token not in ino and token not in pet and token not in pet_h
           for token in forbidden_departure) and 'line == "BYE"' not in ino,
       "abandon et adieu entierement inaccessibles")
-check('drawBattleButtonLabel(306,367,78,T(S_RUN_BATTLE))' in ino and
-      'x >= 306 && x <= 384 && y >= 344 && y <= 410' in ino and
+check('drawBattleButtonLabel(318,367,76,T(S_RUN_BATTLE))' in ino and
+      'x >= 318 && x <= 394 && y >= 344 && y <= 410' in ino and
       'finishBattle() n\'est pas appele' in ino,
       "fuite tactile en combat sauvage sans gain ni penalite")
+check('gfx->fillRect(0, 326, 466, 90' in ino and
+      'gfx->drawFastHLine(0, 326, 466' in ino and
+      'gfx->fillRoundRect(72, 350, 76, 52' in ino,
+      "bandeau combat pleine largeur et boutons decales a droite")
 check('#define CARD_COUNT 9' in ino and 'renderCardRecords();' in ino and
       'drawPersonalityRecord(68,94' in ino,
       "records separes sur une neuvieme page")
