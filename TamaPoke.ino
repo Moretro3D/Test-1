@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.23-moretro3d-v9.43-shopify-embed"
+#define FW_VERSION "1.46.24-moretro3d-v9.62-fuite-sans-abandon"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -337,7 +337,7 @@ bool swallowGesture = false; // el toque que despierta no acciona nada
 uint32_t ignoreTouchUntil = 0;
 uint32_t holdStart = 0;     // pulsacion larga sobre el bicho
 uint32_t confirmUntil = 0;  // dialogo "soltar?" activo hasta este millis
-uint8_t choiceKind = 0;     // dialogo de decision: 0 ninguno, 1 evolucion, 2 despedida
+uint8_t choiceKind = 0;     // dialogue de decision : 0 aucun, 1 evolution
 uint32_t choiceUntil = 0;   // se cierra solo a este millis
 int16_t tX0, tY0, tXl, tYl; // gesto en curso (inicio y ultima posicion)
 uint32_t tStart = 0;
@@ -506,7 +506,7 @@ bool mainScreenReadyForAmbientSound() {
   // doit pas etre rechargee ni redemarree lors du retour a l'accueil.
   if (pet.sleeping || pet.ceremony) return false;
   if (battleOpen) return false;
-  if (pet.evolving() || pet.wantEvolveButton() || pet.canRunawayNow() || pet.wantFarewellButton()) return false;
+  if (pet.evolving() || pet.wantEvolveButton()) return false;
   return true;
 }
 
@@ -790,9 +790,6 @@ void handleSerial() {
     pet.setClock(pet.lastSeenEpoch + 86400);
     pet.caress();
     Serial.printf("streak=%u bond=%u medals=0x%X\n", pet.streak, pet.bond, pet.medals);
-    Serial.println("DONE");
-  } else if (line == "BYE") {
-    pet.startFarewell();
     Serial.println("DONE");
   } else if (line == "BEEP") {
     sfxPlay(SFX_HATCH);  // prueba de audio
@@ -1290,9 +1287,6 @@ void onTap(int16_t x, int16_t y) {
     if (choiceKind == 1) {                 // evolucion
       if (b1) { int16_t old = pet.speciesId; pet.evolve(); evoPmd.load(old, pet.shiny); }
       else if (b2) pet.declineEvolve();
-    } else if (choiceKind == 2) {          // despedida
-      if (b1) pet.startFarewell();
-      else if (b2) pet.declineFarewell();
     }
     choiceKind = 0;
     return;
@@ -1324,11 +1318,6 @@ void onTap(int16_t x, int16_t y) {
       y >= EVO_BTN_Y && y <= EVO_BTN_Y + EVO_BTN_H) {
     choiceKind = 1; choiceUntil = millis() + 12000;
     return;
-  }
-  // botones de final (mismo recuadro): escapada directa; despedida abre dialogo
-  if (x >= FAR_BTN_X && x <= FAR_BTN_X + FAR_BTN_W &&
-      y >= FAR_BTN_Y && y <= FAR_BTN_Y + FAR_BTN_H) {
-    if (pet.wantFarewellButton()) { choiceKind = 2; choiceUntil = millis() + 12000; return; }
   }
   for (int i = 0; i < 4; i++) {
     int dx = x - buttons[i].cx, dy = y - buttons[i].cy;
@@ -1747,8 +1736,7 @@ void render() {
     drawCelebration();
     drawPetEvent();
     if (gameMenuOpen) drawGameMenu();
-    if (pet.wantEvolveButton()) drawEvolveButton();        // CTA rojo: evolucionar
-    else if (pet.wantFarewellButton()) drawFarewellButton();  // CTA dorado: despedida
+    if (pet.wantEvolveButton()) drawEvolveButton();
   }
 
   if (pet.sleeping) {
@@ -2746,7 +2734,7 @@ bool mainScreenReadyForWild() {
   if (screenOff || pet.awaitingStarter() || pet.isEgg() || pet.sleeping || pet.ceremony) return false;
   if (battleOpen || gameOpen || gameMenuOpen || sackOpen || cardOpen || galleryOpen || kbOpen || clockOpen || helpOpen) return false;
   if (feedMenuUntil || confirmUntil || choiceKind || bathUntil || petEventUntil) return false;
-  if (pet.evolving() || pet.wantEvolveButton() || pet.canRunawayNow() || pet.wantFarewellButton()) return false;
+  if (pet.evolving() || pet.wantEvolveButton()) return false;
   return true;
 }
 
@@ -2785,7 +2773,7 @@ bool mainScreenReadyForPetEvent() {
   if (screenOff || pet.awaitingStarter() || pet.isEgg() || pet.sleeping || pet.ceremony) return false;
   if (battleOpen || gameOpen || gameMenuOpen || sackOpen || cardOpen || galleryOpen || kbOpen || clockOpen || helpOpen) return false;
   if (feedMenuUntil || confirmUntil || choiceKind || bathUntil || wildPromptUntil) return false;
-  if (pet.evolving() || pet.wantEvolveButton() || pet.canRunawayNow() || pet.wantFarewellButton()) return false;
+  if (pet.evolving() || pet.wantEvolveButton()) return false;
   return true;
 }
 
@@ -2995,19 +2983,18 @@ void battleTap(int16_t x, int16_t y) {
     sfxPlay(SFX_TAP);
     return;
   }
-  if (x >= 184 && x <= 282 && y >= 100 && y <= 136) {
-    closeBattle();
-    sfxPlay(SFX_TAP);
-    return;
-  }
-  if (x >= 62 && x <= 174 && y >= 344 && y <= 410) {
+  if (x >= 54 && x <= 132 && y >= 344 && y <= 410) {
     battleAttackMenuUntil = 1;
     battleDirty=true;
     sfxPlay(SFX_TAP);
-  } else if (x >= 174 && x <= 292 && y >= 344 && y <= 410) {
+  } else if (x >= 138 && x <= 216 && y >= 344 && y <= 410) {
     performBattleAction(BATTLE_DODGE);
-  } else if (x >= 292 && x <= 410 && y >= 344 && y <= 410) {
+  } else if (x >= 222 && x <= 300 && y >= 344 && y <= 410) {
     performBattleAction(BATTLE_REST);
+  } else if (x >= 306 && x <= 384 && y >= 344 && y <= 410) {
+    // Sortie neutre : finishBattle() n'est pas appele, donc aucun gain ni malus.
+    sfxPlay(SFX_TAP);
+    closeBattle();
   }
 }
 
@@ -3383,18 +3370,21 @@ void renderBattle() {
       gfx->setCursor(218,387); gfx->print("100%");
       gfx->setCursor(330,387); gfx->print("125%");
     } else {
-      gfx->fillRoundRect(70, 350, 96, 52, 12, UI_BAR_BAD);
-      gfx->fillRoundRect(185, 350, 96, 52, 12, C565(0x2d,0x73,0xb9));
-      gfx->fillRoundRect(300, 350, 96, 52, 12, UI_BAR_OK);
+      gfx->fillRoundRect(54, 350, 78, 52, 12, UI_BAR_BAD);
+      gfx->fillRoundRect(138, 350, 78, 52, 12, C565(0x2d,0x73,0xb9));
+      gfx->fillRoundRect(222, 350, 78, 52, 12, UI_BAR_OK);
+      gfx->fillRoundRect(306, 350, 78, 52, 12, UI_BAR_WARN);
 
       gfx->setTextColor(uiContrastText(UI_BAR_BAD));
-      drawBattleButtonLabel(70,367,96,T(S_ATTACK));
+      drawBattleButtonLabel(54,367,78,T(S_ATTACK));
       gfx->setTextColor(uiContrastText(C565(0x2d,0x73,0xb9)));
-      drawBattleButtonLabel(185,367,96,T(S_DODGE));
+      drawBattleButtonLabel(138,367,78,T(S_DODGE));
       char restLabel[18];
       snprintf(restLabel,sizeof(restLabel),"%s %u",T(S_REST),battleRun.restUsesLeft);
       gfx->setTextColor(uiContrastText(UI_BAR_OK));
-      drawBattleButtonLabel(300,367,96,restLabel);
+      drawBattleButtonLabel(222,367,78,restLabel);
+      gfx->setTextColor(uiContrastText(UI_BAR_WARN));
+      drawBattleButtonLabel(306,367,78,T(S_RUN_BATTLE));
     }
   }
 
@@ -5566,17 +5556,10 @@ void drawCeremony() {
     drawMap(SPR_HEART, 32, x + 50, y - 190, 2, false);
 }
 
-// dialogo de decision (2 botones apilados): evolucionar/mantener o despedirse/quedaros
+// Dialogue d'evolution uniquement.
 void drawChoiceDialog() {
-  const char *q, *o1, *o2;
-  uint16_t c1, c2, t1, t2;
-  if (choiceKind == 1) {  // evolucion
-    q = T(S_EVO_Q); o1 = T(S_EVO_TAP); o2 = T(S_EVO_KEEP);
-    c1 = UI_BAR_BAD; t1 = UI_WHITE; c2 = UI_TRACK; t2 = UI_INK;
-  } else {                // despedida
-    q = T(S_FAR_Q); o1 = T(S_FAR_GO); o2 = T(S_FAR_STAY);
-    c1 = UI_BAR_WARN; t1 = UI_INK; c2 = UI_BAR_OK; t2 = UI_WHITE;
-  }
+  const char *q = T(S_EVO_Q), *o1 = T(S_EVO_TAP), *o2 = T(S_EVO_KEEP);
+  uint16_t c1 = UI_BAR_BAD, c2 = UI_TRACK, t1 = UI_WHITE, t2 = UI_INK;
   gfx->fillRoundRect(73, 156, 320, 188, 16, uiPanel());
   gfx->drawRoundRect(73, 156, 320, 188, 16, uiInk());
   gfx->setTextColor(uiInk());
@@ -5606,39 +5589,6 @@ void drawEvolveButton() {
   const char *t = T(S_EVO_TAP);
   gfx->setCursor(CX - (int)strlen(t) * 9, y + h / 2 - 11);
   gfx->print(t);
-}
-
-// boton-CTA dorado de despedida: "<nombre> quiere decirte algo..."
-void drawFarewellButton() {
-  uint32_t now = millis();
-  int p = (int)(4 * sinf(now * 0.005f));
-  int x = FAR_BTN_X - p, y = FAR_BTN_Y - p, w = FAR_BTN_W + 2 * p, h = FAR_BTN_H + 2 * p;
-  gfx->fillRoundRect(x, y, w, h, 16, UI_BAR_WARN);
-  gfx->drawRoundRect(x, y, w, h, 16, uiInk());
-  char buf[52];
-  const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
-  snprintf(buf, sizeof(buf), T(S_FAREWELL_BTN), nm);
-  gfx->setTextColor(uiInk());
-  gfx->setTextSize(2);
-  gfx->setCursor(CX - (int)strlen(buf) * 6, y + h / 2 - 8);
-  gfx->print(buf);
-}
-
-// boton-CTA sombrio de escapada por abandono: "<nombre> se siente abandonado..."
-// (final triste: azul-gris oscuro, latido lento y apagado)
-void drawRunawayButton() {
-  uint32_t now = millis();
-  int p = (int)(3 * sinf(now * 0.003f));
-  int x = FAR_BTN_X - p, y = FAR_BTN_Y - p, w = FAR_BTN_W + 2 * p, h = FAR_BTN_H + 2 * p;
-  gfx->fillRoundRect(x, y, w, h, 16, C565(0x3a, 0x44, 0x5a));
-  gfx->drawRoundRect(x, y, w, h, 16, C565(0x70, 0x80, 0x98));
-  char buf[52];
-  const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
-  snprintf(buf, sizeof(buf), T(S_RUNAWAY_BTN), nm);
-  gfx->setTextColor(C565(0xc8, 0xd2, 0xe0));
-  gfx->setTextSize(2);
-  gfx->setCursor(CX - (int)strlen(buf) * 6, y + h / 2 - 8);
-  gfx->print(buf);
 }
 
 // animacion epica de evolucion: halo radial + rayos giratorios + parpadeo del

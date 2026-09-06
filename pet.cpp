@@ -171,9 +171,6 @@ void Pet::tick() {
   mistakeCooldown = 0;
   neglectTicks = 0;
 
-  // ciclo completo (forma final + 7 dias): la despedida NO salta sola; queda
-  // lista (canFarewellNow) y la dispara el usuario con el boton, para que la vea
-
   // autoguardado periodico: NO escribir a flash aqui (corre dentro del loop,
   // mientras se anima); solo marcar y dejar que el loop lo vuelque al atenuar
   if (++ticksSinceSave >= 5) pendingSave = true;
@@ -537,36 +534,6 @@ bool Pet::tryRespectCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLev
 
 // forma final que ya cumplio su ciclo (7 dias): lista para despedirse. La
 // despedida la dispara el usuario con el boton (no salta sola, para que la vea)
-bool Pet::canFarewellNow() const {
-  return !isEgg() && !sleeping && ceremony == CER_NONE &&
-         DEX_TBL[speciesId].evolvesTo == 0 && ageMinutes >= FAREWELL_AGE_MIN;
-}
-
-// abandono total durante 1h: lista para escaparse. La dispara el usuario con el
-// boton (final triste); cuidarla un solo tick la salva (neglectTicks se resetea)
-bool Pet::canRunawayNow() const {
-  return false;
-}
-
-void Pet::startFarewell() {
-  if (isEgg() || ceremony != CER_NONE) return;
-  lastEnd = CER_FAREWELL;
-  ceremony = CER_FAREWELL;
-  ceremonyUntil = millis() + CEREMONY_MS;
-  heartUntil = ceremonyUntil;  // corazones durante toda la despedida
-  sfxPlay(SFX_BYE);
-  save();
-}
-
-void Pet::startRunaway() {
-  if (isEgg() || ceremony != CER_NONE) return;
-  lastEnd = CER_RUNAWAY;
-  ceremony = CER_RUNAWAY;
-  ceremonyUntil = millis() + CEREMONY_MS;
-  sfxPlay(SFX_BYE);
-  save();
-}
-
 void Pet::release() {
   if (isEgg() || ceremony != CER_NONE) return;
   lastEnd = CER_RELEASE;

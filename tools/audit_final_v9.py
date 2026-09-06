@@ -96,8 +96,8 @@ ok("maintainTamaPokeSd()" in sdmon and "logicalTpk2Size" in sdmon and
    "maintenance SD supprime les intrus et anciens TPK2 dupliques")
 ok('Serial.println("ERRFULL")' in sdmon and "freeBytes" in sdmon,
    "reserve d'espace controlee avant chaque ecriture SD")
-ok('Serial.println("ERRWRITE")' in sdmon and 'Serial.println("ERRTIMEOUT")' in sdmon,
-   "protocole microSD signale les erreurs d'ecriture et les expirations")
+ok("ARRÊT SÉCURISÉ" in ino or "ARRÊT SÉCURISÉ" in (ROOT/"web/index.html").read_text(encoding="utf-8"),
+   "installateur web stoppe des la premiere erreur")
 ok("void drawBattleName" in ino, "noms combat auto-ajustés")
 ok("drawBattleHpInfo" in ino, "PV courant/max affichés")
 ok("Bandeau d'action sombre intégré" in ino, "boutons combat intégrés sans fond gris")

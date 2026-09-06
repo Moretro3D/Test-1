@@ -526,20 +526,6 @@ static void testCareBonusCapsStreakContribution() {
   EXPECT_EQ(pet.careBonus(), 14);
 }
 
-static void testFarewellAndNoRunaway() {
-  Pet pet = hatchedPet(6);
-  pet.ageMinutes = FAREWELL_AGE_MIN;
-
-  EXPECT_TRUE(pet.canFarewellNow());
-
-  pet.sleeping = true;
-  EXPECT_TRUE(!pet.canFarewellNow());
-
-  pet.sleeping = false;
-  pet.dbgRunawayReady();
-  EXPECT_TRUE(!pet.canRunawayNow());
-}
-
 static void testBattleRewardsAndProgression() {
   Pet pet = hatchedPet(25);
   pet.trDef = 99;
@@ -714,7 +700,6 @@ int main() {
   testCatchChanceAndRolls();
   testRespectCatchIsLimitedAndHasNoCareReward();
   testCareBonusCapsStreakContribution();
-  testFarewellAndNoRunaway();
   testBattleRewardsAndProgression();
   testExpeditionStartAndClaim();
   testExpeditionRequirementsAndTrainingChances();

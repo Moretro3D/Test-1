@@ -92,9 +92,18 @@ check('int x = 42 + (i % 2) * 196' in ino and
 check('uint16_t evoCol = darkMode ? UI_WHITE : UI_INK;' in ino and
       'S_MISTAKES_FMT' not in ino,
       "progres sombre lisible et negligences masquees")
-check('bool Pet::canRunawayNow() const {\n  return false;' in pet and
-      'line == "ABANDON"' not in ino and 'line == "RUN"' not in ino,
-      "aucun depart par negligence")
+pet_h = (root / "pet.h").read_text(encoding="utf-8")
+forbidden_departure = (
+    "canRunawayNow", "canFarewellNow", "wantFarewellButton",
+    "startRunaway", "startFarewell", "drawRunawayButton", "drawFarewellButton",
+)
+check(all(token not in ino and token not in pet and token not in pet_h
+          for token in forbidden_departure) and 'line == "BYE"' not in ino,
+      "abandon et adieu entierement inaccessibles")
+check('drawBattleButtonLabel(306,367,78,T(S_RUN_BATTLE))' in ino and
+      'x >= 306 && x <= 384 && y >= 344 && y <= 410' in ino and
+      'finishBattle() n\'est pas appele' in ino,
+      "fuite tactile en combat sauvage sans gain ni penalite")
 check('#define CARD_COUNT 9' in ino and 'renderCardRecords();' in ino and
       'drawPersonalityRecord(68,94' in ino,
       "records separes sur une neuvieme page")

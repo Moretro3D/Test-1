@@ -1,4 +1,11 @@
-POKETAMA MORETRO3D V9.61
+POKETAMA MORETRO3D V9.62
+
+CORRECTIONS DU FIRMWARE :
+- suppression totale de l'ecran « Pokemon veut te parler » et des choix
+  « Dire adieu / Rester ensemble » ;
+- suppression du depart par negligence ;
+- ajout d'un bouton FUIR directement dans chaque combat sauvage ;
+- la fuite quitte le combat sans victoire, defaite, capture, recompense ou malus.
 
 PUBLICATION GITHUB :
 - utiliser ENVOYER_SUR_GITHUB.bat depuis ce dossier extrait ;
