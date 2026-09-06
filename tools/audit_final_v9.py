@@ -100,6 +100,11 @@ ok("ARRÊT SÉCURISÉ" in ino or "ARRÊT SÉCURISÉ" in (ROOT/"web/index.html").
    "installateur web stoppe des la premiere erreur")
 ok("void drawBattleName" in ino, "noms combat auto-ajustés")
 ok("drawBattleHpInfo" in ino, "PV courant/max affichés")
+pet_h=(ROOT/"pet.h").read_text(encoding="utf-8")
+ok("#define MAX_LEVEL 100" in pet_h and
+   "calculated > MAX_LEVEL ? MAX_LEVEL" in pet_h and
+   "if (maxLevel) snprintf(nx, sizeof(nx), \"MAX\")" in ino,
+   "niveau reel plafonne a 100 et page Progres adaptee")
 ok("gfx->fillRect(0, 326, 466, 90" in ino and
    "gfx->drawFastHLine(0, 326, 466" in ino and
    "drawBattleButtonLabel(318,367,76,T(S_RUN_BATTLE))" in ino,

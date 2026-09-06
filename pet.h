@@ -9,6 +9,7 @@
 // Minutos de juego por nivel. Con 60, CHARMANDER evoluciona a las ~16 h
 // de juego con cuidado perfecto. Baja a 1 para ver evoluciones al momento.
 #define MINUTES_PER_LEVEL 60
+#define MAX_LEVEL 100
 #define EAT_ANIM_MS 2500UL
 #define HEART_MS 1500UL
 #define EVOLVE_ANIM_MS 5200UL              // animacion de evolucion (mas larga = mas epica)
@@ -252,7 +253,10 @@ public:
     }
   }
   void factoryReset() { prefs.clear(); }  // borra la NVS (test: comando serie WIPE)
-  uint8_t level() const { return 1 + ageMinutes / MINUTES_PER_LEVEL; }
+  uint8_t level() const {
+    uint32_t calculated = 1UL + ageMinutes / MINUTES_PER_LEVEL;
+    return calculated > MAX_LEVEL ? MAX_LEVEL : (uint8_t)calculated;
+  }
   bool isRegistered(int16_t dex) const {
     return dex >= 1 && dex <= DEX_COUNT && (dexReg[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
   }

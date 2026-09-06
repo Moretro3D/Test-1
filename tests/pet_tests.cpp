@@ -673,6 +673,16 @@ static void testExpeditionItemsCapAndConsumeSafely() {
   EXPECT_EQ(pet.itemCounts[EXP_ITEM_TRAIN], 1);
 }
 
+static void testLevelIsCappedAtOneHundred() {
+  Pet pet = hatchedPet(1);
+  pet.ageMinutes = 98UL * MINUTES_PER_LEVEL;
+  EXPECT_EQ(pet.level(), 99);
+  pet.ageMinutes = 99UL * MINUTES_PER_LEVEL;
+  EXPECT_EQ(pet.level(), MAX_LEVEL);
+  pet.ageMinutes = 1000UL * MINUTES_PER_LEVEL;
+  EXPECT_EQ(pet.level(), MAX_LEVEL);
+}
+
 int main() {
   testEggHatchesChosenStarter();
   testAllNineFirstBootStartersHatch();
@@ -704,6 +714,7 @@ int main() {
   testExpeditionStartAndClaim();
   testExpeditionRequirementsAndTrainingChances();
   testExpeditionItemsCapAndConsumeSafely();
+  testLevelIsCappedAtOneHundred();
 
   if (failures) {
     std::cerr << failures << " Testfehler\n";

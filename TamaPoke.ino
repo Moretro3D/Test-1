@@ -28,7 +28,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.25-moretro3d-v9.63-bandeau-combat"
+#define FW_VERSION "1.46.26-moretro3d-v9.64-niveau-max-100"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -4721,13 +4721,15 @@ void renderCardProgress() {
   gfx->print(lv);
 
   // barra de progreso al siguiente nivel (1 nivel = 60 min de juego)
-  uint8_t into = pet.ageMinutes % MINUTES_PER_LEVEL;
+  bool maxLevel = pet.level() >= MAX_LEVEL;
+  uint8_t into = maxLevel ? MINUTES_PER_LEVEL : pet.ageMinutes % MINUTES_PER_LEVEL;
   int bx = 93, bw = 280, by = 158, bh = 22;
   gfx->fillRoundRect(bx, by, bw, bh, 6, UI_TRACK);
   int fw = (bw - 4) * into / MINUTES_PER_LEVEL;
   if (fw > 0) gfx->fillRoundRect(bx + 2, by + 2, fw, bh - 4, 5, UI_BAR_OK);
   char nx[26];
-  snprintf(nx, sizeof(nx), T(S_NEXT_LVL_FMT), MINUTES_PER_LEVEL - into, pet.level() + 1);
+  if (maxLevel) snprintf(nx, sizeof(nx), "MAX");
+  else snprintf(nx, sizeof(nx), T(S_NEXT_LVL_FMT), MINUTES_PER_LEVEL - into, pet.level() + 1);
   gfx->setTextColor(uiInk());
   gfx->setTextSize(2);
   gfx->setCursor(CX - strlen(nx) * 6, by + 32);

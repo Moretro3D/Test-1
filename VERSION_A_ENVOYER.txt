@@ -1,4 +1,4 @@
-POKETAMA MORETRO3D V9.63
+POKETAMA MORETRO3D V9.64
 
 CORRECTIONS DU FIRMWARE :
 - suppression totale de l'ecran « Pokemon veut te parler » et des choix
@@ -8,6 +8,9 @@ CORRECTIONS DU FIRMWARE :
 - la fuite quitte le combat sans victoire, defaite, capture, recompense ou malus.
 - interface de combat avec bandeau sombre pleine largeur ;
 - boutons d'action et menu d'attaques realignes vers la droite.
+- niveau maximum fixe a 100 pour tous les Pokemon ;
+- statistiques et combats utilisent le niveau plafonne ;
+- la page Progres affiche MAX au niveau 100 sans annoncer un niveau 101.
 
 PUBLICATION GITHUB :
 - utiliser ENVOYER_SUR_GITHUB.bat depuis ce dossier extrait ;
