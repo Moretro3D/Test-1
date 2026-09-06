@@ -100,7 +100,10 @@ ok("ARRÊT SÉCURISÉ" in ino or "ARRÊT SÉCURISÉ" in (ROOT/"web/index.html").
    "installateur web stoppe des la premiere erreur")
 ok("void drawBattleName" in ino, "noms combat auto-ajustés")
 ok("drawBattleHpInfo" in ino, "PV courant/max affichés")
-ok("Bandeau d'action sombre intégré" in ino, "boutons combat intégrés sans fond gris")
+ok("gfx->fillRect(0, 326, 466, 90" in ino and
+   "gfx->drawFastHLine(0, 326, 466" in ino and
+   "drawBattleButtonLabel(318,367,76,T(S_RUN_BATTLE))" in ino,
+   "bandeau combat pleine largeur sans fond gris")
 ok("T(S_QUICK_ATTACK)" in ino and "T(S_NORMAL_ATTACK)" in ino and "T(S_HEAVY_ATTACK)" in ino, "menu attaques traduit")
 ok("BATTLE_ATTACK_QUICK" in ino and "BATTLE_ATTACK_HEAVY" in ino, "menu relié au moteur réel")
 
