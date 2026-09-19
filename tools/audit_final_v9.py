@@ -27,6 +27,9 @@ ok('gfx->setCursor(CX - 18, 366); gfx->print("V10")' in ino and
    '<div class="version">Firmware V10</div>' in (ROOT/"web/index.html").read_text(encoding="utf-8") and
    '<div class="version">Firmware V10</div>' in (ROOT/"web/shopify.html").read_text(encoding="utf-8"),
    "V10 affichee au demarrage, sur la page officielle et sur Shopify")
+ok('location.replace("https://moretro3d.fr/pages/poketama")' in (ROOT/"web/index.html").read_text(encoding="utf-8") and
+   'https://moretro3d.github.io/Test-1/manifest.json' in (ROOT/"web/shopify.html").read_text(encoding="utf-8"),
+   "GitHub Pages redirige vers Shopify et conserve le Web Flasher officiel")
 
 ok('snprintf(caught, sizeof(caught), T(S_CAUGHT_COUNT_FMT), (unsigned)pet.caughtCount());' in ino and
    '#define POKETAMA_UNLOCK_ALL_386 0' in pet_h and

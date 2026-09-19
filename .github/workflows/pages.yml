@@ -1,4 +1,4 @@
-name: PokeTama Test-2 - Page installateur temporaire
+name: PokeTama V10 - Web Flasher officiel
 on:
   push:
     branches: ["main"]
@@ -8,11 +8,11 @@ permissions:
   pages: write
   id-token: write
 concurrency:
-  group: "poketama-test-2-pages"
+  group: "poketama-test-1-web-flasher"
   cancel-in-progress: true
 jobs:
   build:
-    name: Compiler et preparer la page Test-2
+    name: Compiler et preparer le Web Flasher V10
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -73,13 +73,13 @@ jobs:
         with:
           path: web
   deploy:
-    name: Publier l'installateur temporaire
+    name: Publier les fichiers du Web Flasher
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Publier Test-2
+      - name: Publier le Web Flasher Test-1
         id: deployment
         uses: actions/deploy-pages@v4
