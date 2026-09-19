@@ -72,9 +72,9 @@ check("speciesId == 133 && caughtTotal <= 1" in pet,
       "ancienne sauvegarde Evoli reparee")
 check("case 252: case 255: case 258:" in (root / "pet.h").read_text(encoding="utf-8") and
       "case 133" not in (root / "pet.h").read_text(encoding="utf-8"), "Evoli refuse comme starter")
-check(manifest["name"] == "PokeTama Moretro3D - V9.43", "manifest Moretro3D")
-check(manifest["version"] == "1.46.23-moretro3d-v9.43-shopify-embed", "version Web coherente")
-check('VERSION="1.46.23-moretro3d-v9.43-shopify-embed"' in build, "version de compilation coherente")
+check(manifest["name"] == "PokeTama Moretro3D - V9.87 Test-2", "manifest Moretro3D")
+check(manifest["version"] == "1.46.49-moretro3d-v9.87-boite-separee", "version Web coherente")
+check('VERSION="1.46.49-moretro3d-v9.87-boite-separee"' in build, "version de compilation coherente")
 check('if (!powerSave) return 110;' in ino, "cadence AMOLED anti-chevauchement")
 check('dotsX' not in ino and 'cardPage--;' in ino and 'cardPage++;' in ino,
       "fleches tactiles remplacent les billes de pages")
@@ -100,14 +100,14 @@ forbidden_departure = (
 check(all(token not in ino and token not in pet and token not in pet_h
           for token in forbidden_departure) and 'line == "BYE"' not in ino,
       "abandon et adieu entierement inaccessibles")
-check('drawBattleButtonLabel(318,367,76,T(S_RUN_BATTLE))' in ino and
-      'x >= 318 && x <= 394 && y >= 344 && y <= 410' in ino and
+check('drawBattleButtonLabel(240,396,154,T(S_RUN_BATTLE))' in ino and
+      'x >= 240 && x <= 394 && y >= 383 && y <= 426' in ino and
       'finishBattle() n\'est pas appele' in ino,
       "fuite tactile en combat sauvage sans gain ni penalite")
-check('gfx->fillRect(0, 326, 466, 90' in ino and
-      'gfx->drawFastHLine(0, 326, 466' in ino and
-      'gfx->fillRoundRect(72, 350, 76, 52' in ino,
-      "bandeau combat pleine largeur et boutons decales a droite")
+check('gfx->fillRect(0, 320, 466, 146' in ino and
+      'gfx->fillRoundRect(72,334,154,43' in ino and
+      'gfx->fillRoundRect(240,383,154,43' in ino,
+      "bandeau combat classique pleine largeur et boutons 2x2")
 check('#define CARD_COUNT 9' in ino and 'renderCardRecords();' in ino and
       'drawPersonalityRecord(68,94' in ino,
       "records separes sur une neuvieme page")

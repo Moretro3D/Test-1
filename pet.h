@@ -3,6 +3,14 @@
 #include <Preferences.h>
 #include "dex.h"
 
+// Accès normal à la Boîte : seuls les Pokémon réellement obtenus sont disponibles.
+// Les 386 sprites restent présents pour les rencontres et le Pokédex.
+#if defined(ARDUINO)
+#define POKETAMA_UNLOCK_ALL_386 0
+#else
+#define POKETAMA_UNLOCK_ALL_386 0
+#endif
+
 // 1 tick = 1 minuto de juego. Baja este valor para probar mas rapido
 // (p. ej. 5000UL = las estadisticas caen 12x mas rapido).
 #define PET_TICK_MS 60000UL
@@ -140,6 +148,7 @@ public:
   uint16_t battleWins = 0, battleLosses = 0;
   uint16_t battleStreak = 0, bestBattleStreak = 0;
   uint8_t collectionFrame = 0;  // 0=Basis, weitere Rahmen ueber Dex-Meilensteine
+  uint8_t boxBackground = 0;    // fond pixel-art sélectionné pour la Boîte (0..15)
   uint32_t lastPetInteractMinute = 0;
   uint8_t dexRewardMask = 0;
   uint32_t dailyGoalDay = 0;
@@ -261,7 +270,11 @@ public:
     return dex >= 1 && dex <= DEX_COUNT && (dexReg[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
   }
   bool isCaught(int16_t dex) const {
+#if POKETAMA_UNLOCK_ALL_386
+    return dex >= 1 && dex <= DEX_COUNT;
+#else
     return dex >= 1 && dex <= DEX_COUNT && (dexCaught[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
+#endif
   }
   bool isShinyRegistered(int16_t dex) const {
     return dex >= 1 && dex <= DEX_COUNT && (dexShinyReg[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
@@ -272,13 +285,14 @@ public:
   uint8_t collectionRank() const;
   uint8_t unlockedCollectionFrameCount() const;
   bool setCollectionFrame(uint8_t frame);
-  void registerCaught(int16_t dex);
+  bool setBoxBackground(uint8_t background);
+  void registerCaught(int16_t dex, bool caughtShiny = false);
   uint16_t nextDexGoal() const;
   uint16_t applyDexRewards();
   uint8_t catchChanceForWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, bool closeWin) const;
   uint8_t respectCatchChanceForWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel) const;
-  bool tryCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, bool closeWin, uint8_t luckRoll);
-  bool tryRespectCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, uint8_t luckRoll);
+  bool tryCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, bool closeWin, uint8_t luckRoll, bool wildShiny = false);
+  bool tryRespectCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, uint8_t luckRoll, bool wildShiny = false);
   bool lineHasUnregistered(int16_t base) const;
   uint8_t eggRarity() const;       // rareza del huevo actual (sin revelar especie)
   int16_t pickEggSpecies();        // publica para poder simular tiradas (EGGS)

@@ -20,3 +20,6 @@ PROJEKT_KONTEXT.md
 # Firmware is published through the web installer and GitHub Releases.
 # Track only the active installer parts deliberately; ignore every local build.
 web/firmware/tamapoke-*.bin
+# Le pack de 107 Mo est reconstruit par CI depuis les fichiers individuels.
+# GitHub refuse les fichiers individuels de plus de 100 Mo.
+web/sprites.pak

@@ -217,18 +217,27 @@ uint8_t wildLevelFor(uint8_t petLevel, uint8_t luckRoll) {
   return level > 100 ? 100 : (uint8_t)level;
 }
 
-int16_t pickWildSpecies(uint8_t roll) {
-  int16_t pool[DEX_COUNT];
+int16_t pickWildSpecies(uint32_t roll) {
+  // Trois tirages decorreles : generation, rarete, puis espece. Les 386
+  // Pokemon sont accessibles, au lieu de reutiliser le meme nombre 0..99.
+  uint32_t x = roll + 0x9E3779B9u;
+  x ^= x >> 16; x *= 0x7FEB352Du; x ^= x >> 15; x *= 0x846CA68Bu; x ^= x >> 16;
+  uint8_t generation = (uint8_t)(x % 3); // 1G/2G/3G a parts quasi egales
+  uint8_t rarityRoll = (uint8_t)((x >> 8) % 100);
+  uint8_t targetRarity = rarityRoll < 55 ? R_COMUN
+                         : rarityRoll < 80 ? R_EVO
+                         : rarityRoll < 98 ? R_RARO : R_LEGENDARIO;
+  const int16_t first = generation == 0 ? 1 : (generation == 1 ? 152 : 252);
+  const int16_t last  = generation == 0 ? 151 : (generation == 1 ? 251 : 386);
+  int16_t pool[151];
   int count = 0;
-  uint8_t targetRarity = (roll % 100) < 25 ? R_RARO : R_COMUN;
-  for (int16_t dex = 1; dex <= DEX_COUNT; dex++) {
+  for (int16_t dex = first; dex <= last; dex++) {
     if (DEX_TBL[dex].rarity == targetRarity) pool[count++] = dex;
   }
-  if (count == 0 && targetRarity == R_RARO) {
-    for (int16_t dex = 1; dex <= DEX_COUNT; dex++)
-      if (DEX_TBL[dex].rarity == R_COMUN) pool[count++] = dex;
+  if (count == 0) {
+    for (int16_t dex = first; dex <= last; dex++) pool[count++] = dex;
   }
-  return count > 0 ? pool[roll % count] : 1;
+  return count > 0 ? pool[(x >> 16) % count] : first;
 }
 
 BattleStats wildBattleStats(int16_t dex, uint8_t level) {

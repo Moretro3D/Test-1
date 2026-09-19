@@ -93,8 +93,8 @@ void Pet::syncClock(uint32_t nowEpoch) {
       uint8_t p = poops + mins / 240;
       poops = p > 3 ? 3 : p;
     }
-    // la evolucion NO se aplica offline: queda lista y la dispara el usuario
-    // tocando al bicho cuando vuelve (para que vea la transformacion)
+    // Le niveau gagné hors ligne est traité au retour dans la boucle principale,
+    // avec une animation par étape pour préserver les chaînes d'évolution.
   }
   Serial.printf("offline: %u min aplicados (nv.%u)\n", mins, level());
   save();
@@ -429,6 +429,15 @@ bool Pet::setCollectionFrame(uint8_t frame) {
   return true;
 }
 
+bool Pet::setBoxBackground(uint8_t background) {
+  if (background >= 16) return false;
+  boxBackground = background;
+  // Même si l'aperçu a déjà appliqué cette valeur en RAM, Valider doit
+  // l'écrire en NVS pour la conserver après extinction.
+  save();
+  return true;
+}
+
 uint16_t Pet::nextDexGoal() const {
   static const uint16_t GOALS[] = { 10, 25, 50, 100, 151, 251, 386 };
   uint16_t known = knownDexCount();
@@ -474,10 +483,11 @@ uint16_t Pet::applyDexRewards() {
   return reached;
 }
 
-void Pet::registerCaught(int16_t dex) {
+void Pet::registerCaught(int16_t dex, bool caughtShiny) {
   if (dex < 1 || dex > DEX_COUNT) return;
   bool wasKnown = isRegistered(dex) || isCaught(dex);
   dexCaught[(dex - 1) >> 3] |= (1 << ((dex - 1) & 7));
+  if (caughtShiny) dexShinyReg[(dex - 1) >> 3] |= (1 << ((dex - 1) & 7));
   noteDailyGoal(DAILY_GOAL_CATCH, 1);
   if (!wasKnown) applyDexRewards();
   save();
@@ -508,11 +518,11 @@ uint8_t Pet::respectCatchChanceForWild(int16_t wildDex, uint8_t wildLevel, uint8
   return chance;
 }
 
-bool Pet::tryCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, bool closeWin, uint8_t luckRoll) {
+bool Pet::tryCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, bool closeWin, uint8_t luckRoll, bool wildShiny) {
   uint8_t chance = catchChanceForWild(wildDex, wildLevel, petLevel, closeWin);
   if (chance == 0) return false;
   if ((luckRoll % 100) < chance) {
-    registerCaught(wildDex);
+    registerCaught(wildDex, wildShiny);
     joy = clamp100((int)joy + 4);
     addBond(1);
     save();
@@ -521,11 +531,11 @@ bool Pet::tryCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, boo
   return false;
 }
 
-bool Pet::tryRespectCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, uint8_t luckRoll) {
+bool Pet::tryRespectCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, uint8_t luckRoll, bool wildShiny) {
   uint8_t chance = respectCatchChanceForWild(wildDex, wildLevel, petLevel);
   if (chance == 0) return false;
   if ((luckRoll % 100) < chance) {
-    registerCaught(wildDex);
+    registerCaught(wildDex, wildShiny);
     save();
     return true;
   }
@@ -568,16 +578,12 @@ void Pet::hatch() {
   save();
 }
 
-// ¿se dan ya las condiciones para evolucionar? Cada descuido retrasa la
-// evolucion 1 nivel, y ademas tiene que estar bien cuidado en ese momento
-// (ninguna estadistica por debajo de 40). NO evoluciona sola: la dispara el
-// usuario tocando al bicho (evolve()), para que vea la transformacion.
+// Toutes les évolutions ont désormais un seuil de niveau fixe. La boucle
+// principale déclenche une étape à la fois, après chaque animation.
 bool Pet::canEvolveNow() const {
   if (isEgg() || sleeping || ceremony != CER_NONE) return false;
   const DexEntry &d = DEX_TBL[speciesId];
 
-  // V8.5 : une évolution par niveau a un seuil FIXE.
-  // Les erreurs de soin ne décalent plus jamais le niveau d'évolution.
   if (d.evolvesTo == 0 || d.evolveLevel == 0) return false;
   return level() >= d.evolveLevel;
 }
@@ -1158,6 +1164,7 @@ void Pet::save() {
   prefs.putUShort("bstk", battleStreak);
   prefs.putUShort("bbstk", bestBattleStreak);
   prefs.putUChar("cfrm", collectionFrame);
+  prefs.putUChar("boxbg", boxBackground);
   prefs.putUInt("pimin", lastPetInteractMinute);
   prefs.putUChar("dxrew", dexRewardMask);
   prefs.putUInt("dgday", dailyGoalDay);
@@ -1241,6 +1248,8 @@ void Pet::load() {
   bestBattleStreak = prefs.getUShort("bbstk", 0);
   collectionFrame = prefs.getUChar("cfrm", 0);
   if (collectionFrame >= unlockedCollectionFrameCount()) collectionFrame = 0;
+  boxBackground = prefs.getUChar("boxbg", 0);
+  if (boxBackground >= 16) boxBackground = 0;
   lastPetInteractMinute = prefs.getUInt("pimin", 0);
   dexRewardMask = prefs.getUChar("dxrew", 0);
   dailyGoalDay = prefs.getUInt("dgday", 0);

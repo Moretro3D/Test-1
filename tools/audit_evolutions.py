@@ -6,8 +6,6 @@ ROOT=Path(__file__).resolve().parents[1]
 dex=(ROOT/"dex.h").read_text(encoding="utf-8")
 pet=(ROOT/"pet.cpp").read_text(encoding="utf-8")
 ino=(ROOT/"TamaPoke.ino").read_text(encoding="utf-8")
-SPECIAL={25,26,31,34,35,36,38,39,40,45,59,62,65,68,71,76,91,94,103,113,121,122,134,135,136,143,169,176,182,183,185,186,192,196,197,199,208,212,226,230,233,242,272,275,301,315,350,358,367,368}
-
 rx=re.compile(r'\{\s*"([^"]+)",\s*(\d+),\s*(\d+),\s*([A-Z_]+),.*?\},\s*//\s*(\d+)')
 E={}
 for m in rx.finditer(dex):
@@ -16,13 +14,16 @@ for m in rx.finditer(dex):
 if len(E)!=386:
     raise SystemExit(f"FAIL: {len(E)} entrées au lieu de 386")
 
+if E[93][1:] != (94,40):
+    raise SystemExit("FAIL: Spectrum doit evoluer en Ectoplasma au niveau 40")
+
 for sid,(name,to,lvl) in E.items():
     if to<0 or to>386 or to==sid:
         raise SystemExit(f"FAIL cible {sid} {name} -> {to}")
-    if to in SPECIAL and lvl!=0:
-        raise SystemExit(f"FAIL spéciale avec faux niveau: {sid} {name} -> {to} niv {lvl}")
-    if lvl>100:
-        raise SystemExit(f"FAIL niveau impossible: {sid} {name} niv {lvl}")
+    if to and not (1 <= lvl <= 100):
+        raise SystemExit(f"FAIL évolution sans niveau valide: {sid} {name} -> {to} niv {lvl}")
+    if not to and lvl:
+        raise SystemExit(f"FAIL niveau sur forme finale: {sid} {name} niv {lvl}")
 
 # Pas de cycles.
 for sid in E:
@@ -52,12 +53,20 @@ for sid in E:
 combined=pet+"\n"+ino
 if re.search(r'evolveLevel\s*\+\s*(?:pet\.)?careMistakes',combined):
     raise SystemExit("FAIL: careMistakes modifie encore un niveau d'évolution")
-if "if (d.evolvesTo == 0 || d.evolveLevel == 0) return false;" not in pet:
-    raise SystemExit("FAIL: évolutions spéciales encore déclenchables par niveau")
+if E[172][1:] != (25,18) or E[25][1:] != (26,30):
+    raise SystemExit("FAIL chaîne Pichu -> Pikachu -> Raichu")
+if "if (!pet.evolving() && pet.canEvolveNow())" not in ino or "pet.evolve();" not in ino:
+    raise SystemExit("FAIL déclenchement automatique absent")
+if "isEgg() || sleeping || ceremony != CER_NONE || evolving()" in pet:
+    raise SystemExit("FAIL tests moteur : canEvolveNow interdit une évolution explicite pendant l'animation")
+if "evo = T(S_SPECIAL_EVOLUTION)" in ino:
+    raise SystemExit("FAIL mention Évolution spéciale encore affichée")
 
 print("AUDIT EVOLUTIONS OK")
 print(" - 386 espèces")
 print(" - aucun cycle")
 print(" - aucun seuil de niveau non croissant")
-print(" - aucune évolution spéciale avec faux niveau")
+print(" - toutes les évolutions ont un niveau de 1 à 100")
+print(" - Pichu niveau 100 évolue en deux étapes jusqu'à Raichu")
+print(" - déclenchement automatique après chaque animation")
 print(" - careMistakes ne change plus jamais le seuil")

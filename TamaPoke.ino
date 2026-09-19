@@ -18,6 +18,7 @@
 #include "pin_config.h"
 #include "species.h"
 #include "dex.h"
+#define SPRITE_AUDIT_BUILD 0
 #include "pet.h"
 #include "sdmon.h"
 #include "rtcbat.h"
@@ -25,11 +26,16 @@
 #include "audio.h"
 #include "battle.h"
 #include "brand_logo.h"
+#include "battle_ball_icon.h"
+#include "battle_bases.h"
+#include "battle_backgrounds.h"
+#include "box_backgrounds.h"
+#include "battle_sprite_layout.h"
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.46.26-moretro3d-v9.64-niveau-max-100"
-#define HELP_PAGE_COUNT 8
+#define FW_VERSION "1.46.80-moretro3d-v10.01-battle-seam"
+#define HELP_PAGE_COUNT 6
 #define HELP_LINE_COUNT 6
 
 Arduino_DataBus *bus = new Arduino_ESP32QSPI(
@@ -75,7 +81,6 @@ bool galleryOpen = false;
 bool galleryDirty = false;
 int galleryPage = 0;        // 10 paginas de 16
 int16_t galleryDetail = 0;  // dex en vista detalle, 0 = rejilla
-uint8_t galleryFilter = 0;  // 0 todos, 1 criados, 2 capturados
 
 bool screenOff = false;       // pulsacion corta del boton PWR
 bool cardOpen = false;        // ficha del bicho (deslizar vertical)
@@ -92,6 +97,7 @@ int clockH = 12, clockM = 0;  // hora en edicion
 bool powerSave = false;       // ahorro opcional: off por defecto
 bool darkMode = false;        // thème sombre manuel, persistant
 uint8_t settingsPage = 0;     // 0 = réglages principaux, 1 = affichage/cadres
+uint8_t boxBgPreview = 0;
 bool helpOpen = false;
 uint8_t helpPage = 0;
 bool uiDirty = true;
@@ -169,6 +175,9 @@ bool battleCatchSuccess = false;
 bool battleRespectCatch = false;
 uint8_t battleCatchChance = 0;
 bool battleLowHpWarned = false;
+bool battleEnemyShiny = false;
+uint32_t battleShinyFxUntil = 0;
+uint8_t battlePlayerSex = 2, battleEnemySex = 2; // 0 mâle, 1 femelle, 2 sans sexe
 
 #define WILD_COOLDOWN_MS (20UL * 60UL * 1000UL)
 #define WILD_PROMPT_MS 20000UL
@@ -188,6 +197,7 @@ uint32_t lastPetEventCheck = 0;
 uint8_t petEventType = PET_EVENT_BERRY;
 uint32_t petEventFeedbackUntil = 0;
 char petEventMsg[18] = "";
+bool spriteAuditShiny = false;
 
 // las 9 especies con sprite propio en flash (respaldo sin SD): dex -> indice
 int flashIdxForDex(int16_t dex) {
@@ -203,14 +213,6 @@ bool hasPreEvolution(int16_t dex) {
   for (int16_t i = 1; i <= DEX_COUNT; i++)
     if (DEX_TBL[i].evolvesTo == dex) return true;
   return false;
-}
-
-// Une seule configuration visuelle pour les 386 especes. Le cadrage se fait
-// toujours sur la silhouette visible, puis cette reduction uniforme evite les
-// gros sprites qui donnaient un rendu irregulier selon l'evolution.
-uint8_t spriteSizePercent(int16_t dex) {
-  (void)dex;
-  return 92;
 }
 
 #define CX 233  // centro de la pantalla redonda
@@ -427,6 +429,11 @@ void setup() {
   gfx->setTextSize(3);
   // 9 caracteres x 6 px x taille 3 = 162 px : centre exact a x=152.
   gfx->setCursor(CX - 79, 326); gfx->print("Moretro3D");
+  // Version publique volontairement simple : les correctifs V10.x restent
+  // internes tandis que l'utilisateur voit clairement la génération V10.
+  gfx->setTextColor(C565(0x61,0xda,0xf2));
+  gfx->setTextSize(2);
+  gfx->setCursor(CX - 18, 366); gfx->print("V10");
   gfx->flush();
   panel->setBrightness(120);
 
@@ -591,12 +598,17 @@ void loop() {
   uint32_t loopStart = now;
   pet.update(now);
 
-  // avisa con un sonido cuando el bicho pasa a estar listo para evolucionar
-  // (incluye el caso de cumplir al despertar). canEvolveNow es false durmiendo.
-  static bool wasEvoReady = false;
-  bool evoReady = pet.wantEvolveButton();
-  if (evoReady && !wasEvoReady) sfxPlay(SFX_MEDAL);
-  wasEvoReady = evoReady;
+  // Évolution automatique, y compris pour un ancien Pokémon déjà niveau 100.
+  // Une seule forme à la fois : la suivante attend la fin de l'animation.
+  if (!pet.evolving() && pet.canEvolveNow()) {
+    const int16_t oldSpecies = pet.speciesId;
+    evoPmd.unload();
+    pet.evolve();
+    evoPmd.load(oldSpecies, pet.shiny);
+    sdDirty = true;
+    markUiDirty();
+    lockTouchBrief();
+  }
   handleTouch();
   handleSerial();
   ensureMon();
@@ -1192,24 +1204,19 @@ void onTap(int16_t x, int16_t y) {
     }
     if (cardPage == 0 && y < 84) openKeyboard();  // tocar el nombre = renombrar
     else if (cardPage == 3) {
-      if (x >= 302 && x <= 408 && y >= 62 && y <= 92) {
-        boxSort = (boxSort + 1) % 3;
-        boxPage = 0;
-        cardDirty = true;
-        sfxPlay(SFX_TAP);
-      } else if (x >= 76 && x <= 170 && y >= 286 && y <= 334) {
+      if (x >= 76 && x <= 170 && y >= 300 && y <= 350) {
         if (boxPage > 0) { boxPage--; cardDirty = true; }
         sfxPlay(SFX_TAP);
-      } else if (x >= 296 && x <= 390 && y >= 286 && y <= 334) {
+      } else if (x >= 296 && x <= 390 && y >= 300 && y <= 350) {
         uint8_t pages = boxPageCount();
         if (boxPage + 1 < pages) { boxPage++; cardDirty = true; }
         sfxPlay(SFX_TAP);
       } else {
-        int col = (x - 68) / 84;
-        int row = (y - 112) / 84;
+        int col = (x - 84) / 78;
+        int row = (y - 100) / 74;
         if (col >= 0 && col < 4 && row >= 0 && row < 2 &&
-            x >= 68 + col * 84 && x <= 146 + col * 84 &&
-            y >= 112 + row * 84 && y <= 190 + row * 84) {
+            x >= 84 + col * 78 && x <= 148 + col * 78 &&
+            y >= 112 + row * 74 && y <= 176 + row * 74) {
           int16_t dex = boxDexAt((uint16_t)boxPage * 8 + row * 4 + col);
           if (dex > 0) {
             cardOpen = false;
@@ -1217,7 +1224,8 @@ void onTap(int16_t x, int16_t y) {
             galleryDetail = dex;
             galleryDirty = true;
             lockTouchBrief();
-            galleryPmd.load(dex, pet.isShinyRegistered(dex));
+            spriteAuditShiny = false;
+            galleryPmd.load(dex, false);
             sfxPlay(SFX_TAP);
             speciesChirpPlay(dex);
           }
@@ -1270,7 +1278,7 @@ void onTap(int16_t x, int16_t y) {
       bool fight = (x >= 93 && x <= 373 && y >= 226 && y <= 270);
       bool later = (x >= 93 && x <= 373 && y >= 278 && y <= 322);
       if (fight) {
-        startBattleWith(wildPromptDex, wildPromptLevel);
+        startBattleWith(wildPromptDex, wildPromptLevel, -1);
       } else if (later) {
         wildPromptUntil = 0;
         scheduleNextWild(millis());
@@ -1426,6 +1434,15 @@ void drawScene(uint8_t biome, uint32_t now, bool night) {
   uint8_t phase = (h>=6 && h<8) ? 0 : (h>=8 && h<18) ? 1 : (h>=18 && h<20) ? 2 : 3;
   if (night) phase=3;
 
+  // Soleil de gauche (06 h) a droite (20 h), avec une arche haute a midi.
+  // La progression utilise aussi les minutes : pas de saut a chaque heure.
+  int minuteOfDay=pet.lastSeenEpoch ? (int)((pet.lastSeenEpoch/60) % 1440) : 13*60;
+  int daylight=minuteOfDay-6*60;
+  if (daylight<0) daylight=0;
+  if (daylight>14*60) daylight=14*60;
+  int sunX=94+(278*daylight)/(14*60);
+  int sunY=HORIZON-18-(600L*daylight*(14*60-daylight))/((14L*60)*(14L*60));
+
   uint16_t top,mid,bot;
   if (phase==0) {       // lever du soleil
     top=C565(0x3b,0x32,0x8f); mid=C565(0xb8,0x55,0x9b); bot=C565(0xff,0xb0,0x58);
@@ -1451,13 +1468,13 @@ void drawScene(uint8_t biome, uint32_t now, bool night) {
     gfx->fillCircle(376,68,23,lerp565(top,mid,1,3)); // croissant
     for (auto &st:STARS) gfx->fillRect(st[0],st[1],3,3,UI_WHITE);
   } else if (phase==0) {
-    gfx->fillCircle(358,HORIZON-18,32,C565(0xff,0xd0,0x58));
+    gfx->fillCircle(sunX,sunY,32,C565(0xff,0xd0,0x58));
     drawClouds(now,C565(0xff,0xc0,0xb8));
   } else if (phase==1) {
-    gfx->fillCircle(370,78,25,C565(0xff,0xe2,0x58));
+    gfx->fillCircle(sunX,sunY,25,C565(0xff,0xe2,0x58));
     drawClouds(now,C565(0xf7,0xfb,0xff));
   } else {
-    gfx->fillCircle(360,HORIZON-14,34,C565(0xff,0xc1,0x45));
+    gfx->fillCircle(sunX,sunY,34,C565(0xff,0xc1,0x45));
     drawClouds(now,C565(0xeb,0x7b,0x76));
   }
 
@@ -1530,7 +1547,7 @@ void drawStarterThumbCentered(const uint8_t *b, int16_t dex, int cx, int cy, int
   int visibleW=maxX-minX+1, visibleH=maxY-minY+1;
   // La fiche starter doit respirer sur l'ecran rond : taille volontairement
   // plus sobre que l'accueil et le combat.
-  int target=145*spriteSizePercent(dex)/100;
+  int target=145*pokemonSpriteScale(dex)/100;
   int scale=min(maxSize, target/max(visibleW,visibleH));
   if (scale < 2) scale=2;
   int x0=cx-visibleW*scale/2-minX*scale;
@@ -2748,7 +2765,7 @@ void maybeOfferWildEncounter(uint32_t now) {
   lastWildCheck = now;
   if (now < nextWildEligible) return;
   if (!mainScreenReadyForWild()) return;
-  int16_t cand = pickWildSpecies((uint8_t)random(100));
+  int16_t cand = pickWildSpecies((uint32_t)random(0x7FFFFFFF));
   uint8_t phase = currentDayPhase();
   uint8_t chance = (phase == 3) ? 4 : (phase == 0 ? 7 : 8);
   if (phase == 3 && cand >= 1 && cand <= DEX_COUNT) {
@@ -2834,7 +2851,7 @@ void closeBattle() {
   lockTouchBrief();
 }
 
-void startBattleWith(int16_t forcedDex, uint8_t forcedLevel) {
+void startBattleWith(int16_t forcedDex, uint8_t forcedLevel, int8_t forcedShiny) {
   if (!canStartWildBattle(pet.isEgg(), pet.sleeping, pet.ceremony)) return;
   wildPromptUntil = 0;
   scheduleNextWild(millis());
@@ -2842,13 +2859,17 @@ void startBattleWith(int16_t forcedDex, uint8_t forcedLevel) {
     battleDex = forcedDex;
     battleLevel = forcedLevel ? forcedLevel : wildLevelFor(pet.level(), (uint8_t)random(100));
   } else {
-    uint8_t speciesRoll = random(100);
+    uint32_t speciesRoll = (uint32_t)random(0x7FFFFFFF);
     uint8_t levelRoll = random(100);
     battleDex = pickWildSpecies(speciesRoll);
     battleLevel = wildLevelFor(pet.level(), levelRoll);
   }
   battlePlayer = petBattleStats();
   battleEnemy = wildBattleStats(battleDex, battleLevel);
+  battlePlayerSex=(uint8_t)((pet.geneAtk+pet.geneDef+pet.geneSpe)&1);
+  battleEnemySex=(uint8_t)random(2);
+  battleEnemyShiny=(forcedShiny >= 0) ? (forcedShiny != 0) : (random(128)==0);
+  battleShinyFxUntil=battleEnemyShiny ? millis()+1800 : 0;
   battleEnemy.hp = 0;
   battleResult = {};
   battleRun = beginBattleRuntime(battlePlayer, battleEnemy);
@@ -2867,13 +2888,13 @@ void startBattleWith(int16_t forcedDex, uint8_t forcedLevel) {
   battleOpen = true;
   battleDirty = true;
   wildPmd.unload();
-  wildPmd.load(battleDex, false);
-  sfxPlay(SFX_TAP);
+  wildPmd.load(battleDex, battleEnemyShiny);
+  sfxPlay(battleEnemyShiny ? SFX_EVENT_SPARKLE : SFX_TAP);
   speciesChirpPlay(battleDex);
 }
 
 void startBattle() {
-  startBattleWith(0, 0);
+  startBattleWith(0, 0, -1);
 }
 
 void finishBattle() {
@@ -2949,10 +2970,10 @@ void battleTap(int16_t x, int16_t y) {
         battleCatchTried = true;
         battleCatchDone = true;
         if (battleRespectCatch) {
-          battleCatchSuccess = pet.tryRespectCatchWild(battleDex, battleLevel, battlePlayer.level, (uint8_t)random(100));
+          battleCatchSuccess = pet.tryRespectCatchWild(battleDex, battleLevel, battlePlayer.level, (uint8_t)random(100), battleEnemyShiny);
           battleCatchChance = pet.respectCatchChanceForWild(battleDex, battleLevel, battlePlayer.level);
         } else {
-          battleCatchSuccess = pet.tryCatchWild(battleDex, battleLevel, battlePlayer.level, closeWin, (uint8_t)random(100));
+          battleCatchSuccess = pet.tryCatchWild(battleDex, battleLevel, battlePlayer.level, closeWin, (uint8_t)random(100), battleEnemyShiny);
           battleCatchChance = pet.catchChanceForWild(battleDex, battleLevel, battlePlayer.level, closeWin);
         }
         sfxPlay(battleCatchSuccess ? SFX_CATCH_OK : SFX_CATCH_FAIL);
@@ -2973,25 +2994,29 @@ void battleTap(int16_t x, int16_t y) {
     return;
   }
   if (battleAttackMenuUntil) {
-    if (y >= 344 && y <= 410) {
-      if (x >= 82 && x <= 178) { performBattleAction(BATTLE_ATTACK_QUICK); return; }
-      if (x >= 190 && x <= 286) { performBattleAction(BATTLE_ATTACK); return; }
-      if (x >= 298 && x <= 394) { performBattleAction(BATTLE_ATTACK_HEAVY); return; }
+    // Toute la largeur de chaque cellule est tactile, y compris les petits
+    // espaces visuels entre les boutons. C'est plus fiable au doigt.
+    if (y >= 332 && y <= 426) {
+      if (x >= 48 && x <= 179) { performBattleAction(BATTLE_ATTACK_QUICK); return; }
+      if (x >= 180 && x <= 292) { performBattleAction(BATTLE_ATTACK); return; }
+      if (x >= 293 && x <= 418) { performBattleAction(BATTLE_ATTACK_HEAVY); return; }
     }
     battleAttackMenuUntil=0;
     battleDirty=true;
     sfxPlay(SFX_TAP);
     return;
   }
-  if (x >= 72 && x <= 148 && y >= 344 && y <= 410) {
+  // Grandes zones tactiles en quatre quadrants. Elles dépassent légèrement
+  // les rectangles visibles sans jamais se chevaucher.
+  if (x >= 40 && x <= 232 && y >= 326 && y <= 381) {
     battleAttackMenuUntil = 1;
     battleDirty=true;
     sfxPlay(SFX_TAP);
-  } else if (x >= 154 && x <= 230 && y >= 344 && y <= 410) {
+  } else if (x >= 233 && x <= 426 && y >= 326 && y <= 381) {
     performBattleAction(BATTLE_DODGE);
-  } else if (x >= 236 && x <= 312 && y >= 344 && y <= 410) {
+  } else if (x >= 40 && x <= 232 && y >= 382 && y <= 452) {
     performBattleAction(BATTLE_REST);
-  } else if (x >= 318 && x <= 394 && y >= 344 && y <= 410) {
+  } else if (x >= 233 && x <= 426 && y >= 382 && y <= 452) {
     // Sortie neutre : finishBattle() n'est pas appele, donc aucun gain ni malus.
     sfxPlay(SFX_TAP);
     closeBattle();
@@ -3170,7 +3195,7 @@ void drawPetEvent() {
 }
 
 
-void drawBattlePmd(PmdMon &m, int16_t dex, int cx, int groundY, int target, bool sil=false) {
+void drawBattlePmd(PmdMon &m, int16_t dex, int cx, int groundY, int target, bool playerSide, bool sil=false) {
   const PmdAct &a=m.acts[PMD_IDLE];
   if (!a.frames) return;
   // Bounding box visuel cible ~128px sur l'écran 466px.
@@ -3190,21 +3215,52 @@ void drawBattlePmd(PmdMon &m, int16_t dex, int cx, int groundY, int target, bool
   }
   if (maxC<minC || maxR<minR) return;
   int visibleW=maxC-minC+1, visibleH=maxR-minR+1;
-  target=target*spriteSizePercent(dex)/100;
+  target=target*pokemonSpriteScale(dex)/100;
+  cx+=battleSpriteX(dex,playerSide);
+  groundY+=battleSpriteY(dex,playerSide);
   int maxDim=max(visibleW,visibleH);
-  uint8_t s=maxDim>0 ? (uint8_t)(target/maxDim) : 2;
-  if (s<1) s=1;
-  if (s>8) s=8;
-  while (s>1 && (visibleW*s>target || visibleH*s>target)) s--;
-
-  int x0=cx-visibleW*s/2-minC*s;
-  int y0=groundY-(maxR+1)*s;
-  for (int r=0;r<a.h;r++) {
+  int drawW=max(1,visibleW*target/maxDim);
+  int drawH=max(1,visibleH*target/maxDim);
+  int x0=cx-drawW/2;
+  int y0=groundY-drawH;
+  // Rééchantillonnage nearest-neighbour : dimensions continues, pixels nets.
+  // Cela évite que 43 px passent brutalement de x2 à x1 (cas Lokhlass).
+  for (int dy=0;dy<drawH;dy++) {
+    int r=minR+(int)((uint32_t)dy*visibleH/drawH);
     const uint8_t *row=fr+r*a.w;
-    for (int c=0;c<a.w;c++) {
+    for (int dx=0;dx<drawW;dx++) {
+      int c=minC+(int)((uint32_t)dx*visibleW/drawW);
       uint8_t pi=row[c];
       if (pi==0xFF) continue;
-      gfx->fillRect(x0+c*s,y0+r*s,s,s,sil?INK_K:m.pal[pi]);
+      gfx->drawPixel(x0+dx,y0+dy,sil?INK_K:m.pal[pi]);
+    }
+  }
+}
+
+void drawBattleThumb(const uint8_t *b,int16_t dex,int cx,int groundY,int target,bool playerSide,bool sil=false) {
+  uint8_t w=b[0],h=b[1],n=b[2];
+  const uint8_t *pal=b+3;
+  const uint8_t *data=pal+n*2;
+  int minC=w,maxC=-1,minR=h,maxR=-1;
+  for(int r=0;r<h;r++) for(int c=0;c<w;c++) if(data[r*w+c]!=0xFF) {
+    minC=min(minC,c); maxC=max(maxC,c); minR=min(minR,r); maxR=max(maxR,r);
+  }
+  if(maxC<minC||maxR<minR) return;
+  int visibleW=maxC-minC+1,visibleH=maxR-minR+1;
+  target=target*pokemonSpriteScale(dex)/100;
+  cx+=battleSpriteX(dex,playerSide);
+  groundY+=battleSpriteY(dex,playerSide);
+  int maxDim=max(visibleW,visibleH);
+  int drawW=max(1,visibleW*target/maxDim),drawH=max(1,visibleH*target/maxDim);
+  int x0=cx-drawW/2,y0=groundY-drawH;
+  for(int dy=0;dy<drawH;dy++) {
+    int r=minR+(int)((uint32_t)dy*visibleH/drawH);
+    for(int dx=0;dx<drawW;dx++) {
+      int c=minC+(int)((uint32_t)dx*visibleW/drawW);
+      uint8_t pi=data[r*w+c];
+      if(pi==0xFF) continue;
+      uint16_t color=sil?INK_K:(uint16_t)(pal[pi*2]|(pal[pi*2+1]<<8));
+      gfx->drawPixel(x0+dx,y0+dy,color);
     }
   }
 }
@@ -3214,25 +3270,30 @@ void drawBattleName(const char *name, uint8_t level, int x, int y, int maxW) {
   snprintf(line,sizeof(line),"%s Lv.%u",name,(unsigned)level);
   int len=(int)strlen(line);
   uint8_t ts=(len*12<=maxW)?2:1;
-  gfx->setTextColor(UI_WHITE);
+  gfx->setTextColor(UI_INK);
   gfx->setTextSize(ts);
   gfx->setCursor(x,y+(ts==1?3:0));
   gfx->print(line);
 }
 
-void drawBattleCaughtBall(int cx, int cy) {
-  gfx->fillCircle(cx, cy, 10, UI_WHITE);
-  gfx->fillRect(cx - 9, cy - 9, 18, 9, C565(0xef, 0x2b, 0x3a));
-  gfx->drawCircle(cx, cy, 10, UI_INK);
-  gfx->drawFastHLine(cx - 9, cy, 19, UI_INK);
-  gfx->fillCircle(cx, cy, 4, UI_WHITE);
-  gfx->drawCircle(cx, cy, 4, UI_INK);
+void drawBattleCaughtBall(int cx, int cy, int outW=27, int outH=29) {
+  // Le meme sprite transparent sert au combat et au bouton de l'accueil.
+  int left=cx-outW/2, top=cy-outH/2;
+  for(int y=0;y<outH;y++) {
+    int sy=(int)((uint32_t)y*BATTLE_BALL_H/outH);
+    for(int x=0;x<outW;x++) {
+      int sx=(int)((uint32_t)x*BATTLE_BALL_W/outW);
+      uint16_t pos=(uint16_t)sy*BATTLE_BALL_W+sx;
+      if(!(pgm_read_byte(&BATTLE_BALL_MASK[pos>>3])&(1<<(pos&7)))) continue;
+      gfx->drawPixel(left+x,top+y,pgm_read_word(&BATTLE_BALL_PIXELS[pos]));
+    }
+  }
 }
 
 void drawBattleHpInfo(int x,int y,uint16_t cur,uint16_t maxHp,uint16_t color) {
   if (maxHp==0) maxHp=1;
   if (cur>maxHp) cur=maxHp;
-  gfx->setTextColor(UI_WHITE);
+  gfx->setTextColor(UI_INK);
   gfx->setTextSize(1);
   gfx->setCursor(x,y);
   gfx->print(T(S_HP));
@@ -3243,49 +3304,223 @@ void drawBattleHpInfo(int x,int y,uint16_t cur,uint16_t maxHp,uint16_t color) {
   gfx->print(hp);
 }
 
+bool battleSpeciesGenderless(int16_t dex) {
+  return dex==81||dex==82||dex==100||dex==101||dex==120||dex==121||dex==132||dex==137||
+         dex==201||dex==233||dex==292||dex==337||dex==338||dex==343||dex==344||
+         (dex>=374&&dex<=386)||(dex>=144&&dex<=151)||(dex>=243&&dex<=251);
+}
+
+void drawBattleSex(uint8_t sex,int x,int y) {
+  if(sex>1) return;
+  uint16_t c=sex?C565(0xf0,0x48,0xa0):C565(0x28,0xa8,0xf0);
+  gfx->drawCircle(x,y,4,c);
+  if(sex==0) {
+    gfx->drawLine(x+3,y-3,x+8,y-8,c);
+    gfx->drawFastHLine(x+5,y-8,4,c);
+    gfx->drawFastVLine(x+8,y-8,4,c);
+  } else {
+    gfx->drawFastVLine(x,y+4,7,c);
+    gfx->drawFastHLine(x-3,y+8,7,c);
+  }
+}
+
+void drawBattleStatusBar(const char *name,uint8_t level,uint8_t sex,int x,int y,int w,
+                         uint16_t cur,uint16_t maxHp,uint16_t nameColor) {
+  if(maxHp==0) maxHp=1;
+  if(cur>maxHp) cur=maxHp;
+  uint16_t ink=C565(0x18,0x20,0x28), edge=C565(0x50,0x58,0x58), empty=C565(0xb8,0xc0,0xb0);
+  uint8_t nameSize=strlen(name)<=9?2:1;
+  gfx->setTextColor(nameColor); gfx->setTextSize(nameSize);
+  gfx->setCursor(x+10,y+(nameSize==2?1:6)); gfx->print(name);
+  char lv[12]; snprintf(lv,sizeof(lv),"Nv.%u",(unsigned)level);
+  gfx->setTextColor(nameColor); gfx->setTextSize(1); gfx->setCursor(x+w-45,y+5); gfx->print(lv);
+  drawBattleSex(sex,x+w-58,y+9);
+  gfx->fillRect(x+8,y+24,w-16,30,ink);
+  gfx->fillTriangle(x,y+39,x+8,y+24,x+8,y+54,ink);
+  gfx->fillTriangle(x+w,y+39,x+w-8,y+24,x+w-8,y+54,ink);
+  gfx->drawFastHLine(x+10,y+25,w-20,edge);
+  gfx->setTextColor(C565(0xf5,0xd8,0x48)); gfx->setTextSize(1); gfx->setCursor(x+16,y+35); gfx->print(T(S_HP));
+  int bx=x+48, by=y+33, bw=w-66;
+  gfx->fillRect(bx,by,bw,12,edge); gfx->fillRect(bx+2,by+2,bw-4,8,empty);
+  int fill=(int)((uint32_t)(bw-4)*cur/maxHp);
+  uint16_t hpCol=cur*4>maxHp?UI_BAR_OK:(cur*8>maxHp?C565(0xf2,0xc2,0x30):C565(0xe8,0x40,0x38));
+  if(fill>0) gfx->fillRect(bx+2,by+2,fill,8,hpCol);
+  char hp[18]; snprintf(hp,sizeof(hp),"%u/%u",(unsigned)cur,(unsigned)maxHp);
+  gfx->setTextColor(UI_WHITE); gfx->setTextSize(1); gfx->setCursor(x+w-78,y+47); gfx->print(hp);
+}
+
+uint8_t battleTerrainFor(uint8_t type1, uint8_t type2) {
+  if (type1==TYPE_WATER || type1==TYPE_ICE || type2==TYPE_WATER || type2==TYPE_ICE) return 2;
+  if (type1==TYPE_ROCK || type1==TYPE_GROUND || type1==TYPE_STEEL || type1==TYPE_FIRE ||
+      type2==TYPE_ROCK || type2==TYPE_GROUND || type2==TYPE_STEEL || type2==TYPE_FIRE) return 1;
+  return 0;
+}
+
+void drawBattleBackgroundBiome(uint8_t biome) {
+  uint8_t phase=currentDayPhase();
+  uint8_t sourcePhase=(phase==3)?2:(phase==1?0:1); // jour, après-midi, nuit
+  const BattleBgRef &asset=BATTLE_BG_ASSETS[biome<6?biome:0][sourcePhase];
+  uint32_t pixel=0;
+  for(uint16_t i=0;i<asset.rleSize;i+=2) {
+    uint16_t left=pgm_read_byte(&asset.rle[i]);
+    uint8_t palette=pgm_read_byte(&asset.rle[i+1]);
+    uint16_t color=pgm_read_word(&asset.pal[palette]);
+    while(left) {
+      uint16_t sx=pixel%BATTLE_BG_W;
+      uint16_t sy=pixel/BATTLE_BG_W;
+      uint16_t rowLeft=BATTLE_BG_W-sx;
+      uint16_t take=left<rowLeft?left:rowLeft;
+      int dy=(int)((uint32_t)sy*320/BATTLE_BG_H);
+      int dy2=(int)((uint32_t)(sy+1)*320/BATTLE_BG_H);
+      gfx->fillRect(-23+sx*2,dy,take*2,dy2-dy,color);
+      pixel+=take;
+      left-=take;
+    }
+  }
+}
+
+uint8_t battleGroundStyleFor(uint8_t type1,uint8_t type2) {
+  if(type1==TYPE_ICE||type2==TYPE_ICE) return 5;
+  if(type1==TYPE_WATER||type2==TYPE_WATER) return 1;
+  // Les Pokemon Feu utilisent la plateforme herbe classique, pas le sol Ligue/volcan.
+  if(type1==TYPE_FIRE||type2==TYPE_FIRE) return 0;
+  // Les 15 especes Acier utilisaient toutes la base rocheuse, dont le bord
+  // inferieur contraste avec leurs decors. Unifie leur plateforme en herbe.
+  // Ce test precede Sol et Roche pour inclure Steelix et la ligne Galekid.
+  if(type1==TYPE_STEEL||type2==TYPE_STEEL) return 0;
+  if(type1==TYPE_GROUND||type2==TYPE_GROUND) return 2;
+  if(type1==TYPE_ROCK||type2==TYPE_ROCK) return 4;
+  if(type1==TYPE_GRASS||type2==TYPE_GRASS||type1==TYPE_BUG||type2==TYPE_BUG) return 0;
+  return 0;
+}
+
+void drawBattleBaseFor(uint8_t style,bool enemy) {
+  const uint16_t *pal=enemy?BATTLE_BASE_E_0_PAL:BATTLE_BASE_P_0_PAL;
+  const uint8_t *rle=enemy?BATTLE_BASE_E_0_RLE:BATTLE_BASE_P_0_RLE;
+  uint16_t rleSize=enemy?sizeof(BATTLE_BASE_E_0_RLE):sizeof(BATTLE_BASE_P_0_RLE);
+  switch(style) {
+    case 1: pal=enemy?BATTLE_BASE_E_1_PAL:BATTLE_BASE_P_1_PAL; rle=enemy?BATTLE_BASE_E_1_RLE:BATTLE_BASE_P_1_RLE; rleSize=enemy?sizeof(BATTLE_BASE_E_1_RLE):sizeof(BATTLE_BASE_P_1_RLE); break;
+    case 2: pal=enemy?BATTLE_BASE_E_2_PAL:BATTLE_BASE_P_2_PAL; rle=enemy?BATTLE_BASE_E_2_RLE:BATTLE_BASE_P_2_RLE; rleSize=enemy?sizeof(BATTLE_BASE_E_2_RLE):sizeof(BATTLE_BASE_P_2_RLE); break;
+    case 3: pal=enemy?BATTLE_BASE_E_3_PAL:BATTLE_BASE_P_3_PAL; rle=enemy?BATTLE_BASE_E_3_RLE:BATTLE_BASE_P_3_RLE; rleSize=enemy?sizeof(BATTLE_BASE_E_3_RLE):sizeof(BATTLE_BASE_P_3_RLE); break;
+    case 4: pal=enemy?BATTLE_BASE_E_4_PAL:BATTLE_BASE_P_4_PAL; rle=enemy?BATTLE_BASE_E_4_RLE:BATTLE_BASE_P_4_RLE; rleSize=enemy?sizeof(BATTLE_BASE_E_4_RLE):sizeof(BATTLE_BASE_P_4_RLE); break;
+    case 5: pal=enemy?BATTLE_BASE_E_5_PAL:BATTLE_BASE_P_5_PAL; rle=enemy?BATTLE_BASE_E_5_RLE:BATTLE_BASE_P_5_RLE; rleSize=enemy?sizeof(BATTLE_BASE_E_5_RLE):sizeof(BATTLE_BASE_P_5_RLE); break;
+  }
+  // 256 px agrandis x2 puis centrés : 23 px sont rognés de chaque côté
+  // par le cadrage 466 px, sans déformer les pixels ni les deux plateformes.
+  uint32_t pixel=0;
+  for(uint16_t i=0;i<rleSize;i+=2) {
+    uint16_t left=pgm_read_byte(&rle[i]);
+    uint8_t palette=pgm_read_byte(&rle[i+1]);
+    uint16_t color=palette==255?0:pgm_read_word(&pal[palette]);
+    while(left) {
+      uint16_t sx=pixel%BATTLE_BASE_W;
+      uint16_t sy=pixel/BATTLE_BASE_W;
+      uint16_t rowLeft=BATTLE_BASE_W-sx;
+      uint16_t take=left<rowLeft?left:rowLeft;
+      if(palette!=255) gfx->fillRect(-23+sx*2,102+sy*2,take*2,2,color);
+      pixel+=take;
+      left-=take;
+    }
+  }
+}
+
+void drawBattlePlatform(int x, int y, int w, int h, uint8_t terrain) {
+  uint16_t dark = terrain==2 ? C565(0x1d,0x68,0xa4) : terrain==1 ? C565(0x6e,0x50,0x35) : C565(0x2d,0x75,0x36);
+  uint16_t mid  = terrain==2 ? C565(0x35,0x9f,0xd2) : terrain==1 ? C565(0xa5,0x7a,0x4d) : C565(0x48,0xa8,0x48);
+  uint16_t lite = terrain==2 ? C565(0x70,0xd4,0xea) : terrain==1 ? C565(0xd2,0xac,0x72) : C565(0x78,0xd0,0x5a);
+
+  // Composition classique : butte adverse ouverte à droite et premier plan
+  // du joueur ouvert à gauche. Les contours sont faits en marches de pixels.
+  const bool enemy=(x>100);
+  static const uint8_t inset[8]={64,43,27,14,5,0,8,25};
+  int band=max(4,h/8);
+  gfx->fillRect(x+(enemy?54:0),y+h-1,w-54,4,C565(0x91,0x98,0x8a));
+  for(int row=0;row<8;row++) {
+    int cut=inset[row];
+    int px=enemy ? x+cut : x;
+    int pw=max(2,w-cut);
+    uint16_t col=(row==0||row>=6)?dark:(row<=2?lite:mid);
+    gfx->fillRect(px,y+row*band,pw,band+1,col);
+  }
+
+  // Petits motifs carrés, sans anti-aliasing, propres à chaque biome.
+  if (terrain==2) {
+    for(int i=0;i<5;i++) {
+      int px=x+28+i*34, py=y+14+(i&1)*17;
+      gfx->fillRect(px,py,24,3,C565(0xdb,0xfa,0xff));
+      gfx->fillRect(px+6,py+5,16,3,C565(0x25,0x82,0xbf));
+    }
+  } else if (terrain==1) {
+    for(int i=0;i<7;i++) {
+      int px=x+25+i*26,py=y+15+(i%3)*11;
+      gfx->fillRect(px,py,10,7,C565(0x68,0x4a,0x32));
+      gfx->fillRect(px+2,py,6,2,C565(0xee,0xca,0x8b));
+      if(i&1) gfx->fillRect(px+8,py+5,5,4,C565(0x87,0x60,0x3d));
+    }
+  } else {
+    // Liseré d'herbe irrégulier visible sur le bord, comme sur la référence.
+    for(int i=0;i<18;i++) {
+      int px=x+(enemy?48:0)+i*12, py=y+4+(i%4)*2;
+      gfx->fillRect(px,py,4,9+(i%3)*3,C565(0x25,0x83,0x31));
+      gfx->fillRect(px+4,py+5,5,4,C565(0x91,0xdc,0x63));
+    }
+  }
+}
+
+void drawBattleShinyEntrance(int cx,int cy) {
+  if (!battleEnemyShiny || !battleShinyFxUntil || millis()>=battleShinyFxUntil) return;
+  uint32_t elapsed=1800-(battleShinyFxUntil-millis());
+  uint8_t phase=(uint8_t)((elapsed/90)&7);
+  static const int8_t px[8]={-48,-31,0,35,51,31,-4,-38};
+  static const int8_t py[8]={-10,-43,-55,-40,-4,31,42,26};
+  for(uint8_t i=0;i<8;i++) {
+    uint8_t pulse=(phase+i)&7;
+    int x=cx+px[i]+(px[i]*pulse)/28;
+    int y=cy+py[i]+(py[i]*pulse)/28;
+    int r=2+(pulse<4?pulse:7-pulse);
+    uint16_t color=(i&1)?C565(0xff,0xf2,0x68):C565(0x6e,0xe9,0xff);
+    gfx->drawFastHLine(x-r,y,r*2+1,color);
+    gfx->drawFastVLine(x,y-r,r*2+1,color);
+    if(r>=4){ gfx->drawPixel(x-2,y-2,color); gfx->drawPixel(x+2,y+2,color); }
+  }
+}
+
 void renderBattle() {
   if (battleResolved) battleDirty = false;
-  drawGameScene();
-  bool night = sceneHour() < 6 || sceneHour() >= 20;
-  uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
-  const DexEntry &mine = DEX_TBL[pet.speciesId];
-  const DexEntry &wild = DEX_TBL[battleDex];
+  int16_t playerDex = pet.speciesId;
+  const DexEntry &mine = DEX_TBL[playerDex];
+  const DexEntry &foe = DEX_TBL[battleDex];
+  uint8_t biome=mine.biome<6?mine.biome:0;
+  static const uint16_t skies[6]={C565(0xe8,0xf3,0xd9),C565(0xd9,0xf4,0xfa),C565(0xdf,0xef,0xd4),C565(0xed,0xd8,0xc6),C565(0xf1,0xe4,0xcf),C565(0xe9,0xf3,0xfa)};
+  uint16_t sky=skies[biome];
+  gfx->fillScreen(sky);
+  drawBattleBackgroundBiome(biome);
+  drawBattleBaseFor(battleGroundStyleFor(foe.type1,foe.type2),true);
+  drawBattleBaseFor(battleGroundStyleFor(mine.type1,mine.type2),false);
 
-  // V6.3 : interface de combat plus proche d'un vrai écran Pokémon.
-  // Adversaire en haut à droite, compagnon en bas à gauche.
-  char mineName[24], wildName[24];
-  snprintf(mineName, sizeof(mineName), "%s Lv.%u",
-           pet.nick[0] ? pet.nick : dexName(pet.speciesId), battlePlayer.level);
-  snprintf(wildName, sizeof(wildName), "%s Lv.%u", dexName(battleDex), battleLevel);
-
-  // Titre directement sur le décor : aucune capsule blanche.
-  gfx->setTextColor(UI_WHITE);
-  gfx->setTextSize(1);
-  gfx->setCursor(CX - (int)strlen(T(S_WILD_BATTLE)) * 3, 26);
-  gfx->print(T(S_WILD_BATTLE));
-
-  // ----- Infos adversaire : nom, niveau, PV, types -----
-  drawBattleName(dexName(battleDex), battleLevel, 78, 72, 190);
-  if (pet.isCaught(battleDex)) drawBattleCaughtBall(60, 82);
-  drawBattleHpInfo(78, 98, battleRun.enemyHp, battleRun.enemyMaxHp, UI_BAR_BAD);
-  drawTypeChips(78, 120, wild, false);
-
-  // ----- Infos compagnon -----
-  drawBattleName(pet.nick[0] ? pet.nick : dexName(pet.speciesId),
-                 battlePlayer.level, 236, 236, 190);
-  drawBattleHpInfo(236, 262, battleRun.playerHp, battleRun.playerMaxHp, UI_BAR_OK);
-  drawTypeChips(236, 284, mine, false);
+  // Zone sûre du cercle : aucune pointe ni information ne touche les bords.
+  uint8_t enemySex=battleSpeciesGenderless(battleDex)?2:battleEnemySex;
+  uint8_t playerSex=battleSpeciesGenderless(playerDex)?2:battlePlayerSex;
+  uint8_t phase=currentDayPhase();
+  uint16_t nameColor=(phase==3||biome==2||biome==3)?UI_WHITE:UI_INK;
+  char enemyName[28];
+  snprintf(enemyName,sizeof(enemyName),"%s%s",battleEnemyShiny?"*":"",dexName(battleDex));
+  drawBattleStatusBar(enemyName,battleLevel,enemySex,82,66,190,battleRun.enemyHp,battleRun.enemyMaxHp,
+                      battleEnemyShiny?UI_BAR_WARN:nameColor);
+  if(pet.isCaught(battleDex)) drawBattleCaughtBall(102,137);
+  drawBattleStatusBar(pet.nick[0]?pet.nick:dexName(pet.speciesId),battlePlayer.level,playerSex,220,234,220,battleRun.playerHp,battleRun.playerMaxHp,nameColor);
 
   // Sprites standardisés dans une boîte visuelle ~82 px, quelle que soit l'espèce.
-  if (wildPmd.loaded) drawBattlePmd(wildPmd, battleDex, 350, 232, 84, false);
+  if (wildPmd.loaded) drawBattlePmd(wildPmd, battleDex, 354, 190, 84, false, false);
   else {
     const uint8_t *th=thumbs.get(battleDex);
-    if (th) drawThumb(th, 282, 118, 3, false);
+    if (th) drawBattleThumb(th,battleDex,354,190,84,false,false);
   }
-  if (pmd.loaded) drawBattlePmd(pmd, pet.speciesId, 118, 316, 112, false);
+  drawBattleShinyEntrance(354,146);
+  if (pmd.loaded) drawBattlePmd(pmd, playerDex, 110, 302, 104, true, false);
   else {
-    const uint8_t *th=thumbs.get(pet.speciesId);
-    if (th) drawThumb(th, 54, 190, 3, false);
+    const uint8_t *th=thumbs.get(playerDex);
+    if (th) drawBattleThumb(th,playerDex,110,302,104,true,false);
   }
 
   if (battleResolved) {
@@ -3341,52 +3576,61 @@ void renderBattle() {
   } else {
     // Bandeau continu jusqu'aux bords : l'ecran rond masque naturellement ses
     // extremites et evite l'effet de petite boite posee sur le combat.
-    gfx->fillRect(0, 326, 466, 90, C565(0x0c,0x16,0x2c));
-    gfx->drawFastHLine(0, 326, 466, C565(0x50,0x64,0x8c));
-    gfx->drawFastHLine(0, 415, 466, C565(0x28,0x38,0x5c));
+    gfx->fillRect(0, 320, 466, 146, C565(0x8e,0xa6,0xb9));
+    // Barre noire unique : séparation franche sans double liseré coloré.
+    // Chevauche le décor et le bandeau pour qu'aucun filet clair ne puisse
+    // apparaître entre les deux zones, même pendant un rafraîchissement.
+    gfx->fillRect(0,318,466,9,UI_INK);
 
     if (battleMsg[0]) {
-      gfx->setTextColor(UI_WHITE);
+      // Retour d'action au-dessus du bandeau : il ne recouvre plus Attaque,
+      // Esquive ou Repos. L'ombre conserve le contraste sur tous les biomes.
       gfx->setTextSize(1);
       int msgW=(int)strlen(battleMsg)*6;
-      gfx->setCursor(CX-msgW/2,338);
-      gfx->print(battleMsg);
+      // Aligne le retour d'action dans la moitié droite, loin du sol et du
+      // sprite du Pokémon joueur. On conserve une marge sûre dans le rond.
+      int msgX=396-msgW;
+      if (msgX < 238) msgX=238;
+      gfx->setTextColor(UI_INK);
+      gfx->setCursor(msgX+1,307); gfx->print(battleMsg);
+      gfx->setTextColor(UI_WHITE);
+      gfx->setCursor(msgX,306); gfx->print(battleMsg);
     }
 
     if (battleAttackMenuUntil) {
       // Trois attaques fiables directement reliées au moteur existant.
-      gfx->fillRoundRect(82, 350, 96, 52, 12, C565(0x1a,0x54,0x9a));
-      gfx->fillRoundRect(190, 350, 96, 52, 12, UI_BAR_BAD);
-      gfx->fillRoundRect(298, 350, 96, 52, 12, UI_BAR_WARN);
+      gfx->fillRoundRect(68, 346, 104, 60, 12, C565(0x1a,0x54,0x9a));
+      gfx->fillRoundRect(181, 346, 104, 60, 12, UI_BAR_BAD);
+      gfx->fillRoundRect(294, 346, 104, 60, 12, UI_BAR_WARN);
 
       gfx->setTextColor(uiContrastText(C565(0x1a,0x54,0x9a)));
-      drawBattleButtonLabel(82,363,96,T(S_QUICK_ATTACK));
+      drawBattleButtonLabel(68,360,104,T(S_QUICK_ATTACK));
       gfx->setTextColor(uiContrastText(UI_BAR_BAD));
-      drawBattleButtonLabel(190,363,96,T(S_NORMAL_ATTACK));
+      drawBattleButtonLabel(181,360,104,T(S_NORMAL_ATTACK));
       gfx->setTextColor(uiContrastText(UI_BAR_WARN));
-      drawBattleButtonLabel(298,363,96,T(S_HEAVY_ATTACK));
+      drawBattleButtonLabel(294,360,104,T(S_HEAVY_ATTACK));
 
       gfx->setTextSize(1);
       gfx->setTextColor(UI_WHITE);
-      gfx->setCursor(117,387); gfx->print("85%");
-      gfx->setCursor(223,387); gfx->print("100%");
-      gfx->setCursor(328,387); gfx->print("125%");
+      gfx->setCursor(102,389); gfx->print("85%");
+      gfx->setCursor(214,389); gfx->print("100%");
+      gfx->setCursor(329,389); gfx->print("125%");
     } else {
-      gfx->fillRoundRect(72, 350, 76, 52, 12, UI_BAR_BAD);
-      gfx->fillRoundRect(154, 350, 76, 52, 12, C565(0x2d,0x73,0xb9));
-      gfx->fillRoundRect(236, 350, 76, 52, 12, UI_BAR_OK);
-      gfx->fillRoundRect(318, 350, 76, 52, 12, UI_BAR_WARN);
+      gfx->fillRoundRect(68,330,158,48,11,UI_BAR_BAD);
+      gfx->fillRoundRect(240,330,158,48,11,C565(0x2d,0x73,0xb9));
+      gfx->fillRoundRect(68,383,158,48,11,UI_BAR_WARN);
+      gfx->fillRoundRect(240,383,158,48,11,UI_WHITE);
 
       gfx->setTextColor(uiContrastText(UI_BAR_BAD));
-      drawBattleButtonLabel(72,367,76,T(S_ATTACK));
+      drawBattleButtonLabel(68,346,158,T(S_ATTACK));
       gfx->setTextColor(uiContrastText(C565(0x2d,0x73,0xb9)));
-      drawBattleButtonLabel(154,367,76,T(S_DODGE));
+      drawBattleButtonLabel(240,346,158,T(S_DODGE));
       char restLabel[18];
       snprintf(restLabel,sizeof(restLabel),"%s %u",T(S_REST),battleRun.restUsesLeft);
-      gfx->setTextColor(uiContrastText(UI_BAR_OK));
-      drawBattleButtonLabel(236,367,76,restLabel);
       gfx->setTextColor(uiContrastText(UI_BAR_WARN));
-      drawBattleButtonLabel(318,367,76,T(S_RUN_BATTLE));
+      drawBattleButtonLabel(68,399,158,restLabel);
+      gfx->setTextColor(UI_INK);
+      drawBattleButtonLabel(240,399,158,T(S_RUN_BATTLE));
     }
   }
 
@@ -3493,74 +3737,62 @@ static const char *const HELP_WORD[LANG_COUNT] = { "AYUDA", "HELP", "AIDE", "HIL
 static const char *const HELP_OK[LANG_COUNT] = { "OK", "OK", "OK", "OK", "OK", "OK" };
 
 static const char *const HELP_TITLES[LANG_COUNT][HELP_PAGE_COUNT] = {
-  { "CUIDADO", "SUENO/ENERGIA", "MINIJUEGOS", "COMBATE 1", "COMBATE 2", "COLECCION", "EXTRAS", "EXPEDICION" },
-  { "CARE", "SLEEP/ENERGY", "MINIGAMES", "BATTLE 1", "BATTLE 2", "COLLECTION", "EXTRAS", "EXPEDITION" },
-  { "SOIN", "SOMMEIL/ENE", "MINI-JEUX", "COMBAT 1", "COMBAT 2", "COLLECTION", "EXTRAS", "EXPEDITION" },
-  { "PFLEGE", "SCHLAF/ENERGIE", "MINISPIELE", "KAMPF 1", "KAMPF 2", "SAMMLUNG", "EXTRAS", "EXPEDITION" },
-  { "CURA", "SONNO/ENERGIA", "MINIGIOCHI", "LOTTA 1", "LOTTA 2", "COLLEZIONE", "EXTRA", "SPEDIZIONE" },
-  { "CUIDADO", "SONO/ENERGIA", "MINIJOGOS", "BATALHA 1", "BATALHA 2", "COLECAO", "EXTRAS", "EXPEDICAO" },
+  { "CUIDADOS", "SUENO", "MINIJUEGOS", "COMBATE", "POKEDEX", "EXPEDICION" },
+  { "CARE", "SLEEP", "MINIGAMES", "BATTLE", "POKEDEX", "EXPEDITION" },
+  { "SOINS", "SOMMEIL", "MINI-JEUX", "COMBAT", "POKEDEX", "EXPEDITION" },
+  { "PFLEGE", "SCHLAF", "MINISPIELE", "KAMPF", "POKEDEX", "EXPEDITION" },
+  { "CURA", "SONNO", "MINIGIOCHI", "LOTTA", "POKEDEX", "SPEDIZIONE" },
+  { "CUIDADOS", "SONO", "MINIJOGOS", "BATALHA", "POKEDEX", "EXPEDICAO" },
 };
 
 static const char *const HELP_LINES[LANG_COUNT][HELP_PAGE_COUNT][HELP_LINE_COUNT] = {
   {
-    { "Comida baja = descuido.", "Jugar sube alegria.", "Bano limpia suciedad.", "Tocar da alegria/vinc.", "Peso alto te frena.", "Dulce alegra, engorda." },
-    { "Dormir recupera energia.", "Durmiendo todo baja lento.", "Luz despierta o duerme.", "PWR corto apaga pantalla.", "Ahorro usa light sleep.", "Sin borrar conserva save." },
-    { "Bola: toca la bola.", "Atrapa: toca iconos.", "Memo: repite secuencia.", "Limpia: toca manchas.", "Tipo: elige ventaja.", "Dan records y entreno." },
-    { "Rapido: menos dano.", "Rival esquiva poco.", "Recibes algo menos dano.", "Fuerte: mas dano.", "Riesgo y contra mayor.", "No siempre conviene." },
-    { "Esquivar evita dano.", "Si sale: Contra listo.", "Prox ataque pega mas.", "Ruhe/Descanso cura 2x.", "Tambien da Guardia.", "Tipos suben/bajan dano." },
-    { "Pokedex: desliza lado.", "Criado y atrapado cuentan.", "10/25/50/100/151: marcos.", "Perfil: elige marco.", "Detalle conocido: chirp.", "SON TODO: toca pet." },
-    { "Diario da metas diarias.", "Eventos salen raros.", "Batallas salvajes opc.", "Captura tras ganar.", "Rachas y medallas quedan.", "Sonido se ajusta abajo." },
-    { "Expedicion: 15/30/60 min.", "Cuesta energia al salir.", "El bicho sigue disponible.", "Buen cuidado mejora premio.", "Recoge 1 objeto al volver.", "Objetos max. x3." },
+    { "Dale comida si tiene hambre.", "Bana al Pokemon si se ensucia.", "Jugar aumenta la alegria.", "Acariciarlo mejora el vinculo.", "Las bayas estan en Comida.", "Diario: cumple 3 metas." },
+    { "Dormir devuelve energia.", "La luz controla el sueno.", "PWR corto apaga la pantalla.", "Ajusta el sonido en Sonido.", "Cambia el tema en Pantalla.", "Tu partida se guarda sola." },
+    { "Bola: toca la bola.", "Atrapa: toca los iconos.", "Memo: repite los colores.", "Limpia: toca las manchas.", "Tipo: elige el tipo bueno.", "Juega para batir records." },
+    { "Elige un ataque.", "Esquiva para evitar golpes.", "Descansar recupera PS.", "Los tipos cambian el dano.", "Puedes huir del combate.", "Tras ganar, puedes atrapar." },
+    { "Desliza para cambiar pagina.", "Toca un Pokemon para verlo.", "La Pokeball indica obtenido.", "Una estrella indica Shiny.", "Uno obtenido puede seguirte.", "Marcos: Ajustes > Pantalla." },
+    { "Elige 15, 30 o 60 min.", "Salir consume energia.", "Tu Pokemon sigue disponible.", "Vuelve a recoger el objeto.", "Hasta 3 de cada objeto.", "Abre la mochila para usarlo." },
   },
   {
-    { "Low food = slip-up.", "Play raises joy.", "Bath cleans dirt.", "Petting gives joy/bond.", "High weight slows you.", "Candy cheers but fattens." },
-    { "Sleep restores energy.", "Needs decay slower asleep.", "Light toggles sleep.", "Short PWR screen off.", "Power Save light-sleeps.", "No erase keeps saves." },
-    { "Ball: tap the ball.", "Catch: tap icons.", "Memo: repeat sequence.", "Clean: tap stains.", "Type: pick advantage.", "Records and training." },
-    { "Quick: lower damage.", "Enemy dodges less.", "You take less damage.", "Heavy: more damage.", "More risk/counterplay.", "Not always best." },
-    { "Dodge avoids damage.", "Success: Counter ready.", "Next attack hits harder.", "Rest heals only 2x.", "Rest also gives Guard.", "Types change damage." },
-    { "Pokedex: side swipe.", "Raised and caught count.", "10/25/50/100/151: frames.", "Profile: choose frame.", "Known detail: species chirp.", "SND ALL: tap pet." },
-    { "Daily gives small goals.", "Events appear rarely.", "Wild battles are optional.", "Catch after winning.", "Streaks/medals persist.", "Sound is in settings." },
-    { "Expedition: 15/30/60 min.", "Energy is spent at start.", "Pet stays available.", "Care and bond improve finds.", "Claim 1 item when back.", "Items hold max x3." },
+    { "Feed it when it is hungry.", "Wash it when it gets dirty.", "Playing raises its joy.", "Petting builds your bond.", "Berries are under Food.", "Daily: complete 3 goals." },
+    { "Sleep restores energy.", "The light controls sleep.", "Short PWR turns screen off.", "Set volume under Sound.", "Change theme under Display.", "Your game saves itself." },
+    { "Ball: tap the ball.", "Catch: tap the icons.", "Memo: repeat the colors.", "Clean: tap the stains.", "Type: choose a good type.", "Play to beat your records." },
+    { "Choose an attack.", "Dodge to avoid a hit.", "Rest restores HP.", "Types change damage.", "You can run from battle.", "After a win, you can catch." },
+    { "Swipe to change pages.", "Tap a Pokemon to see it.", "A Pokeball means you own it.", "A star marks a Shiny.", "An owned one can join you.", "Frames: Settings > Display." },
+    { "Choose 15, 30 or 60 min.", "Leaving uses energy.", "Your Pokemon stays usable.", "Return to claim an item.", "Up to 3 of each item.", "Open the bag to use items." },
   },
   {
-    { "Faim basse = erreur.", "Jouer monte la joie.", "Bain nettoie.", "Caresse donne lien/joie.", "Poids haut ralentit.", "Bonbon rend gros." },
-    { "Sommeil rend energie.", "Besoins baissent moins.", "Lumiere dort/reveille.", "PWR court eteint ecran.", "Eco utilise light sleep.", "Sans erase garde save." },
-    { "Balle: touche la balle.", "Attrape: touche icones.", "Memo: repete sequence.", "Nettoie: touche taches.", "Type: choisis avantage.", "Records et entrainement." },
-    { "Rapide: degats bas.", "Ennemi esquive moins.", "Tu subis moins.", "Fort: degats hauts.", "Risque plus grand.", "Pas toujours meilleur." },
-    { "Esquive evite degats.", "Succes: Contre pret.", "Prochaine attaque plus.", "Repos soigne 2 fois.", "Repos donne Garde.", "Types changent degats." },
-    { "Pokedex: glisse cote.", "Eleve et capture comptent.", "10/25/50/100/151: cadres.", "Profil: choisis cadre.", "Detail connu: chirp.", "SON TOUT: touche pet." },
-    { "Quotidien donne buts.", "Events rares.", "Combats sauvages option.", "Capture apres victoire.", "Series/medailles restent.", "Son dans reglages." },
-    { "Expedition: 15/30/60 min.", "Energie payee au depart.", "Le pet reste disponible.", "Soin/lien aide le butin.", "Prends 1 objet au retour.", "Objets max x3." },
+    { "Nourris-le quand il a faim.", "Lave-le quand il est sale.", "Jouer augmente sa joie.", "Les caresses creent un lien.", "Les baies sont dans Nourrir.", "Quotidien : fais 3 objectifs." },
+    { "Dormir rend de l'energie.", "La lumiere gere le sommeil.", "PWR court eteint l'ecran.", "Regle le volume dans Son.", "Change le theme: Affichage.", "Ta partie se sauvegarde." },
+    { "Balle : touche la balle.", "Attrape : touche les icones.", "Memo : repete les couleurs.", "Nettoie : touche les taches.", "Type : choisis le bon type.", "Joue pour battre tes records." },
+    { "Choisis une attaque.", "Esquive pour eviter un coup.", "Repos redonne des PV.", "Les types changent les degats.", "Tu peux fuir un combat.", "Apres victoire, capture-le." },
+    { "Glisse pour changer de page.", "Touche un Pokemon: sa fiche.", "La Pokeball = deja obtenu.", "L'etoile indique un Shiny.", "Un obtenu peut te suivre.", "Cadres: Reglages > Affichage." },
+    { "Choisis 15, 30 ou 60 min.", "Le depart coute de l'energie.", "Ton Pokemon reste disponible.", "Reviens chercher ton objet.", "Le sac garde 3 de chaque objet.", "Ouvre le sac pour les utiliser." },
   },
   {
-    { "Food 0 = Patzer.", "Spielen hebt Freude.", "Bad reinigt Hygiene.", "Streicheln gibt Bond.", "Hohes Gewicht bremst.", "Candy freut, macht dick." },
-    { "Schlaf gibt Energie.", "Needs sinken langsamer.", "Licht: schlafen/wach.", "PWR kurz: Screen aus.", "Sparen nutzt Light Sleep.", "Ohne Erase bleibt Save." },
-    { "Ball: Ball antippen.", "Fangen: Icons treffen.", "Memo: Folge merken.", "Putzen: Flecken tippen.", "Typ: Vorteil waehlen.", "Gibt Rekorde/Training." },
-    { "Schnell: weniger Schaden.", "Gegner weicht selten aus.", "Du kassierst weniger.", "Stark: mehr Schaden.", "Mehr Risiko/Gegendruck.", "Nicht immer beste Wahl." },
-    { "Ausweichen meidet Schaden.", "Klappt es: Konter bereit.", "Naechster Angriff staerker.", "Ruhen heilt nur 2x.", "Ruhen gibt auch Schutz.", "Typen aendern Schaden." },
-    { "Pokedex: seitlich wischen.", "Aufz./gefangen zaehlen.", "10/25/50/100/151: Rahmen.", "Profil: Rahmen waehlen.", "Bekanntes Detail: Chirp.", "TON VIEL: Pet tippen." },
-    { "Taeglich gibt Ziele.", "Events sind selten.", "Wildkampf ist optional.", "Fangen nach Sieg.", "Serien/Medaillen bleiben.", "Ton unten einstellen." },
-    { "Expedition: 15/30/60 Min.", "Kostet beim Start Energie.", "Pet bleibt verfuegbar.", "Pflege/Bond verbessert Fund.", "Fund danach einsammeln.", "Items maximal x3." },
+    { "Fuettere es bei Hunger.", "Bei Schmutz: waschen.", "Spielen macht es froh.", "Streicheln staerkt Bindung.", "Beeren findest du bei Essen.", "Taeglich: 3 Ziele schaffen." },
+    { "Schlaf gibt Energie.", "Das Licht steuert Schlaf.", "PWR kurz: Bildschirm aus.", "Lautstaerke unter Ton.", "Design unter Anzeige.", "Dein Spiel speichert selbst." },
+    { "Ball: tippe den Ball an.", "Fangen: tippe die Symbole.", "Memo: Farben wiederholen.", "Putzen: Flecken antippen.", "Typ: guten Typ waehlen.", "Spiele fuer neue Rekorde." },
+    { "Waehle einen Angriff.", "Ausweichen meidet Treffer.", "Ruhen gibt KP zurueck.", "Typen aendern den Schaden.", "Du kannst auch fliehen.", "Nach dem Sieg: fangen." },
+    { "Wische fuer neue Seiten.", "Tippe ein Pokemon an.", "Pokeball: bereits erhalten.", "Ein Stern zeigt ein Shiny.", "Erhaltene koennen folgen.", "Rahmen: Anzeige im Menue." },
+    { "Waehle 15, 30 oder 60 Min.", "Der Start kostet Energie.", "Dein Pokemon bleibt nutzbar.", "Hol danach einen Fund ab.", "Bis zu 3 je Gegenstand.", "Nutze Dinge aus der Tasche." },
   },
   {
-    { "Cibo 0 = errore.", "Gioca aumenta gioia.", "Bagno pulisce.", "Carezza da legame.", "Peso alto rallenta.", "Dolce rallegra, ingrassa." },
-    { "Sonno da energia.", "Bisogni calano meno.", "Luce dorme/sveglia.", "PWR corto spegne schermo.", "Risparmio usa light sleep.", "Senza erase salva." },
-    { "Palla: tocca palla.", "Prendi: tocca icone.", "Memo: ripeti sequenza.", "Pulisci: tocca macchie.", "Tipo: scegli vantaggio.", "Record e allenamento." },
-    { "Rapido: meno danni.", "Nemico schiva meno.", "Subisci meno danni.", "Forte: piu danni.", "Piu rischio.", "Non sempre migliore." },
-    { "Schiva evita danni.", "Successo: contro pronto.", "Prox attacco piu forte.", "Riposo cura solo 2x.", "Riposo da Guardia.", "Tipi cambiano danni." },
-    { "Pokedex: scorri lato.", "Allevato e preso contano.", "10/25/50/100/151: cornici.", "Profilo: scegli cornice.", "Dettaglio noto: chirp.", "SON TUTTO: tocca pet." },
-    { "Quotidiano da obiettivi.", "Eventi rari.", "Lotte selvatiche opz.", "Cattura dopo vittoria.", "Serie/medaglie restano.", "Audio nei settaggi." },
-    { "Spedizione: 15/30/60 min.", "Energia spesa alla partenza.", "Il pet resta disponibile.", "Cura/legame migliora premio.", "Ritira 1 oggetto al ritorno.", "Oggetti max x3." },
+    { "Dagli cibo quando ha fame.", "Lavalo quando e sporco.", "Giocare aumenta la gioia.", "Le carezze creano legame.", "Le bacche sono in Cibo.", "Ogni giorno: 3 obiettivi." },
+    { "Dormire ridona energia.", "La luce regola il sonno.", "PWR breve spegne lo schermo.", "Volume nel menu Audio.", "Tema nel menu Schermo.", "Il gioco si salva da solo." },
+    { "Palla: tocca la palla.", "Prendi: tocca le icone.", "Memo: ripeti i colori.", "Pulisci: tocca le macchie.", "Tipo: scegli il tipo giusto.", "Gioca per battere i record." },
+    { "Scegli un attacco.", "Schiva per evitare colpi.", "Riposo ripristina i PS.", "I tipi cambiano i danni.", "Puoi fuggire dalla lotta.", "Dopo la vittoria, cattura." },
+    { "Scorri per cambiare pagina.", "Tocca un Pokemon: la scheda.", "Pokeball: gia ottenuto.", "Una stella indica Shiny.", "Uno ottenuto puo seguirti.", "Cornici: menu Schermo." },
+    { "Scegli 15, 30 o 60 min.", "Partire consuma energia.", "Il Pokemon resta disponibile.", "Torna a ritirare un oggetto.", "Fino a 3 per ogni oggetto.", "Usa gli oggetti dallo zaino." },
   },
   {
-    { "Comida 0 = falha.", "Jogar sobe alegria.", "Banho limpa.", "Carinho da vinculo.", "Peso alto atrasa.", "Doce alegra, engorda." },
-    { "Sono da energia.", "Necessidades caem menos.", "Luz dorme/acorda.", "PWR curto apaga tela.", "Poupanca usa light sleep.", "Sem erase guarda save." },
-    { "Bola: toque na bola.", "Pegar: toque icones.", "Memo: repita sequencia.", "Limpa: toque manchas.", "Tipo: escolha vantagem.", "Recordes e treino." },
-    { "Rapido: dano menor.", "Rival desvia menos.", "Voce recebe menos.", "Forte: dano maior.", "Mais risco.", "Nem sempre melhor." },
-    { "Desviar evita dano.", "Sucesso: contra pronto.", "Prox ataque mais forte.", "Descanso cura so 2x.", "Descanso da Guarda.", "Tipos mudam dano." },
-    { "Pokedex: deslize lado.", "Criado e apanhado contam.", "10/25/50/100/151: molduras.", "Perfil: escolha moldura.", "Detalhe conhecido: chirp.", "SOM TODO: toque pet." },
-    { "Diario da metas.", "Eventos sao raros.", "Batalha selvagem opc.", "Captura apos vitoria.", "Series/medalhas ficam.", "Som nos ajustes." },
-    { "Expedicao: 15/30/60 min.", "Energia gasta ao sair.", "Pet fica disponivel.", "Cuidado/laco melhora premio.", "Recolhe 1 item ao voltar.", "Itens max x3." },
+    { "Da comida se tiver fome.", "Da banho quando esta sujo.", "Jogar aumenta a alegria.", "Carinho reforca o laco.", "Bagas ficam em Comida.", "Diario: cumpre 3 metas." },
+    { "Dormir recupera energia.", "A luz controla o sono.", "PWR curto apaga o ecra.", "Volume no menu Som.", "Tema no menu Tela.", "O jogo guarda-se sozinho." },
+    { "Bola: toca na bola.", "Apanha: toca nos icones.", "Memo: repete as cores.", "Limpa: toca nas manchas.", "Tipo: escolhe o tipo certo.", "Joga para bater recordes." },
+    { "Escolhe um ataque.", "Desvia para evitar golpes.", "Descanso recupera PS.", "Os tipos mudam o dano.", "Podes fugir do combate.", "Depois de vencer, apanha." },
+    { "Desliza para mudar pagina.", "Toca num Pokemon: a ficha.", "Pokeball: ja foi obtido.", "A estrela indica Shiny.", "Um obtido pode seguir-te.", "Molduras: menu Tela." },
+    { "Escolhe 15, 30 ou 60 min.", "Sair gasta energia.", "O Pokemon fica disponivel.", "Volta para recolher o item.", "Ate 3 de cada objeto.", "Usa os itens da mochila." },
   },
 };
 
@@ -3688,13 +3920,40 @@ void drawSettingsRow(int x, int y, int w, int h, const char *label, const char *
   }
 }
 
-void renderDisplaySettings() {
+static const char *displayFrameLabel() {
+  static const char *const L[LANG_COUNT]={"MARCO","FRAME","CADRE","RAHMEN","CORNICE","MOLDURA"};
+  return L[gLang];
+}
+
+static const char *displayBoxLabel() {
+  static const char *const L[LANG_COUNT]={"CAJA","BOX","BOITE","BOX","BOX","CAIXA"};
+  return L[gLang];
+}
+
+void drawSettingsTitle(const char *title);
+
+void drawBoxBackgroundAsset(uint8_t style,int x0,int y0,int scale) {
+  if(style>=BOX_BG_COUNT) style=0;
+  const BoxBgRef &asset=BOX_BG_ASSETS[style];
+  uint32_t pixel=0;
+  for(uint16_t i=0;i<asset.rleSize;i+=2) {
+    uint8_t count=pgm_read_byte(&asset.rle[i]);
+    uint16_t color=pgm_read_word(&asset.pal[pgm_read_byte(&asset.rle[i+1])]);
+    while(count--) {
+      int x=(int)(pixel%BOX_BG_W), y=(int)(pixel/BOX_BG_W);
+      gfx->fillRect(x0+x*scale,y0+y*scale,scale,scale,color);
+      pixel++;
+    }
+  }
+}
+
+void renderFrameSettings() {
   clockDirty=false;
   gfx->fillScreen(uiBg());
 
   gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
-  const char *title=T(S_DISPLAY_LABEL);
+  const char *title=displayFrameLabel();
   gfx->setCursor(CX-(int)strlen(title)*9,38);
   gfx->print(title);
 
@@ -3756,6 +4015,41 @@ void renderDisplaySettings() {
   gfx->setTextSize(2);
   gfx->setCursor(CX-12,410);
   gfx->print("OK");
+  gfx->flush();
+}
+
+void renderDisplaySettings() {
+  clockDirty=false; gfx->fillScreen(uiBg());
+  drawSettingsTitle(T(S_DISPLAY_LABEL));
+  drawSettingsRow(64,82,338,48,T(S_MODE_LABEL),darkMode?T(S_DARK):T(S_LIGHT),darkMode);
+  drawSettingsRow(64,144,338,48,displayFrameLabel(),frameTemplateName(pet.collectionFrame),false);
+  char boxVal[12]; snprintf(boxVal,sizeof(boxVal),"%u/16",(unsigned)(pet.boxBackground+1));
+  drawSettingsRow(64,206,338,48,displayBoxLabel(),boxVal,false);
+  char langVal[10]; snprintf(langVal,sizeof(langVal),"%s",LANG_CODES[gLang]);
+  drawSettingsRow(64,268,164,42,T(S_LANG_LABEL),langVal,false);
+  drawSettingsRow(238,268,164,42,T(S_POWER_SAVE_LABEL),powerSave?T(S_ON):T(S_OFF),powerSave);
+  gfx->fillRoundRect(128,342,210,46,14,UI_BAR_OK);
+  gfx->setTextColor(UI_WHITE); gfx->setTextSize(2); gfx->setCursor(CX-12,356); gfx->print("OK");
+  gfx->flush();
+}
+
+void renderBoxBackgroundSettings() {
+  clockDirty=false; gfx->fillScreen(uiBg());
+  drawSettingsTitle(displayBoxLabel());
+  gfx->fillRoundRect(72,82,322,270,18,uiPanel2());
+  gfx->drawRoundRect(72,82,322,270,18,uiLine());
+  drawBoxBackgroundAsset(boxBgPreview,83,104,2);
+  gfx->fillRoundRect(82,188,52,52,14,uiPanel());
+  gfx->fillRoundRect(332,188,52,52,14,uiPanel());
+  gfx->setTextColor(uiInk()); gfx->setTextSize(3);
+  gfx->setCursor(98,199); gfx->print("<"); gfx->setCursor(348,199); gfx->print(">");
+  char count[12]; snprintf(count,sizeof(count),"%u/16",(unsigned)(boxBgPreview+1));
+  gfx->fillRoundRect(180,314,106,28,9,uiPanel());
+  gfx->setTextColor(uiInk()); gfx->setTextSize(1);
+  gfx->setCursor(CX-(int)strlen(count)*3,324); gfx->print(count);
+  gfx->fillRoundRect(128,374,210,46,14,UI_BAR_OK);
+  gfx->setTextColor(UI_WHITE); gfx->setTextSize(2);
+  const char *valid=T(S_VALIDATE); gfx->setCursor(CX-(int)strlen(valid)*6,388); gfx->print(valid);
   gfx->flush();
 }
 
@@ -3826,6 +4120,8 @@ void renderClock() {
   if (settingsPage==2) { renderSoundSettings(); return; }
   if (settingsPage==3) { renderTimeSettings(); return; }
   if (settingsPage==4) { renderResetSettings(); return; }
+  if (settingsPage==5) { renderFrameSettings(); return; }
+  if (settingsPage==6) { renderBoxBackgroundSettings(); return; }
 
   clockDirty=false;
   gfx->fillScreen(uiBg());
@@ -3892,17 +4188,24 @@ void clockTap(int16_t x,int16_t y) {
     }
     return;
   }
-  if (settingsPage==1) {
-    if (x>=118 && x<=348 && y>=388 && y<=448) {
-      settingsPage=0; clockDirty=true; sfxPlay(SFX_TAP); lockTouchBrief(); return;
+  if (settingsPage==6) {
+    if (x>=112 && x<=354 && y>=362 && y<=432) {
+      pet.setBoxBackground(boxBgPreview); settingsPage=1; clockDirty=true;
+      sfxPlay(SFX_TAP); lockTouchBrief(); return;
     }
-    if (x>=54 && x<=412 && y>=78 && y<=144) {
-      setDarkMode(!darkMode); clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
-    }
-    if (y>=342 && y<=398) {
-      if (x>=54 && x<=232) setLang((Lang)((gLang+1)%LANG_COUNT));
-      else if (x>=232 && x<=412) setPowerSave(!powerSave);
+    if (y>=168 && y<=260) {
+      if (x>=68 && x<=154) boxBgPreview=boxBgPreview==0?BOX_BG_COUNT-1:boxBgPreview-1;
+      else if (x>=312 && x<=398) boxBgPreview=(uint8_t)((boxBgPreview+1)%BOX_BG_COUNT);
+      else return;
+      pet.boxBackground=boxBgPreview; // application immédiate, sans redémarrage
+      cardDirty=true;
       clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
+    }
+    return;
+  }
+  if (settingsPage==5) {
+    if (x>=118 && x<=348 && y>=388 && y<=448) {
+      settingsPage=1; clockDirty=true; sfxPlay(SFX_TAP); lockTouchBrief(); return;
     }
     uint8_t count=pet.unlockedCollectionFrameCount();
     if (y>=204 && y<=282 && count>0) {
@@ -3914,6 +4217,26 @@ void clockTap(int16_t x,int16_t y) {
         uint8_t next=(uint8_t)((pet.collectionFrame+1)%count);
         pet.setCollectionFrame(next); clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
       }
+    }
+    return;
+  }
+  if (settingsPage==1) {
+    if (x>=118 && x<=348 && y>=330 && y<=410) {
+      settingsPage=0; clockDirty=true; sfxPlay(SFX_TAP); lockTouchBrief(); return;
+    }
+    if (x>=54 && x<=412 && y>=72 && y<=140) {
+      setDarkMode(!darkMode); clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
+    }
+    if (x>=54 && x<=412 && y>=138 && y<=200) {
+      settingsPage=5; clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
+    }
+    if (x>=54 && x<=412 && y>=200 && y<=262) {
+      boxBgPreview=pet.boxBackground; settingsPage=6; clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
+    }
+    if (y>=260 && y<=326) {
+      if (x>=54 && x<=232) setLang((Lang)((gLang+1)%LANG_COUNT));
+      else if (x>=232 && x<=412) setPowerSave(!powerSave);
+      clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
     }
     return;
   }
@@ -4532,8 +4855,12 @@ bool boxComesBefore(int16_t a, int16_t b) {
 
 uint16_t boxBuildList(int16_t *out) {
   uint16_t n = 0;
+#if SPRITE_AUDIT_BUILD
+  for (int16_t dex = 1; dex <= DEX_COUNT; dex++) out[n++] = dex;
+#else
   for (int16_t dex = 1; dex <= DEX_COUNT; dex++)
     if (pet.isCaught(dex)) out[n++] = dex;
+#endif
   for (uint16_t i = 1; i < n; i++) {
     int16_t v = out[i];
     int j = i - 1;
@@ -4547,7 +4874,11 @@ uint16_t boxBuildList(int16_t *out) {
 }
 
 uint8_t boxPageCount() {
+#if SPRITE_AUDIT_BUILD
+  uint16_t count = DEX_COUNT;
+#else
   uint16_t count = pet.caughtCount();
+#endif
   uint8_t pages = (count + BOX_ROWS - 1) / BOX_ROWS;
   return pages > 0 ? pages : 1;
 }
@@ -4568,34 +4899,21 @@ void renderCardBox() {
   uint8_t pages = boxPageCount();
   if (boxPage >= pages) boxPage = pages - 1;
 
+  gfx->fillRoundRect(108,24,250,72,15,uiPanel());
+  gfx->drawRoundRect(108,24,250,72,15,uiLine());
   gfx->setTextColor(uiInk());
   gfx->setTextSize(3);
-  gfx->setCursor(CX - strlen(T(S_BOX)) * 9, 42);
+  gfx->setCursor(CX - strlen(T(S_BOX)) * 9, 36);
   gfx->print(T(S_BOX));
 
-  const char *sort = boxSortLabel();
-  gfx->fillRoundRect(302, 62, 106, 28, 9, uiPanel());
-  gfx->drawRoundRect(302, 62, 106, 28, 9, uiInk());
-  gfx->setTextColor(uiInk());
-  gfx->setTextSize(1);
-  gfx->setCursor(302 + (106 - (int)strlen(sort) * 6) / 2, 73);
-  gfx->print(sort);
-
-  char caught[24], known[24], goal[22];
-  snprintf(caught, sizeof(caught), T(S_CAUGHT_COUNT_FMT), pet.caughtCount());
-  snprintf(known, sizeof(known), T(S_KNOWN_FMT), pet.knownDexCount());
-  snprintf(goal, sizeof(goal), T(S_DEX_GOAL_FMT), pet.nextDexGoal());
+  char caught[24];
+  snprintf(caught, sizeof(caught), T(S_CAUGHT_COUNT_FMT), (unsigned)pet.caughtCount());
   gfx->setTextSize(2);
   gfx->setTextColor(uiInk());
-  gfx->setCursor(72, 70);
+  gfx->setCursor(CX-(int)strlen(caught)*6, 76);
   gfx->print(caught);
-  gfx->setTextColor(uiSub());
-  gfx->setCursor(72, 92);
-  gfx->print(known);
-  gfx->setCursor(258, 92);
-  gfx->print(goal);
 
-  if (pet.caughtCount() == 0) {
+  if (false) {
     gfx->fillRoundRect(82, 178, 302, 72, 16, uiPanel());
     gfx->drawRoundRect(82, 178, 302, 72, 16, UI_TRACK);
     gfx->setTextColor(uiSub());
@@ -4605,40 +4923,45 @@ void renderCardBox() {
     return;
   }
 
+  // Le décor personnalisé de la Boîte s'arrête à la séparation. La navigation
+  // générale reprend ensuite le fond standard, clair ou sombre selon le thème.
+  gfx->fillRect(0,355,466,111,uiBg());
+  gfx->fillRect(0,350,466,5,UI_INK);
+
   // Grille 4x2 de mini-sprites captures, adaptee au cercle 1,75 pouce.
   for (uint8_t i = 0; i < BOX_ROWS; i++) {
     int16_t dex = boxDexAt((uint16_t)boxPage * BOX_ROWS + i);
     if (dex <= 0) break;
     const DexEntry &d = DEX_TBL[dex];
     int col = i % 4, row = i / 4;
-    int x = 68 + col * 84, y = 112 + row * 84;
-    gfx->fillRoundRect(x, y, 78, 78, 12, uiPanel());
-    gfx->drawRoundRect(x, y, 78, 78, 12, d.accent);
+    int x = 84 + col * 78, y = 112 + row * 74;
+    gfx->fillRoundRect(x, y, 64, 64, 10, uiPanel());
+    gfx->drawRoundRect(x, y, 64, 64, 10, d.accent);
     const uint8_t *thumb = thumbs.get(dex);
-    if (thumb) drawStarterThumbCentered(thumb, dex, x + 39, y + 37, 2);
+    if (thumb) drawStarterThumbCentered(thumb, dex, x + 32, y + 31, 2);
     if (pet.isShinyRegistered(dex)) {
       gfx->setTextColor(UI_BAR_WARN);
       gfx->setTextSize(1);
-      gfx->setCursor(x + 62, y + 7);
+      gfx->setCursor(x + 51, y + 5);
       gfx->print("*");
     }
   }
   uint16_t prevBg = boxPage > 0 ? UI_TRACK : C565(0xe4, 0xe8, 0xee);
   uint16_t nextBg = boxPage + 1 < pages ? UI_TRACK : C565(0xe4, 0xe8, 0xee);
-  gfx->fillRoundRect(76, 292, 94, 38, 11, prevBg);
-  gfx->fillRoundRect(296, 292, 94, 38, 11, nextBg);
+  gfx->fillRoundRect(76, 306, 94, 38, 11, prevBg);
+  gfx->fillRoundRect(296, 306, 94, 38, 11, nextBg);
   gfx->setTextSize(3);
   gfx->setTextColor(uiContrastText(prevBg));
-  gfx->setCursor(111, 301);
+  gfx->setCursor(111, 315);
   gfx->print("<");
   gfx->setTextColor(uiContrastText(nextBg));
-  gfx->setCursor(331, 301);
+  gfx->setCursor(331, 315);
   gfx->print(">");
   char pg[12];
   snprintf(pg, sizeof(pg), T(S_PAGE_FMT), boxPage + 1, pages);
   gfx->setTextColor(uiSub());
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(pg) * 6, 304);
+  gfx->setCursor(CX - strlen(pg) * 6, 318);
   gfx->print(pg);
 }
 
@@ -4744,10 +5067,6 @@ void renderCardProgress() {
   uint16_t evoCol = darkMode ? UI_WHITE : UI_INK;
   if (d.evolvesTo == 0) {
     evo = T(S_FINAL_FORM);
-  } else if (d.evolveLevel == 0) {
-    // Pierre / échange / bonheur / beauté : aucun faux niveau.
-    evo = T(S_SPECIAL_EVOLUTION);
-    evoCol = UI_BAR_WARN;
   } else {
     int needed = d.evolveLevel;
     if (pet.level() >= needed) {
@@ -5009,6 +5328,9 @@ void expeditionCardTap(int16_t x, int16_t y) {
 void renderCard() {
   cardDirty = false;
   gfx->fillScreen(uiBg());
+  // Mode cover : 600x432, centré et rogné par l'écran rond. Le décor déborde
+  // volontairement à gauche, à droite et en haut pour ne laisser aucune marge.
+  if (cardPage == 3) drawBoxBackgroundAsset(pet.boxBackground,-67,-20,4);
   if (cardPage == 0) renderCardProfile();
   else if (cardPage == 1) renderCardPersonality();
   else if (cardPage == 2) renderCardDaily();
@@ -5121,37 +5443,15 @@ void keyboardTap(int16_t x, int16_t y) {
 // ---------- galeria pokedex ----------
 
 #define GAL_X 89
-#define GAL_Y 94
+#define GAL_Y 82
 #define GAL_CELL 72
 
-bool galleryDexVisible(int16_t dex) {
-  if (dex < 1 || dex > DEX_COUNT) return false;
-  if (galleryFilter == 1) return pet.isRegistered(dex);
-  if (galleryFilter == 2) return pet.isCaught(dex);
-  return true;
-}
-
-uint16_t galleryFilteredCount() {
-  if (galleryFilter == 0) return DEX_COUNT;
-  uint16_t count = 0;
-  for (int16_t dex = 1; dex <= DEX_COUNT; dex++)
-    if (galleryDexVisible(dex)) count++;
-  return count;
-}
-
 int galleryPageCount() {
-  uint16_t count = galleryFilteredCount();
-  int pages = (count + 15) / 16;
-  return pages > 0 ? pages : 1;
+  return (DEX_COUNT + 15) / 16;
 }
 
 int16_t galleryDexAt(uint16_t index) {
-  for (int16_t dex = 1; dex <= DEX_COUNT; dex++) {
-    if (!galleryDexVisible(dex)) continue;
-    if (index == 0) return dex;
-    index--;
-  }
-  return 0;
+  return index < DEX_COUNT ? (int16_t)(index + 1) : 0;
 }
 
 // dibuja una miniatura centrada en su celda; sil=true la pinta en tinta
@@ -5178,9 +5478,30 @@ void drawThumb(const uint8_t *b, int x, int y, int s, bool sil) {
   }
 }
 
+// Habillage inspire d'un Pokedex classique, adapte a l'ecran rond.
+// Les zones tactiles et les sprites restent ceux de l'interface existante.
+void drawPokedexShell(bool detail) {
+  const uint16_t red = C565(0xc9,0x12,0x44);
+  const uint16_t darkRed = C565(0x71,0x0b,0x2a);
+  const uint16_t cyan = C565(0x38,0xd7,0xeb);
+  const uint16_t screen = gNight ? C565(0x14,0x23,0x35) : C565(0xec,0xf6,0xf4);
+  gfx->fillScreen(red);
+  gfx->drawRoundRect(38,12,390,442,38,darkRed);
+  gfx->drawRoundRect(43,17,380,432,34,C565(0xf8,0x61,0x82));
+  gfx->fillCircle(91,43,18,UI_WHITE);
+  gfx->fillCircle(91,43,13,cyan);
+  gfx->fillCircle(86,38,4,UI_WHITE);
+  gfx->fillCircle(128,37,5,C565(0xf5,0x3e,0x55));
+  gfx->fillCircle(145,37,5,C565(0xf2,0xd5,0x54));
+  gfx->fillCircle(162,37,5,C565(0x7b,0xe0,0x70));
+  gfx->fillRoundRect(75,detail?112:80,316,detail?220:304,17,screen);
+  gfx->drawRoundRect(75,detail?112:80,316,detail?220:304,17,darkRed);
+  gfx->fillRoundRect(189,441,88,4,2,darkRed);
+}
+
 void renderGallery() {
   if (galleryDetail) {  // vista detalle: se redibuja siempre (animada)
-    gfx->fillScreen(uiBg());
+    drawPokedexShell(true);
     const DexEntry &d = DEX_TBL[galleryDetail];
     bool reg = pet.isRegistered(galleryDetail);
     bool caught = pet.isCaught(galleryDetail);
@@ -5188,7 +5509,7 @@ void renderGallery() {
     char head[24];
     snprintf(head, sizeof(head), "N.%03u %s%s", displayedDexNumber(galleryDetail),
              pet.isShinyRegistered(galleryDetail) ? "*" : "", known ? dexName(galleryDetail) : "???");
-    gfx->setTextColor(known ? d.accent : UI_INK);
+    gfx->setTextColor(UI_WHITE);
     int glen = strlen(head);
     int gts = (glen <= 13) ? 3 : 2;  // auto-encoge nombres largos (no caben a t3)
     gfx->setTextSize(gts);
@@ -5197,7 +5518,7 @@ void renderGallery() {
     if (known) {
       char types[24];
       typeText(types, sizeof(types), d);
-      gfx->setTextColor(battleTypeColor(d.type1));
+      gfx->setTextColor(UI_WHITE);
       gfx->setTextSize(2);
       gfx->setCursor(CX - strlen(types) * 6, 94);
       gfx->print(types);
@@ -5209,20 +5530,8 @@ void renderGallery() {
       const uint8_t *t = thumbs.get(galleryDetail);
       if (t) drawThumb(t, CX - GAL_CELL, 135, 4, !known);
     }
-    if (reg) {
-      const char *mark = T(S_RAISED_MARK);
-      gfx->setTextColor(UI_BAR_OK);
-      gfx->setTextSize(2);
-      gfx->setCursor(CX - strlen(mark) * 6, caught ? 354 : 366);
-      gfx->print(mark);
-    }
-    if (caught) {
-      const char *mark = T(S_CAUGHT_MARK);
-      gfx->setTextColor(UI_BAR_WARN);
-      gfx->setTextSize(2);
-      gfx->setCursor(CX - strlen(mark) * 6, reg ? 376 : 366);
-      gfx->print(mark);
-    }
+    // Un seul pictogramme discret rappelle que ce Pokemon est deja obtenu.
+    if (known) drawBattleCaughtBall(350,354,24,26);
     // Bouton RETOUR vers la grille Pokédex.
     gfx->fillRoundRect(22, 20, 54, 34, 10, uiPanel());
     gfx->drawRoundRect(22, 20, 54, 34, 10, uiInk());
@@ -5231,6 +5540,22 @@ void renderGallery() {
     gfx->setCursor(42, 28);
     gfx->print("<");
 
+    // Version spéciale : forme normale/Shiny et lancement d'un combat de contrôle.
+#if SPRITE_AUDIT_BUILD
+    {
+      gfx->fillRoundRect(46, 386, 112, 42, 13, spriteAuditShiny ? UI_TRACK : UI_BAR_OK);
+      gfx->fillRoundRect(177, 386, 112, 42, 13, spriteAuditShiny ? UI_BAR_WARN : UI_TRACK);
+      gfx->fillRoundRect(308, 386, 112, 42, 13, C565(0x36,0x78,0xd9));
+      gfx->setTextColor(UI_WHITE);
+      gfx->setTextSize(1);
+      gfx->setCursor(81, 402);
+      gfx->print("NORMAL");
+      gfx->setCursor(216, 402);
+      gfx->print("SHINY");
+      gfx->setCursor(340, 402);
+      gfx->print("COMBAT");
+    }
+#else
     // Pokémon capturé : bouton pour le choisir comme compagnon actif.
     if (caught || reg) {
       bool active = (galleryDetail == pet.speciesId);
@@ -5247,6 +5572,7 @@ void renderGallery() {
       gfx->setCursor(CX - strlen(T(S_DETAIL_BACK)) * 6, 408);
       gfx->print(T(S_DETAIL_BACK));
     }
+#endif
     gfx->flush();
     return;
   }
@@ -5254,30 +5580,11 @@ void renderGallery() {
   if (!galleryDirty) return;  // la rejilla es estatica
   galleryDirty = false;
 
-  gfx->fillScreen(uiBg());
-  gfx->setTextColor(uiInk());
+  drawPokedexShell(false);
+  gfx->setTextColor(UI_WHITE);
   gfx->setTextSize(3);
   gfx->setCursor(CX - 7 * 9, 28);
   gfx->print("POKEDEX");
-
-  char head[28];
-  snprintf(head, sizeof(head), "R:%u C:%u", pet.registeredCount(), pet.caughtCount());
-  gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(head) * 6, 54);
-  gfx->print(head);
-
-  const char *filters[3] = { T(S_FILTER_ALL), T(S_RAISED_MARK), T(S_CAUGHT_MARK) };
-  for (int i = 0; i < 3; i++) {
-    int fx = 74 + i * 106;
-    uint16_t fill = (galleryFilter == i) ? UI_INK : UI_WHITE;
-    uint16_t text = (galleryFilter == i) ? UI_BG_DAY : UI_INK;
-    gfx->fillRoundRect(fx, 74, 96, 18, 6, fill);
-    gfx->drawRoundRect(fx, 74, 96, 18, 6, uiInk());
-    gfx->setTextColor(text);
-    gfx->setTextSize(1);
-    gfx->setCursor(fx + (96 - (int)strlen(filters[i]) * 6) / 2, 80);
-    gfx->print(filters[i]);
-  }
 
   for (int r = 0; r < 4; r++) {
     for (int c = 0; c < 4; c++) {
@@ -5295,11 +5602,6 @@ void renderGallery() {
           gfx->setTextSize(2);
           gfx->setCursor(x + 62, y + 4);
           gfx->print("*");
-        } else if (caught && !reg) {
-          gfx->setTextColor(UI_BAR_WARN);
-          gfx->setTextSize(1);
-          gfx->setCursor(x + 60, y + 6);
-          gfx->print("C");
         }
       } else {
         char num[6];
@@ -5354,6 +5656,36 @@ void galleryTap(int16_t x, int16_t y) {
       return;
     }
 
+    // Audit complet : même taille partout, choix Normal/Shiny, combat immédiat.
+#if SPRITE_AUDIT_BUILD
+    if (y >= 378 && y <= 438 && x >= 36 && x <= 168) {
+      spriteAuditShiny = false;
+      galleryPmd.unload();
+      galleryPmd.load(galleryDetail, false);
+      lockTouchBrief();
+      sfxPlay(SFX_TAP);
+      return;
+    }
+    if (y >= 378 && y <= 438 && x >= 169 && x <= 299) {
+      spriteAuditShiny = true;
+      galleryPmd.unload();
+      galleryPmd.load(galleryDetail, true);
+      lockTouchBrief();
+      sfxPlay(SFX_EVENT_SPARKLE);
+      return;
+    }
+    if (y >= 378 && y <= 438 && x >= 300 && x <= 430) {
+      int16_t testDex = galleryDetail;
+      bool testShiny = spriteAuditShiny;
+      galleryOpen = false;
+      galleryDetail = 0;
+      galleryPmd.unload();
+      markUiDirty();
+      lockTouchBrief();
+      startBattleWith(testDex, max((uint8_t)5, pet.level()), testShiny ? 1 : 0);
+      return;
+    }
+#else
     // Le bouton S'OCCUPER est disponible pour les Pokémon capturés OU déjà élevés.
     if ((pet.isCaught(galleryDetail) || pet.isRegistered(galleryDetail)) && y >= 378 && y <= 438 && x >= 112 && x <= 354) {
       if (galleryDetail == pet.speciesId) {
@@ -5373,6 +5705,7 @@ void galleryTap(int16_t x, int16_t y) {
       }
       return;
     }
+#endif
     // Toucher ailleurs revient à la grille.
     galleryDetail = 0;
     galleryPmd.unload();
@@ -5409,23 +5742,14 @@ void galleryTap(int16_t x, int16_t y) {
     }
   }
 
-  if (y >= 68 && y < GAL_Y) {
-    int f = (x - 74) / 106;
-    if (f >= 0 && f < 3 && x >= 74 + f * 106 && x <= 170 + f * 106) {
-      galleryFilter = (uint8_t)f;
-      galleryPage = 0;
-      galleryDirty = true;
-      sfxPlay(SFX_TAP);
-      return;
-    }
-  }
   if (x < GAL_X || y < GAL_Y) return;
   int c = (x - GAL_X) / GAL_CELL, r = (y - GAL_Y) / GAL_CELL;
   if (c < 0 || c > 3 || r < 0 || r > 3) return;
   int16_t dex = galleryDexAt(galleryPage * 16 + r * 4 + c);
   if (dex <= 0) return;
   galleryDetail = dex;
-  galleryPmd.load(dex, pet.isShinyRegistered(dex));
+  spriteAuditShiny = false;
+  galleryPmd.load(dex, false);
   sfxPlay(SFX_MENU);
   if (pet.isRegistered(dex) || pet.isCaught(dex)) speciesChirpPlay(dex);
 }
@@ -5786,8 +6110,32 @@ void drawPmdActM(PmdMon &m, uint8_t actId, int cx, int groundY, uint32_t t, bool
   // Uniformite d'accueil : l'ancienne formule ne regardait que la hauteur.
   // Un Pokemon large comme Kaiminus paraissait donc beaucoup plus gros. On
   // borne maintenant la plus grande dimension de la silhouette visible.
-  int targetDim=170*spriteSizePercent(dex)/100;
+  // La même taille propre à l'espèce est utilisée sur accueil, fiche et combat.
+  int targetDim=170*pokemonSpriteScale(dex)/100;
   int visibleMax=max(visibleW,visibleH);
+  // Ces grands Pokémon utilisent une échelle continue : l'arrondi et maxS
+  // masquaient autrement leur agrandissement de 30 %.
+  if ((dex == 144 || dex == 145 || dex == 146 || dex == 248 || dex == 382) && visibleMax > 0) {
+    uint8_t fi = pmdFrameAt(a, t, loop);
+    const uint8_t *fr = a.data + (uint32_t)fi * a.w * a.h;
+    int drawW = max(1, a.w * targetDim / visibleMax);
+    int drawH = max(1, a.h * targetDim / visibleMax);
+    if (drawH > 250) {
+      drawW = max(1, drawW * 250 / drawH);
+      drawH = 250;
+    }
+    int baseY = a.base ? a.base : a.h;
+    int x0 = cx - drawW / 2;
+    int y0 = groundY - baseY * drawH / a.h;
+    for (int dy = 0; dy < drawH; dy++) {
+      const uint8_t *row = fr + (uint32_t)(dy * a.h / drawH) * a.w;
+      for (int dx = 0; dx < drawW; dx++) {
+        uint8_t idx = row[dx * a.w / drawW];
+        if (idx != 0xFF) gfx->drawPixel(x0 + dx, y0 + dy, sil ? INK_K : m.pal[idx]);
+      }
+    }
+    return;
+  }
   uint8_t sBase = visibleMax ? targetDim / visibleMax : 5;
   if (sBase < 2) sBase = 2;
   if (sBase > maxS) sBase = maxS;
@@ -5968,12 +6316,15 @@ void drawButtons() {
     if (!pet.sleeping) gfx->fillRoundRect(bx, by, frame, frame, 14, uiPanel());
     gfx->drawRoundRect(bx, by, frame, frame, 14, inkColor());
     if (!off) {
-      // Bouton JOUER de l'accueil : même vraie Poké Ball pixel-art que la page RECORDS.
-      // Les autres boutons conservent leurs sprites d'origine.
-      drawMapSized(buttons[i].icon, 16,
-                   buttons[i].cx + buttons[i].iconDx,
-                   buttons[i].cy + buttons[i].iconDy,
-                   buttons[i].iconSize, false);
+      if (i == 1) {
+        drawBattleCaughtBall(buttons[i].cx + buttons[i].iconDx,
+                             buttons[i].cy + buttons[i].iconDy, 29, 31);
+      } else {
+        drawMapSized(buttons[i].icon, 16,
+                     buttons[i].cx + buttons[i].iconDx,
+                     buttons[i].cy + buttons[i].iconDy,
+                     buttons[i].iconSize, false);
+      }
     }
   }
 }

@@ -123,12 +123,19 @@ static void testWildLevelStaysNearPetLevel() {
   EXPECT_EQ(wildLevelFor(10, 86), 12);
 }
 
-static void testWildSpeciesUsesHatchableNonLegendaryPool() {
-  for (uint8_t roll = 0; roll < 100; roll++) {
+static void testWildSpeciesUsesAllGenerationsAndRarities() {
+  bool seen[DEX_COUNT + 1] = {};
+  bool gen[3] = {}, rarity[4] = {};
+  for (uint32_t roll = 0; roll < 500000; roll++) {
     int16_t dex = pickWildSpecies(roll);
     EXPECT_TRUE(dex >= 1 && dex <= DEX_COUNT);
-    EXPECT_TRUE(DEX_TBL[dex].rarity == R_COMUN || DEX_TBL[dex].rarity == R_RARO);
+    seen[dex] = true;
+    gen[dex <= 151 ? 0 : (dex <= 251 ? 1 : 2)] = true;
+    rarity[DEX_TBL[dex].rarity] = true;
   }
+  for (int16_t dex = 1; dex <= DEX_COUNT; dex++) EXPECT_TRUE(seen[dex]);
+  EXPECT_TRUE(gen[0] && gen[1] && gen[2]);
+  EXPECT_TRUE(rarity[R_EVO] && rarity[R_COMUN] && rarity[R_RARO] && rarity[R_LEGENDARIO]);
 }
 
 static void testWildStatsUseDexBaseAndLevel() {
@@ -403,7 +410,7 @@ int main() {
   testDerivedHpUsesLevelAndDefense();
   testWildBattleStartGate();
   testWildLevelStaysNearPetLevel();
-  testWildSpeciesUsesHatchableNonLegendaryPool();
+  testWildSpeciesUsesAllGenerationsAndRarities();
   testWildStatsUseDexBaseAndLevel();
   testBattleRuntimeStartsWithScaledHp();
   testAttackStepsOneRoundAndAvoidsNormalOneHit();

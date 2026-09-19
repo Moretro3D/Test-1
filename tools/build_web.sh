@@ -9,7 +9,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 FQBN="esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
-VERSION="1.46.23-moretro3d-v9.43-shopify-embed"
+VERSION="1.46.80-moretro3d-v10.01-battle-seam"
 
 echo "Préparation du sketch TamaPoke..."
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/tamapoke-ci.XXXXXX")"
@@ -17,7 +17,9 @@ trap 'rm -rf "$TMP"' EXIT
 
 SKETCH="$TMP/TamaPoke"
 BUILD="$TMP/build"
+CACHE="${HOME}/.cache/arduino/poketama-build"
 mkdir -p "$SKETCH" "$BUILD" "$ROOT/web/firmware"
+mkdir -p "$CACHE"
 
 # Arduino exige que le fichier .ino principal porte le même nom que
 # le dossier du sketch. On copie donc toutes les sources dans TamaPoke/.
@@ -29,6 +31,7 @@ echo "Compilation..."
 arduino-cli compile \
   --fqbn "$FQBN" \
   --build-path "$BUILD" \
+  --build-cache-path "$CACHE" \
   "$SKETCH"
 
 echo "Copie des binaires pour le Web Flasher..."
@@ -49,23 +52,13 @@ except Exception as exc:
     raise SystemExit("Pillow/PIL absent : " + str(exc))
 PY
 
-echo "Préparation des sprites Johto + Hoenn #152-386..."
-missing=0
-for n in $(seq 152 386); do
-  printf -v num "%03d" "$n"
-  if [ ! -f "$ROOT/tools/sdcard/mons/p${num}.bin" ] || [ ! -f "$ROOT/tools/sdcard/mons/ps${num}.bin" ]; then
-    missing=1
-    break
-  fi
-done
-
-if [ "$missing" -eq 1 ]; then
-  echo "Téléchargement/packaging PMD SpriteCollab pour Johto + Hoenn..."
-  python3 "$ROOT/tools/pack_pmd.py" $(seq 152 386)
+if python3 "$ROOT/tools/audit_386_assets.py"; then
+  echo "Les 386 sprites normaux/Shiny et les miniatures sont déjà présents : téléchargement évité."
+else
+  echo "Ressources manquantes : téléchargement des 386 sprites PMD originaux."
+  python3 "$ROOT/tools/pack_pmd.py" $(seq 1 386)
+  python3 "$ROOT/tools/make_thumbs.py"
 fi
-
-echo "Génération des 386 miniatures Pokédex..."
-python3 "$ROOT/tools/make_thumbs.py"
 
 echo "Empaquetage des sprites, decors et OST pour l'installation automatique..."
 python3 "$ROOT/tools/pack_bundle.py"
