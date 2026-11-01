@@ -609,6 +609,9 @@ void Pet::evolve() {
   registerSpecies(speciesId);
   sfxPlay(SFX_EVOLVE);
   evolveUntil = millis() + EVOLVE_ANIM_MS;
+  // Le profil appartient a l'individu, pas a toutes les formes de sa chaine.
+  // Sans ce nettoyage, un ancien profil de la forme precedente restait en NVS.
+  removeStoredProfile(prevSpeciesId);
   save();
 }
 
@@ -1065,39 +1068,43 @@ bool Pet::hasStoredProfile(int16_t dex) {
   return prefs.getBytesLength(key) == sizeof(StoredPetProfile);
 }
 
-void Pet::repairCaughtProfiles() {
-  bool changed = false;
+void Pet::removeStoredProfile(int16_t dex) {
+  if (dex < 1 || dex > DEX_COUNT) return;
+  char key[8];
+  petProfileKey(dex, key, sizeof(key));
+  prefs.remove(key);
+}
 
-  // Chaque profil sauvegarde correspond a un individu deja obtenu. Quand
-  // plusieurs profils appartiennent a la meme chaine, seule la forme la plus
-  // recente doit rester dans la Boite (les autres restent dans le Pokedex).
+void Pet::repairCaughtProfiles() {
+  bool caughtChanged = false;
+  bool registeredChanged = false;
+
+  // Une reparation peut restaurer des donnees, mais ne doit jamais effacer un
+  // bit de capture. Deux profils d'une meme chaine peuvent correspondre a deux
+  // captures distinctes (par exemple Carapuce + Tortank).
   for (int16_t candidate = 1; candidate <= DEX_COUNT; candidate++) {
     if (!hasStoredProfile(candidate)) continue;
-    bool hasNewerForm = false;
-    int16_t form = candidate;
-    for (uint8_t guard = 0; guard < 6; guard++) {
-      form = (form >= 1 && form <= DEX_COUNT) ? DEX_TBL[form].evolvesTo : 0;
-      if (form == 0) break;
-      if (hasStoredProfile(form)) hasNewerForm = true;
-    }
     uint8_t &slot = dexCaught[(candidate - 1) >> 3];
     uint8_t mask = (1 << ((candidate - 1) & 7));
-    bool shouldBeInBox = !hasNewerForm;
-    if (((slot & mask) != 0) != shouldBeInBox) {
-      if (shouldBeInBox) slot |= mask;
-      else slot &= ~mask;
-      changed = true;
+    if ((slot & mask) == 0) {
+      slot |= mask;
+      caughtChanged = true;
+    }
+    uint8_t &regSlot = dexReg[(candidate - 1) >> 3];
+    if ((regSlot & mask) == 0) {
+      regSlot |= mask;
+      registeredChanged = true;
     }
   }
 
   // Securite pour les sauvegardes tres anciennes sans profil individuel.
   if (speciesId >= 1 && speciesId <= DEX_COUNT && !isCaught(speciesId)) {
     dexCaught[(speciesId - 1) >> 3] |= (1 << ((speciesId - 1) & 7));
-    changed = true;
+    caughtChanged = true;
   }
-  if (changed) prefs.putBytes("dexcgt", dexCaught, sizeof(dexCaught));
+  if (caughtChanged) prefs.putBytes("dexcgt", dexCaught, sizeof(dexCaught));
+  if (registeredChanged) prefs.putBytes("dexreg", dexReg, sizeof(dexReg));
 }
-
 void Pet::saveActiveProfile() {
   if (speciesId < 1 || speciesId > DEX_COUNT) return;
   StoredPetProfile p;

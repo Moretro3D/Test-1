@@ -339,7 +339,8 @@ public:
   bool switchToCaught(int16_t dex);
   bool hasStoredProfile(int16_t dex);
   void saveActiveProfile();
-  void repairCaughtProfiles(); // migration des anciens Pokemon eleves vers la Boite
+  void removeStoredProfile(int16_t dex);
+  void repairCaughtProfiles(); // restauration additive : ne retire jamais une capture
 
 private:
   Preferences prefs;

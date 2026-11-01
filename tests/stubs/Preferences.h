@@ -19,6 +19,12 @@ public:
     return values.count(k) || blobs.count(k);
   }
 
+  bool remove(const char *key) {
+    std::string k(key ? key : "");
+    bool removed = values.erase(k) != 0;
+    removed = blobs.erase(k) != 0 || removed;
+    return removed;
+  }
   void putBool(const char *key, bool value) { values[key] = value ? "1" : "0"; }
   bool getBool(const char *key, bool fallback = false) const {
     return getValue(key, fallback ? "1" : "0") == "1";
