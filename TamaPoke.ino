@@ -39,7 +39,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.47.5-moretro3d-v11.5-save-fix"
+#define FW_VERSION "1.47.6-moretro3d-v11.6-active-save-fix"
 #define HELP_PAGE_COUNT 6
 #define HELP_LINE_COUNT 6
 
@@ -446,10 +446,10 @@ void setup() {
   gfx->setTextSize(3);
   // 9 caracteres x 6 px x taille 3 = 162 px : centre exact a x=152.
   gfx->setCursor(CX - 79, 326); gfx->print("Moretro3D");
-  // Version publique corrective V11.5.
+  // Version publique corrective V11.6.
   gfx->setTextColor(C565(0x61,0xda,0xf2));
   gfx->setTextSize(2);
-  gfx->setCursor(CX - 30, 366); gfx->print("V11.5");
+  gfx->setCursor(CX - 30, 366); gfx->print("V11.6");
   gfx->flush();
   panel->setBrightness(120);
 

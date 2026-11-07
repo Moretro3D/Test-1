@@ -40,7 +40,7 @@ public:
     return static_cast<uint32_t>(std::stoul(getValue(key, std::to_string(fallback))));
   }
 
-  void putShort(const char *key, int16_t value) { values[key] = std::to_string(value); }
+  size_t putShort(const char *key, int16_t value) { values[key] = std::to_string(value); return sizeof(value); }
   int16_t getShort(const char *key, int16_t fallback = 0) const {
     return static_cast<int16_t>(std::stoi(getValue(key, std::to_string(fallback))));
   }
@@ -62,9 +62,10 @@ public:
     out[len - 1] = '\0';
   }
 
-  void putBytes(const char *key, const void *data, size_t len) {
+  size_t putBytes(const char *key, const void *data, size_t len) {
     const auto *bytes = static_cast<const uint8_t *>(data);
     blobs[key] = std::vector<uint8_t>(bytes, bytes + len);
+    return len;
   }
 
   size_t getBytesLength(const char *key) const {

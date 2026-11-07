@@ -63,6 +63,7 @@ enum ExpeditionItem : uint8_t {
 };
 #define EXP_ITEM_COUNT 4
 #define EXP_ITEM_MAX 3
+#define STORED_PROFILE_LIMIT 24
 
 enum TrainingStat : int8_t {
   TRAIN_STAT_ATK = 0,
@@ -341,6 +342,8 @@ public:
   void saveActiveProfile();
   void removeStoredProfile(int16_t dex);
   void repairCaughtProfiles(); // restauration additive : ne retire jamais une capture
+  void compactStoredProfiles();
+  uint16_t storedProfileCount();
 
 private:
   Preferences prefs;
@@ -376,6 +379,7 @@ private:
   void hatch();
   void registerSpecies(int16_t dex);
   bool canReceiveExpeditionItem(ExpeditionItem item) const;
+  bool persistActiveSpecies();
   void save();
   void load();
   static uint8_t clamp100(int v) { return v < 0 ? 0 : (v > 100 ? 100 : v); }

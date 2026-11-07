@@ -1,6 +1,6 @@
-PokeTama Moretro3D V11.5 CORRECTIF SAUVEGARDE
+PokeTama Moretro3D V11.6 CORRECTIF SAUVEGARDE
 
-VERSION INTERNE : 1.47.5-moretro3d-v11.5-save-fix
+VERSION INTERNE : 1.47.6-moretro3d-v11.6-active-save-fix
 
 NOUVEAUTES :
 - Sept sols de combat pixel art : Plante, Eau, Feu, Normal, Roche, Glace, Nuages.

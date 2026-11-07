@@ -18,16 +18,16 @@ def ok(cond,msg):
         raise SystemExit("FAIL V9: "+msg)
     print("OK  ",msg)
 
-ok("1.47.5-moretro3d-v11.5-save-fix" in ino and
-   "1.47.5-moretro3d-v11.5-save-fix" in (ROOT/"web/manifest.json").read_text(encoding="utf-8") and
-   "1.47.5-moretro3d-v11.5-save-fix" in (ROOT/"web/index.html").read_text(encoding="utf-8") and
-   "1.47.5-moretro3d-v11.5-save-fix" in (ROOT/"web/shopify.html").read_text(encoding="utf-8") and
-   "1.47.5-moretro3d-v11.5-save-fix" in (ROOT/"tools/build_web.sh").read_text(encoding="utf-8"),
-   "version 1.47.5 coherente et caches installateur invalides")
-ok('gfx->setCursor(CX - 30, 366); gfx->print("V11.5")' in ino and
-   '<div class="version">Firmware V11.5</div>' in (ROOT/"web/index.html").read_text(encoding="utf-8") and
-   '<div class="version">Firmware V11.5</div>' in (ROOT/"web/shopify.html").read_text(encoding="utf-8"),
-   "V11.5 affichee au demarrage, sur la page officielle et sur Shopify")
+ok("1.47.6-moretro3d-v11.6-active-save-fix" in ino and
+   "1.47.6-moretro3d-v11.6-active-save-fix" in (ROOT/"web/manifest.json").read_text(encoding="utf-8") and
+   "1.47.6-moretro3d-v11.6-active-save-fix" in (ROOT/"web/index.html").read_text(encoding="utf-8") and
+   "1.47.6-moretro3d-v11.6-active-save-fix" in (ROOT/"web/shopify.html").read_text(encoding="utf-8") and
+   "1.47.6-moretro3d-v11.6-active-save-fix" in (ROOT/"tools/build_web.sh").read_text(encoding="utf-8"),
+   "version 1.47.6 coherente et caches installateur invalides")
+ok('gfx->setCursor(CX - 30, 366); gfx->print("V11.6")' in ino and
+   '<div class="version">Firmware V11.6</div>' in (ROOT/"web/index.html").read_text(encoding="utf-8") and
+   '<div class="version">Firmware V11.6</div>' in (ROOT/"web/shopify.html").read_text(encoding="utf-8"),
+   "V11.6 affichee au demarrage, sur la page officielle et sur Shopify")
 ok('location.replace("https://moretro3d.fr/pages/poketama")' in (ROOT/"web/index.html").read_text(encoding="utf-8") and
    'https://moretro3d.github.io/Test-1/manifest.json' in (ROOT/"web/shopify.html").read_text(encoding="utf-8"),
    "GitHub Pages redirige vers Shopify et conserve le Web Flasher officiel")
@@ -37,7 +37,7 @@ ok("github.repository == 'Moretro3D/Test-2'" in workflow and
    "! grep -q 'location.replace' web/index.html" in workflow,
    "Test-2 affiche son Web Flasher sans redirection Shopify")
 test2_launcher=(ROOT/"OUVRIR_WEB_FLASHER_TEST_2.bat").read_text(encoding="utf-8")
-ok("https://moretro3d.github.io/Test-2/?v=1.47.5-moretro3d-v11.5-save-fix" in test2_launcher,
+ok("https://moretro3d.github.io/Test-2/?v=1.47.6-moretro3d-v11.6-active-save-fix" in test2_launcher,
    "lanceur direct Test-2 avec contournement du cache")
 scene=ino[ino.index("void drawScene("):ino.index("void drawStarterPokeball(")]
 ok("HORIZON-38" not in scene and "uint16_t sea=" not in scene and

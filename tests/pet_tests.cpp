@@ -247,6 +247,33 @@ static void testGengarDoesNotLockActivePokemonAfterBoot() {
   EXPECT_EQ(pet.speciesId, 7);
 }
 
+static void testManySelectionsKeepLatestPokemonAndCollection() {
+  Pet pet;
+  pet.begin();
+  pet.chooseStarter(7);
+  for (int16_t dex = 1; dex <= 80; dex++) {
+    pet.registerCaught(dex);
+    EXPECT_TRUE(pet.switchToCaught(dex));
+  }
+  EXPECT_TRUE(pet.storedProfileCount() <= STORED_PROFILE_LIMIT);
+  EXPECT_EQ(pet.caughtCount(), 80);
+  EXPECT_EQ(pet.speciesId, 80);
+
+  for (uint8_t boot = 0; boot < 12; boot++) {
+    pet.begin();
+    EXPECT_EQ(pet.speciesId, 80);
+    EXPECT_EQ(pet.caughtCount(), 80);
+    EXPECT_TRUE(pet.isCaught(7));
+    EXPECT_TRUE(pet.isCaught(25));
+    EXPECT_TRUE(pet.isCaught(80));
+    EXPECT_TRUE(pet.storedProfileCount() <= STORED_PROFILE_LIMIT);
+  }
+
+  EXPECT_TRUE(pet.switchToCaught(25));
+  pet.begin();
+  EXPECT_EQ(pet.speciesId, 25);
+  EXPECT_EQ(pet.caughtCount(), 80);
+}
 static void testEvolutionDeletesOnlyItsOwnOldProfile() {
   Pet pet = hatchedPet(7);
   pet.saveActiveProfile();
@@ -832,6 +859,7 @@ int main() {
   testAllEvolutionPairsRemainWhenCaughtSeparately();
   testRepeatedBootsNeverShrinkBoxOrDex();
   testGengarDoesNotLockActivePokemonAfterBoot();
+  testManySelectionsKeepLatestPokemonAndCollection();
   testEvolutionDeletesOnlyItsOwnOldProfile();
   testFullDexSurvivesRepeatedBoots();
   testCareMistakeNeverDelaysEvolution();

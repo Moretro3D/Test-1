@@ -1075,6 +1075,39 @@ void Pet::removeStoredProfile(int16_t dex) {
   prefs.remove(key);
 }
 
+uint16_t Pet::storedProfileCount() {
+  uint16_t count = 0;
+  for (int16_t dex = 1; dex <= DEX_COUNT; dex++)
+    if (hasStoredProfile(dex)) count++;
+  return count;
+}
+
+void Pet::compactStoredProfiles() {
+  // Les bitmaps dexCaught/dexReg sont la source de verite de la collection.
+  // Les profils ne contiennent que l'etat de soin individuel et sont gardes
+  // comme un cache borne afin de ne jamais saturer la petite partition NVS.
+  uint16_t kept = hasStoredProfile(speciesId) ? 1 : 0;
+  for (int16_t dex = 1; dex <= DEX_COUNT; dex++) {
+    if (dex == speciesId || !hasStoredProfile(dex)) continue;
+    if (kept < STORED_PROFILE_LIMIT) kept++;
+    else removeStoredProfile(dex);
+  }
+}
+
+bool Pet::persistActiveSpecies() {
+  if (prefs.putShort("dexn", speciesId) == sizeof(int16_t)) return true;
+
+  // Les anciennes versions pouvaient remplir la NVS avec des centaines de
+  // profils. Libere progressivement les profils inactifs et retente l'ecriture
+  // critique. La Boite et le Pokedex restent conserves dans leurs bitmaps.
+  for (int16_t dex = 1; dex <= DEX_COUNT; dex++) {
+    if (dex == speciesId || !hasStoredProfile(dex)) continue;
+    removeStoredProfile(dex);
+    if (prefs.putShort("dexn", speciesId) == sizeof(int16_t)) return true;
+  }
+  return false;
+}
+
 void Pet::repairCaughtProfiles() {
   bool caughtChanged = false;
   bool registeredChanged = false;
@@ -1107,6 +1140,14 @@ void Pet::repairCaughtProfiles() {
 }
 void Pet::saveActiveProfile() {
   if (speciesId < 1 || speciesId > DEX_COUNT) return;
+  if (!hasStoredProfile(speciesId) && storedProfileCount() >= STORED_PROFILE_LIMIT) {
+    for (int16_t dex = 1; dex <= DEX_COUNT; dex++) {
+      if (dex != speciesId && hasStoredProfile(dex)) {
+        removeStoredProfile(dex);
+        break;
+      }
+    }
+  }
   StoredPetProfile p;
   p.fullness=fullness; p.joy=joy; p.energy=energy; p.hygiene=hygiene;
   p.poops=poops; p.weight=weight;
@@ -1119,7 +1160,9 @@ void Pet::saveActiveProfile() {
   p.nick[sizeof(p.nick)-1]=0;
   char key[8];
   petProfileKey(speciesId,key,sizeof(key));
-  prefs.putBytes(key,&p,sizeof(p));
+  if (prefs.putBytes(key,&p,sizeof(p)) != sizeof(p)) {
+    Serial.printf("[SAVE] profil #%d non ecrit\n", speciesId);
+  }
 }
 
 bool Pet::switchToCaught(int16_t dex) {
@@ -1167,6 +1210,7 @@ bool Pet::switchToCaught(int16_t dex) {
 }
 
 void Pet::save() {
+  const bool activeSaved = persistActiveSpecies();
   saveActiveProfile();
   ticksSinceSave = 0;
   pendingSave = false;
@@ -1188,7 +1232,7 @@ void Pet::save() {
   prefs.putBool("stpk", starterPick);
   prefs.putBytes("dexsh", dexShinyReg, sizeof(dexShinyReg));
   prefs.putUInt("age", ageMinutes);
-  prefs.putShort("dexn", speciesId);
+  if (!activeSaved) Serial.printf("[SAVE] espece active #%d non ecrite\n", speciesId);
   prefs.putShort("eggT2", eggTarget);
   prefs.putUChar("crack", eggTaps);
   prefs.putUChar("mist", careMistakes);
@@ -1283,6 +1327,9 @@ void Pet::load() {
   // Migration de toutes les anciennes creatures elevees, meme si elles ne
   // sont plus le compagnon actif au moment de la mise a jour.
   repairCaughtProfiles();
+  compactStoredProfiles();
+  prefs.putBytes("dexreg", dexReg, sizeof(dexReg));
+  prefs.putBytes("dexcgt", dexCaught, sizeof(dexCaught));
   streak = prefs.getUShort("strk", 0);
   bestStreak = prefs.getUShort("bstrk", 0);
   lastCareDay = prefs.getUInt("cday", 0);
