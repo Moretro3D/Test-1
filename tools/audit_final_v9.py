@@ -18,16 +18,16 @@ def ok(cond,msg):
         raise SystemExit("FAIL V9: "+msg)
     print("OK  ",msg)
 
-ok("1.47.7-moretro3d-v11.7-personal-save-fix" in ino and
-   "1.47.7-moretro3d-v11.7-personal-save-fix" in (ROOT/"web/manifest.json").read_text(encoding="utf-8") and
-   "1.47.7-moretro3d-v11.7-personal-save-fix" in (ROOT/"web/index.html").read_text(encoding="utf-8") and
-   "1.47.7-moretro3d-v11.7-personal-save-fix" in (ROOT/"web/shopify.html").read_text(encoding="utf-8") and
-   "1.47.7-moretro3d-v11.7-personal-save-fix" in (ROOT/"tools/build_web.sh").read_text(encoding="utf-8"),
-   "version 1.47.7 coherente et caches installateur invalides")
-ok('gfx->setCursor(CX - 30, 366); gfx->print("V11.7")' in ino and
-   '<div class="version">Firmware V11.7</div>' in (ROOT/"web/index.html").read_text(encoding="utf-8") and
-   '<div class="version">Firmware V11.7</div>' in (ROOT/"web/shopify.html").read_text(encoding="utf-8"),
-   "V11.7 affichee au demarrage, sur la page officielle et sur Shopify")
+ok("1.47.8-moretro3d-v11.8-sd-save" in ino and
+   "1.47.8-moretro3d-v11.8-sd-save" in (ROOT/"web/manifest.json").read_text(encoding="utf-8") and
+   "1.47.8-moretro3d-v11.8-sd-save" in (ROOT/"web/index.html").read_text(encoding="utf-8") and
+   "1.47.8-moretro3d-v11.8-sd-save" in (ROOT/"web/shopify.html").read_text(encoding="utf-8") and
+   "1.47.8-moretro3d-v11.8-sd-save" in (ROOT/"tools/build_web.sh").read_text(encoding="utf-8"),
+   "version 1.47.8 coherente et caches installateur invalides")
+ok('gfx->setCursor(CX - 30, 366); gfx->print("V11.8")' in ino and
+   '<div class="version">Firmware V11.8</div>' in (ROOT/"web/index.html").read_text(encoding="utf-8") and
+   '<div class="version">Firmware V11.8</div>' in (ROOT/"web/shopify.html").read_text(encoding="utf-8"),
+   "V11.8 affichee au demarrage, sur la page officielle et sur Shopify")
 ok('location.replace("https://moretro3d.fr/pages/poketama")' in (ROOT/"web/index.html").read_text(encoding="utf-8") and
    'https://moretro3d.github.io/Test-1/manifest.json' in (ROOT/"web/shopify.html").read_text(encoding="utf-8"),
    "GitHub Pages redirige vers Shopify et conserve le Web Flasher officiel")
@@ -37,7 +37,7 @@ ok("github.repository == 'Moretro3D/Test-2'" in workflow and
    "! grep -q 'location.replace' web/index.html" in workflow,
    "Test-2 affiche son Web Flasher sans redirection Shopify")
 test2_launcher=(ROOT/"OUVRIR_WEB_FLASHER_TEST_2.bat").read_text(encoding="utf-8")
-ok("https://moretro3d.github.io/Test-2/?v=1.47.7-moretro3d-v11.7-personal-save-fix" in test2_launcher,
+ok("https://moretro3d.github.io/Test-2/?v=1.47.8-moretro3d-v11.8-sd-save" in test2_launcher,
    "lanceur direct Test-2 avec contournement du cache")
 scene=ino[ino.index("void drawScene("):ino.index("void drawStarterPokeball(")]
 ok("HORIZON-38" not in scene and "uint16_t sea=" not in scene and
@@ -356,6 +356,15 @@ ok("repairCaughtProfiles();" not in load_part and
    "La collection appartient uniquement a cette sauvegarde" in load_part and
    "soin individuels ne doivent jamais fabriquer de captures" in load_part,
    "captures strictement personnelles et collection persistante")
+ok('SD_SAVE_MAIN = "/save/poketama.bin"' in pet and
+   'SD_SAVE_BACKUP = "/save/poketama.bak"' in pet and
+   'SD_SAVE_TEMP = "/save/poketama.tmp"' in pet and
+   "sdSaveChecksum" in pet and "syncSdSave" in pet and
+   "pet.syncSdSave();" in ino,
+   "sauvegarde personnelle SD atomique avec secours et CRC")
+ok('SD_MMC.begin("/sdcard", true /* modo 1-bit */, false' in sdmon and
+   'clearSdTree("/save")' not in sdmon,
+   "aucun formatage automatique et dossier save preserve")
 ok(all(name in audio for name in ("OST_MORNING", "OST_LOFI", "OST_NIGHT")) and
    "AUDIO_EVENT_AMBIENT" in audio and "audioAmbientPlay" in ino,
    "trois OST originales et lecture ambiante non bloquante")

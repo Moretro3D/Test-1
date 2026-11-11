@@ -1,25 +1,25 @@
 {
-  "name": "PokeTama Moretro3D - V11.7 Correctif sauvegarde",
-  "version": "1.47.7-moretro3d-v11.7-personal-save-fix",
+  "name": "PokeTama Moretro3D - V11.8 Correctif sauvegarde",
+  "version": "1.47.8-moretro3d-v11.8-sd-save",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "firmware/poketama-1.47.7-moretro3d-v11.7-personal-save-fix-bootloader.bin",
+          "path": "firmware/poketama-1.47.8-moretro3d-v11.8-sd-save-bootloader.bin",
           "offset": 0
         },
         {
-          "path": "firmware/poketama-1.47.7-moretro3d-v11.7-personal-save-fix-partitions.bin",
+          "path": "firmware/poketama-1.47.8-moretro3d-v11.8-sd-save-partitions.bin",
           "offset": 32768
         },
         {
-          "path": "firmware/poketama-1.47.7-moretro3d-v11.7-personal-save-fix-boot_app0.bin",
+          "path": "firmware/poketama-1.47.8-moretro3d-v11.8-sd-save-boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "firmware/poketama-1.47.7-moretro3d-v11.7-personal-save-fix-app.bin",
+          "path": "firmware/poketama-1.47.8-moretro3d-v11.8-sd-save-app.bin",
           "offset": 65536
         }
       ]

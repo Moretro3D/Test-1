@@ -1,8 +1,13 @@
-PokeTama Moretro3D V11.7 CORRECTIF SAUVEGARDE
+PokeTama Moretro3D V11.8 CORRECTIF SAUVEGARDE
 
-VERSION INTERNE : 1.47.7-moretro3d-v11.7-personal-save-fix
+VERSION INTERNE : 1.47.8-moretro3d-v11.8-sd-save
 
 NOUVEAUTES :
+- Sauvegarde personnelle complète copiée dans /save/poketama.bin sur la microSD.
+- Copie de secours, écriture temporaire atomique et contrôle CRC intégrés.
+- Restauration automatique après une installation ayant effacé la mémoire interne.
+- Le dossier /save est préservé pendant l'installation des sprites, fonds et musiques.
+- La microSD n'est plus formatée automatiquement si son montage échoue.
 - Les captures proviennent uniquement de la sauvegarde personnelle de l'appareil.
 - Les profils internes ne peuvent plus ajouter ou reconstruire des captures.
 - La collection est écrite en priorité et vérifiée avant les données secondaires.

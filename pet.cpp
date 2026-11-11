@@ -1,6 +1,87 @@
 #include "pet.h"
 #include "dex.h"
 #include "audio.h"
+#ifdef ARDUINO
+#include "sdmon.h"
+#include <FS.h>
+#include <SD_MMC.h>
+#endif
+
+#ifdef ARDUINO
+namespace {
+static const uint32_t SD_SAVE_MAGIC = 0x50545356UL; // "PTSV"
+static const uint16_t SD_SAVE_VERSION = 1;
+static const char *SD_SAVE_DIR = "/save";
+static const char *SD_SAVE_MAIN = "/save/poketama.bin";
+static const char *SD_SAVE_BACKUP = "/save/poketama.bak";
+static const char *SD_SAVE_TEMP = "/save/poketama.tmp";
+
+struct SdPetSaveV1 {
+  uint32_t magic;
+  uint16_t version;
+  uint16_t size;
+  uint32_t sequence;
+  uint8_t fullness, joy, energy, hygiene, poops, weight;
+  uint8_t geneAtk, geneDef, geneSpe, trAtk, trDef, trSpe;
+  uint8_t flags;
+  uint32_t ageMinutes;
+  int16_t speciesId;
+  int16_t eggTarget;
+  uint8_t eggTaps, careMistakes, lastEnd;
+  uint32_t lastSeenEpoch;
+  uint8_t dexReg[49], dexShinyReg[49], dexCaught[49];
+  uint16_t streak, bestStreak;
+  uint32_t lastCareDay;
+  uint8_t bond;
+  char nick[12];
+  uint16_t medals, totalMedals, lastMilestone;
+  uint16_t gameHi, strHi, catchHi, memoHi, cleanHi, typeHi;
+  uint16_t battleWins, battleLosses, battleStreak, bestBattleStreak;
+  uint8_t kantoBadges, collectionFrame, boxBackground;
+  int16_t boxFavorites[2][8];
+  uint32_t lastPetInteractMinute;
+  uint8_t dexRewardMask;
+  uint32_t dailyGoalDay;
+  uint8_t dailyGoalType[DAILY_GOAL_COUNT];
+  uint8_t dailyGoalProgress[DAILY_GOAL_COUNT];
+  uint8_t dailyGoalDone;
+  uint8_t itemCounts[EXP_ITEM_COUNT];
+  uint32_t expeditionEndEpoch;
+  uint8_t expeditionRewardItem;
+  uint8_t profileCount;
+  int16_t profileDex[STORED_PROFILE_LIMIT];
+  StoredPetProfile profiles[STORED_PROFILE_LIMIT];
+  uint32_t crc;
+};
+
+uint32_t sdSaveChecksum(const SdPetSaveV1 &save) {
+  const uint8_t *bytes = reinterpret_cast<const uint8_t *>(&save);
+  uint32_t hash = 2166136261UL;
+  for (size_t i = 0; i < offsetof(SdPetSaveV1, crc); i++) {
+    hash ^= bytes[i];
+    hash *= 16777619UL;
+  }
+  return hash;
+}
+
+bool validSdSave(const SdPetSaveV1 &save) {
+  return save.magic == SD_SAVE_MAGIC && save.version == SD_SAVE_VERSION &&
+         save.size == sizeof(SdPetSaveV1) && save.profileCount <= STORED_PROFILE_LIMIT &&
+         save.crc == sdSaveChecksum(save);
+}
+
+bool readSdSaveFile(const char *path, SdPetSaveV1 &save) {
+  File file = SD_MMC.open(path, FILE_READ);
+  if (!file || file.size() != sizeof(SdPetSaveV1)) {
+    if (file) file.close();
+    return false;
+  }
+  bool ok = file.read(reinterpret_cast<uint8_t *>(&save), sizeof(save)) == sizeof(save);
+  file.close();
+  return ok && validSdSave(save);
+}
+}
+#endif
 
 void Pet::begin() {
   prefs.begin("tamapoke", false);
@@ -1288,6 +1369,9 @@ void Pet::save() {
   prefs.putUInt("exend", expeditionEndEpoch);
   prefs.putUChar("exrwd", expeditionRewardItem);
   prefs.putString("nick", nick);
+  saveSequence++;
+  prefs.putUInt("svseq", saveSequence);
+  saveSdBackup();
 }
 
 static void loadCompatBitmap(Preferences &prefs, const char *key, uint8_t *dst, size_t dstLen) {
@@ -1299,6 +1383,7 @@ static void loadCompatBitmap(Preferences &prefs, const char *key, uint8_t *dst, 
 }
 
 void Pet::load() {
+  saveSequence = prefs.getUInt("svseq", 0);
   fullness = prefs.getUChar("full", 80);
   joy = prefs.getUChar("joy", 80);
   energy = prefs.getUChar("ene", 80);
@@ -1433,4 +1518,142 @@ void Pet::load() {
     nick[0] = 0;
     save();
   }
+}
+
+void Pet::factoryReset() {
+  prefs.clear();
+  saveSequence = 0;
+#ifdef ARDUINO
+  if (sdReady) {
+    SD_MMC.remove(SD_SAVE_TEMP);
+    SD_MMC.remove(SD_SAVE_MAIN);
+    SD_MMC.remove(SD_SAVE_BACKUP);
+    SD_MMC.rmdir(SD_SAVE_DIR);
+  }
+#endif
+}
+
+bool Pet::saveSdBackup() {
+#ifndef ARDUINO
+  return false;
+#else
+  if (!sdReady) return false;
+  SdPetSaveV1 data{};
+  data.magic = SD_SAVE_MAGIC;
+  data.version = SD_SAVE_VERSION;
+  data.size = sizeof(data);
+  data.sequence = saveSequence;
+  data.fullness=fullness; data.joy=joy; data.energy=energy; data.hygiene=hygiene;
+  data.poops=poops; data.weight=weight;
+  data.geneAtk=geneAtk; data.geneDef=geneDef; data.geneSpe=geneSpe;
+  data.trAtk=trAtk; data.trDef=trDef; data.trSpe=trSpe;
+  data.flags=(berryKnown?1:0)|(shiny?2:0)|(eggShiny?4:0)|(starterPick?8:0)|(sleeping?16:0);
+  data.ageMinutes=ageMinutes; data.speciesId=speciesId; data.eggTarget=eggTarget;
+  data.eggTaps=eggTaps; data.careMistakes=careMistakes; data.lastEnd=lastEnd;
+  data.lastSeenEpoch=lastSeenEpoch;
+  memcpy(data.dexReg,dexReg,sizeof(dexReg));
+  memcpy(data.dexShinyReg,dexShinyReg,sizeof(dexShinyReg));
+  memcpy(data.dexCaught,dexCaught,sizeof(dexCaught));
+  data.streak=streak; data.bestStreak=bestStreak; data.lastCareDay=lastCareDay;
+  data.bond=bond; memcpy(data.nick,nick,sizeof(nick));
+  data.medals=medals; data.totalMedals=totalMedals; data.lastMilestone=lastMilestone;
+  data.gameHi=gameHi; data.strHi=strHi; data.catchHi=catchHi; data.memoHi=memoHi;
+  data.cleanHi=cleanHi; data.typeHi=typeHi;
+  data.battleWins=battleWins; data.battleLosses=battleLosses;
+  data.battleStreak=battleStreak; data.bestBattleStreak=bestBattleStreak;
+  data.kantoBadges=kantoBadges; data.collectionFrame=collectionFrame; data.boxBackground=boxBackground;
+  memcpy(data.boxFavorites,boxFavorites,sizeof(boxFavorites));
+  data.lastPetInteractMinute=lastPetInteractMinute; data.dexRewardMask=dexRewardMask;
+  data.dailyGoalDay=dailyGoalDay;
+  memcpy(data.dailyGoalType,dailyGoalType,sizeof(dailyGoalType));
+  memcpy(data.dailyGoalProgress,dailyGoalProgress,sizeof(dailyGoalProgress));
+  data.dailyGoalDone=dailyGoalDone; memcpy(data.itemCounts,itemCounts,sizeof(itemCounts));
+  data.expeditionEndEpoch=expeditionEndEpoch; data.expeditionRewardItem=expeditionRewardItem;
+  for (int16_t dex=1; dex<=DEX_COUNT && data.profileCount<STORED_PROFILE_LIMIT; dex++) {
+    if (!hasStoredProfile(dex)) continue;
+    char key[8]; petProfileKey(dex,key,sizeof(key));
+    StoredPetProfile profile;
+    if (prefs.getBytes(key,&profile,sizeof(profile)) != sizeof(profile)) continue;
+    uint8_t slot=data.profileCount++;
+    data.profileDex[slot]=dex;
+    data.profiles[slot]=profile;
+  }
+  data.crc=sdSaveChecksum(data);
+
+  SD_MMC.mkdir(SD_SAVE_DIR);
+  SD_MMC.remove(SD_SAVE_TEMP);
+  File file=SD_MMC.open(SD_SAVE_TEMP,FILE_WRITE);
+  if (!file) return false;
+  bool written=file.write(reinterpret_cast<const uint8_t *>(&data),sizeof(data))==sizeof(data);
+  file.flush(); file.close();
+  if (!written) { SD_MMC.remove(SD_SAVE_TEMP); return false; }
+  SD_MMC.remove(SD_SAVE_BACKUP);
+  if (SD_MMC.exists(SD_SAVE_MAIN) && !SD_MMC.rename(SD_SAVE_MAIN,SD_SAVE_BACKUP)) {
+    SD_MMC.remove(SD_SAVE_TEMP); return false;
+  }
+  if (!SD_MMC.rename(SD_SAVE_TEMP,SD_SAVE_MAIN)) {
+    if (SD_MMC.exists(SD_SAVE_BACKUP)) SD_MMC.rename(SD_SAVE_BACKUP,SD_SAVE_MAIN);
+    return false;
+  }
+  return true;
+#endif
+}
+
+void Pet::syncSdSave() {
+#ifdef ARDUINO
+  if (!sdReady) return;
+  SdPetSaveV1 mainSave{}, backupSave{};
+  bool mainOk=readSdSaveFile(SD_SAVE_MAIN,mainSave);
+  bool backupOk=readSdSaveFile(SD_SAVE_BACKUP,backupSave);
+  const SdPetSaveV1 *best=nullptr;
+  if (mainOk) best=&mainSave;
+  if (backupOk && (!best || backupSave.sequence>best->sequence)) best=&backupSave;
+  if (!best || (!saveCreatedThisBoot && best->sequence<=saveSequence)) {
+    saveSdBackup();
+    return;
+  }
+
+  const SdPetSaveV1 &data=*best;
+  fullness=data.fullness; joy=data.joy; energy=data.energy; hygiene=data.hygiene;
+  poops=data.poops; weight=data.weight;
+  geneAtk=data.geneAtk; geneDef=data.geneDef; geneSpe=data.geneSpe;
+  trAtk=data.trAtk; trDef=data.trDef; trSpe=data.trSpe;
+  berryKnown=data.flags&1; shiny=data.flags&2; eggShiny=data.flags&4;
+  starterPick=data.flags&8; sleeping=data.flags&16;
+  ageMinutes=data.ageMinutes;
+  speciesId=(data.speciesId>=-1 && data.speciesId<=DEX_COUNT)?data.speciesId:-1;
+  eggTarget=(data.eggTarget>=1 && data.eggTarget<=DEX_COUNT)?data.eggTarget:1;
+  eggTaps=data.eggTaps; careMistakes=data.careMistakes; lastEnd=data.lastEnd;
+  lastSeenEpoch=data.lastSeenEpoch;
+  memcpy(dexReg,data.dexReg,sizeof(dexReg));
+  memcpy(dexShinyReg,data.dexShinyReg,sizeof(dexShinyReg));
+  memcpy(dexCaught,data.dexCaught,sizeof(dexCaught));
+  streak=data.streak; bestStreak=data.bestStreak; lastCareDay=data.lastCareDay;
+  bond=data.bond; memcpy(nick,data.nick,sizeof(nick)); nick[sizeof(nick)-1]=0;
+  medals=data.medals; totalMedals=data.totalMedals; lastMilestone=data.lastMilestone;
+  gameHi=data.gameHi; strHi=data.strHi; catchHi=data.catchHi; memoHi=data.memoHi;
+  cleanHi=data.cleanHi; typeHi=data.typeHi;
+  battleWins=data.battleWins; battleLosses=data.battleLosses;
+  battleStreak=data.battleStreak; bestBattleStreak=data.bestBattleStreak;
+  kantoBadges=data.kantoBadges; collectionFrame=data.collectionFrame; boxBackground=data.boxBackground;
+  memcpy(boxFavorites,data.boxFavorites,sizeof(boxFavorites));
+  lastPetInteractMinute=data.lastPetInteractMinute; dexRewardMask=data.dexRewardMask;
+  dailyGoalDay=data.dailyGoalDay;
+  memcpy(dailyGoalType,data.dailyGoalType,sizeof(dailyGoalType));
+  memcpy(dailyGoalProgress,data.dailyGoalProgress,sizeof(dailyGoalProgress));
+  dailyGoalDone=data.dailyGoalDone; memcpy(itemCounts,data.itemCounts,sizeof(itemCounts));
+  expeditionEndEpoch=data.expeditionEndEpoch; expeditionRewardItem=data.expeditionRewardItem;
+  for (int16_t dex=1; dex<=DEX_COUNT; dex++) removeStoredProfile(dex);
+  for (uint8_t i=0; i<data.profileCount; i++) {
+    int16_t dex=data.profileDex[i];
+    if (dex<1 || dex>DEX_COUNT || data.profiles[i].version!=1) continue;
+    char key[8]; petProfileKey(dex,key,sizeof(key));
+    prefs.putBytes(key,&data.profiles[i],sizeof(StoredPetProfile));
+  }
+  prevSpeciesId=-1; ceremony=CER_NONE; saveSequence=data.sequence;
+  saveLoadedFromNvs=true; saveCreatedThisBoot=false;
+  save();
+  Serial.printf("SAVE SD restauree seq=%lu captures=%u\n",
+                (unsigned long)saveSequence,(unsigned)caughtCount());
+#endif
 }
