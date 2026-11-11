@@ -1,6 +1,6 @@
 POKETAMA TEST-2 - VERSION NORMALE COMPLETE 386 POKEMON
 
-VERSION INTERNE : 1.47.6 / V11.6 correctif sauvegarde
+VERSION INTERNE : 1.47.7 / V11.7 correctif sauvegarde
 
 Cette version conserve l'interface et le fonctionnement normaux. Les sprites
 des 386 Pokémon restent installés, mais la Boîte n'ouvre plus artificiellement

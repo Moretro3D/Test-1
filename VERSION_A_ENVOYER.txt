@@ -1,8 +1,13 @@
-PokeTama Moretro3D V11.6 CORRECTIF SAUVEGARDE
+PokeTama Moretro3D V11.7 CORRECTIF SAUVEGARDE
 
-VERSION INTERNE : 1.47.6-moretro3d-v11.6-active-save-fix
+VERSION INTERNE : 1.47.7-moretro3d-v11.7-personal-save-fix
 
 NOUVEAUTES :
+- Les captures proviennent uniquement de la sauvegarde personnelle de l'appareil.
+- Les profils internes ne peuvent plus ajouter ou reconstruire des captures.
+- La collection est écrite en priorité et vérifiée avant les données secondaires.
+- Le Pokédex repasse en grille 4x4, sans compteur ni icône de capture.
+- Le correctif empêchant Ectoplasma de redevenir automatiquement actif est conservé.
 - Sept sols de combat pixel art : Plante, Eau, Feu, Normal, Roche, Glace, Nuages.
 - Demi-sol joueur et plateforme adverse alignes sur des positions fixes.
 - Affectation verifiee individuellement pour les 386 Pokemon.

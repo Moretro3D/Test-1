@@ -1,9 +1,9 @@
 @echo off
 setlocal EnableExtensions
-title PokeTama V11.6 - Envoi GitHub officiel
+title PokeTama V11.7 - Envoi GitHub officiel
 cd /d "%~dp0"
 
-echo PokeTama V11.6 - deploiement officiel vers Moretro3D/Test-1
+echo PokeTama V11.7 - deploiement officiel vers Moretro3D/Test-1
 echo.
 where git >nul 2>nul
 if errorlevel 1 (
@@ -31,15 +31,15 @@ echo Preparation de la version officielle V11...
 git -c safe.directory="%CD%" add -A
 git -c safe.directory="%CD%" diff --cached --quiet
 if errorlevel 1 (
-  git -c safe.directory="%CD%" commit -m "PokeTama V11.6 correctif sauvegarde"
+  git -c safe.directory="%CD%" commit -m "PokeTama V11.7 correctif sauvegarde"
   if errorlevel 1 goto :connexion
 )
 
-echo Envoi officiel de la V11.6 sans effacement ni force push...
+echo Envoi officiel de la V11.7 sans effacement ni force push...
 git -c safe.directory="%CD%" -c http.sslBackend=openssl push -u origin main
 if errorlevel 1 goto :connexion
 echo.
-echo TERMINE : la V11.6 officielle est envoyee sur Test-1.
+echo TERMINE : la V11.7 officielle est envoyee sur Test-1.
 echo Ouvre https://github.com/Moretro3D/Test-1/actions pour suivre la compilation.
 pause
 exit /b 0

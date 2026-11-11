@@ -1108,6 +1108,22 @@ bool Pet::persistActiveSpecies() {
   return false;
 }
 
+bool Pet::persistCollection() {
+  auto writeCollection = [this]() {
+    bool regOk = prefs.putBytes("dexreg", dexReg, sizeof(dexReg)) == sizeof(dexReg);
+    bool caughtOk = prefs.putBytes("dexcgt", dexCaught, sizeof(dexCaught)) == sizeof(dexCaught);
+    bool shinyOk = prefs.putBytes("dexsh", dexShinyReg, sizeof(dexShinyReg)) == sizeof(dexShinyReg);
+    return regOk && caughtOk && shinyOk;
+  };
+  if (writeCollection()) return true;
+  for (int16_t dex = 1; dex <= DEX_COUNT; dex++) {
+    if (dex == speciesId || !hasStoredProfile(dex)) continue;
+    removeStoredProfile(dex);
+    if (writeCollection()) return true;
+  }
+  return false;
+}
+
 void Pet::repairCaughtProfiles() {
   bool caughtChanged = false;
   bool registeredChanged = false;
@@ -1211,6 +1227,7 @@ bool Pet::switchToCaught(int16_t dex) {
 
 void Pet::save() {
   const bool activeSaved = persistActiveSpecies();
+  const bool collectionSaved = persistCollection();
   saveActiveProfile();
   ticksSinceSave = 0;
   pendingSave = false;
@@ -1230,7 +1247,6 @@ void Pet::save() {
   prefs.putBool("shy", shiny);
   prefs.putBool("eshy", eggShiny);
   prefs.putBool("stpk", starterPick);
-  prefs.putBytes("dexsh", dexShinyReg, sizeof(dexShinyReg));
   prefs.putUInt("age", ageMinutes);
   if (!activeSaved) Serial.printf("[SAVE] espece active #%d non ecrite\n", speciesId);
   prefs.putShort("eggT2", eggTarget);
@@ -1239,8 +1255,7 @@ void Pet::save() {
   prefs.putBool("sleep", sleeping);
   prefs.putUChar("lend", lastEnd);
   if (lastSeenEpoch) prefs.putUInt("seen", lastSeenEpoch);
-  prefs.putBytes("dexreg", dexReg, sizeof(dexReg));
-  prefs.putBytes("dexcgt", dexCaught, sizeof(dexCaught));
+  if (!collectionSaved) Serial.println("[SAVE] collection non ecrite");
   prefs.putUShort("strk", streak);
   prefs.putUShort("bstrk", bestStreak);
   prefs.putUInt("cday", lastCareDay);
@@ -1324,12 +1339,10 @@ void Pet::load() {
   lastEnd = prefs.getUChar("lend", CER_NONE);
   loadCompatBitmap(prefs, "dexreg", dexReg, sizeof(dexReg));
   loadCompatBitmap(prefs, "dexcgt", dexCaught, sizeof(dexCaught));
-  // Migration de toutes les anciennes creatures elevees, meme si elles ne
-  // sont plus le compagnon actif au moment de la mise a jour.
-  repairCaughtProfiles();
+  // La collection appartient uniquement a cette sauvegarde. Les profils de
+  // soin individuels ne doivent jamais fabriquer de captures.
   compactStoredProfiles();
-  prefs.putBytes("dexreg", dexReg, sizeof(dexReg));
-  prefs.putBytes("dexcgt", dexCaught, sizeof(dexCaught));
+  persistCollection();
   streak = prefs.getUShort("strk", 0);
   bestStreak = prefs.getUShort("bstrk", 0);
   lastCareDay = prefs.getUInt("cday", 0);

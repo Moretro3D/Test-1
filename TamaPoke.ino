@@ -39,7 +39,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.47.6-moretro3d-v11.6-active-save-fix"
+#define FW_VERSION "1.47.7-moretro3d-v11.7-personal-save-fix"
 #define HELP_PAGE_COUNT 6
 #define HELP_LINE_COUNT 6
 
@@ -446,10 +446,10 @@ void setup() {
   gfx->setTextSize(3);
   // 9 caracteres x 6 px x taille 3 = 162 px : centre exact a x=152.
   gfx->setCursor(CX - 79, 326); gfx->print("Moretro3D");
-  // Version publique corrective V11.6.
+  // Version publique corrective V11.7.
   gfx->setTextColor(C565(0x61,0xda,0xf2));
   gfx->setTextSize(2);
-  gfx->setCursor(CX - 30, 366); gfx->print("V11.6");
+  gfx->setCursor(CX - 30, 366); gfx->print("V11.7");
   gfx->flush();
   panel->setBrightness(120);
 
@@ -6004,7 +6004,7 @@ void keyboardTap(int16_t x, int16_t y) {
 #define GAL_Y 82
 #define GAL_CELL 72
 #define GAL_COLS 4
-#define GAL_ROWS 3
+#define GAL_ROWS 4
 #define GAL_PAGE_SIZE (GAL_COLS * GAL_ROWS)
 
 int galleryPageCount() {
@@ -6143,8 +6143,6 @@ void renderGallery() {
       const uint8_t *t = thumbs.get(galleryDetail);
       if (t) drawThumb(t, CX - GAL_CELL, 135, 4, !known);
     }
-    // Un seul pictogramme discret rappelle que ce Pokemon est deja obtenu.
-    if (known) drawBattleCaughtBall(350,354,24,26);
     // Bouton RETOUR vers la grille Pokédex.
     gfx->fillRoundRect(22, 20, 54, 34, 10, uiPanel());
     gfx->drawRoundRect(22, 20, 54, 34, 10, uiInk());
@@ -6217,15 +6215,6 @@ void renderGallery() {
       }
     }
   }
-  // La quatrieme ligne est remplacee par le total reel des captures.
-  char caught[28];
-  snprintf(caught,sizeof(caught),T(S_CAUGHT_COUNT_FMT),(unsigned)pet.caughtCount());
-  gfx->fillRoundRect(103,306,260,54,14,uiPanel());
-  gfx->drawRoundRect(103,306,260,54,14,uiLine());
-  gfx->setTextColor(uiInk());
-  gfx->setTextSize(2);
-  gfx->setCursor(CX-(int)strlen(caught)*6,325);
-  gfx->print(caught);
   // Navigation latérale : aucune rangée de petites billes.
   int pages = galleryPageCount();
   if (galleryPage > 0) {

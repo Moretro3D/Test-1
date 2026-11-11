@@ -380,6 +380,7 @@ private:
   void registerSpecies(int16_t dex);
   bool canReceiveExpeditionItem(ExpeditionItem item) const;
   bool persistActiveSpecies();
+  bool persistCollection();
   void save();
   void load();
   static uint8_t clamp100(int v) { return v < 0 ? 0 : (v > 100 ? 100 : v); }
