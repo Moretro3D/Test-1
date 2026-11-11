@@ -18,16 +18,16 @@ def ok(cond,msg):
         raise SystemExit("FAIL V9: "+msg)
     print("OK  ",msg)
 
-ok("1.47.8-moretro3d-v11.8-sd-save" in ino and
-   "1.47.8-moretro3d-v11.8-sd-save" in (ROOT/"web/manifest.json").read_text(encoding="utf-8") and
-   "1.47.8-moretro3d-v11.8-sd-save" in (ROOT/"web/index.html").read_text(encoding="utf-8") and
-   "1.47.8-moretro3d-v11.8-sd-save" in (ROOT/"web/shopify.html").read_text(encoding="utf-8") and
-   "1.47.8-moretro3d-v11.8-sd-save" in (ROOT/"tools/build_web.sh").read_text(encoding="utf-8"),
-   "version 1.47.8 coherente et caches installateur invalides")
-ok('gfx->setCursor(CX - 30, 366); gfx->print("V11.8")' in ino and
-   '<div class="version">Firmware V11.8</div>' in (ROOT/"web/index.html").read_text(encoding="utf-8") and
-   '<div class="version">Firmware V11.8</div>' in (ROOT/"web/shopify.html").read_text(encoding="utf-8"),
-   "V11.8 affichee au demarrage, sur la page officielle et sur Shopify")
+ok("1.48.0-moretro3d-v12-sky-biome" in ino and
+   "1.48.0-moretro3d-v12-sky-biome" in (ROOT/"web/manifest.json").read_text(encoding="utf-8") and
+   "1.48.0-moretro3d-v12-sky-biome" in (ROOT/"web/index.html").read_text(encoding="utf-8") and
+   "1.48.0-moretro3d-v12-sky-biome" in (ROOT/"web/shopify.html").read_text(encoding="utf-8") and
+   "1.48.0-moretro3d-v12-sky-biome" in (ROOT/"tools/build_web.sh").read_text(encoding="utf-8"),
+   "version 1.48.0 coherente et caches installateur invalides")
+ok('gfx->setCursor(CX - 24, 366); gfx->print("V12")' in ino and
+   '<div class="version">Firmware V12</div>' in (ROOT/"web/index.html").read_text(encoding="utf-8") and
+   '<div class="version">Firmware V12</div>' in (ROOT/"web/shopify.html").read_text(encoding="utf-8"),
+   "V12 affichee au demarrage, sur la page officielle et sur Shopify")
 ok('location.replace("https://moretro3d.fr/pages/poketama")' in (ROOT/"web/index.html").read_text(encoding="utf-8") and
    'https://moretro3d.github.io/Test-1/manifest.json' in (ROOT/"web/shopify.html").read_text(encoding="utf-8"),
    "GitHub Pages redirige vers Shopify et conserve le Web Flasher officiel")
@@ -37,7 +37,7 @@ ok("github.repository == 'Moretro3D/Test-2'" in workflow and
    "! grep -q 'location.replace' web/index.html" in workflow,
    "Test-2 affiche son Web Flasher sans redirection Shopify")
 test2_launcher=(ROOT/"OUVRIR_WEB_FLASHER_TEST_2.bat").read_text(encoding="utf-8")
-ok("https://moretro3d.github.io/Test-2/?v=1.47.8-moretro3d-v11.8-sd-save" in test2_launcher,
+ok("https://moretro3d.github.io/Test-2/?v=1.48.0-moretro3d-v12-sky-biome" in test2_launcher,
    "lanceur direct Test-2 avec contournement du cache")
 scene=ino[ino.index("void drawScene("):ino.index("void drawStarterPokeball(")]
 ok("HORIZON-38" not in scene and "uint16_t sea=" not in scene and
@@ -310,9 +310,9 @@ ok((ROOT/"assets/home_habitat_mountain_v10_31.png").exists() and
 ok(all((ROOT/"assets"/f"battle_ground_{name}_v10_32.png").exists()
        for name in ("grass","water","fire","normal","rock","ice","cloud")),
    "sept nouveaux pixel arts joueur et adversaire integres au combat")
-ok("void drawHomeGymPlatform(uint8_t biome, uint8_t phase)" in ino and
-   "if (biome==1)" in ino and "else if (biome==4)" not in ino and
-   "gfx->fillRoundRect(129,242,208,38,13,edge)" not in ino and
+home_platform=ino[ino.index("void drawHomeGymPlatform"):ino.index("void drawScene")]
+ok("if (biome==1)" in home_platform and "else if (biome==4)" not in home_platform and
+   "gfx->fillRoundRect(129,242,208,38,13,edge)" not in home_platform and
    scene.index("drawHomeHabitatGround(b);") < scene.index("drawHomeGymPlatform(b,phase);") < scene.index("drawHomeGymCabin(phase,b);"),
    "volcan releve, ilot eau conserve et arene posee directement sur le pixel art roche")
 ok("STARTER_DEX[3][3]" in ino and "{ 252, 255, 258 }" in ino,
@@ -342,7 +342,7 @@ ok("python3 \"$ROOT/tools/pack_pmd.py\" $(seq 1 386)" in build_web and
    "386 formes normales et Shiny rechargees depuis les sources originales")
 ok("int8_t forcedShiny = -1" not in ino and
    "startBattleWith(wildPromptDex, wildPromptLevel, -1)" in ino and
-   "startBattleWith(0, 0, -1)" in ino,
+   "startBattleWith(foundDex, foundLevel, -1)" in ino,
    "prototype Arduino sans argument par defaut duplique")
 ok('"..........kkk..."' in (ROOT/"species.h").read_text(encoding="utf-8") and
    '".....kkkkk.k...."' in (ROOT/"species.h").read_text(encoding="utf-8") and
@@ -370,6 +370,19 @@ ok(all(name in audio for name in ("OST_MORNING", "OST_LOFI", "OST_NIGHT")) and
    "trois OST originales et lecture ambiante non bloquante")
 ok("hour>=7 && hour<13" in ino and "hour>=13 && hour<20" in ino,
    "selection OST automatique matin, lo-fi et nuit")
+ok("pickWildSpeciesForBiome" in battle and
+   "DEX_TBL[dex].biome == biome" in battle and
+   "TYPE_FLYING" in battle and
+   "for (uint8_t biome = 0; biome < 7; biome++)" in (ROOT/"tests/battle_tests.cpp").read_text(encoding="utf-8") and
+   "testBiomeSelectionAlwaysMatchesChosenBiome" in (ROOT/"tests/battle_tests.cpp").read_text(encoding="utf-8"),
+   "tirage sauvage filtre et teste sur six habitats plus le biome Ciel reserve au type Vol")
+ok("biomeSelectOpen" in ino and "renderBiomeSelection" in ino and
+   "drawBattleBackgroundBiome(biomeSelected)" in ino and
+   "drawSkyBiomeBackground()" in ino and
+   "battleEnvironmentBiome" in ino and
+   "biomeSearchUntil=millis()+2400UL" in ino and
+   "startBattleWith(foundDex, foundLevel, -1)" in ino,
+   "selection de biome et exploration animee avant revelation")
 music=ROOT/"tools/sdcard/music"
 for filename in ("morning.wav", "lofi.wav", "night.wav"):
     with wave.open(str(music/filename), "rb") as wav:

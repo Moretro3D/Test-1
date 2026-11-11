@@ -1,8 +1,12 @@
-PokeTama Moretro3D V11.8 CORRECTIF SAUVEGARDE
+PokeTama Moretro3D V12 BIOME CIEL
 
-VERSION INTERNE : 1.47.8-moretro3d-v11.8-sd-save
+VERSION INTERNE : 1.48.0-moretro3d-v12-sky-biome
 
 NOUVEAUTES :
+- Six biomes sélectionnables avant de lancer un combat sauvage.
+- Recherche animée de 2,4 secondes avant de révéler le Pokémon.
+- Chaque biome ne propose que des Pokémon associés à son environnement.
+- Décors pixel art adaptés au biome choisi pendant l'exploration.
 - Sauvegarde personnelle complète copiée dans /save/poketama.bin sur la microSD.
 - Copie de secours, écriture temporaire atomique et contrôle CRC intégrés.
 - Restauration automatique après une installation ayant effacé la mémoire interne.

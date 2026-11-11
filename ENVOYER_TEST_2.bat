@@ -1,9 +1,9 @@
 @echo off
 setlocal EnableExtensions
-title PokeTama V11.8 - Envoi vers Test-2
+title PokeTama V12 - Envoi vers Test-2
 cd /d "%~dp0"
 
-echo PokeTama V11.8 - envoi vers Moretro3D/Test-2
+echo PokeTama V12 - envoi vers Moretro3D/Test-2
 echo.
 where git >nul 2>nul
 if errorlevel 1 (
@@ -31,7 +31,7 @@ echo Preparation des fichiers V11...
 git -c safe.directory="%CD%" add -A
 git -c safe.directory="%CD%" diff --cached --quiet
 if errorlevel 1 (
-  git -c safe.directory="%CD%" commit -m "PokeTama V11.8 correctif sauvegarde"
+  git -c safe.directory="%CD%" commit -m "PokeTama V12 biome Ciel"
   if errorlevel 1 goto :connexion
 )
 
