@@ -21,6 +21,7 @@
 static I2SClass i2s;
 static bool gReady = false;
 static uint8_t gMode = SOUND_FULL;
+static volatile bool gMusicEnabled = true;
 static QueueHandle_t gQ = nullptr;
 static volatile bool gBusy = false;
 static volatile uint32_t gAmbientKeepAliveUntil = 0;
@@ -143,6 +144,15 @@ static const Note N_EXPEDITION_START[] = {TRI(523, 52, 64), TRI(659, 62, 70), SL
 static const Note N_EXPEDITION_FOUND[] = {TRI(784, 55, 70), TRI(1047, 58, 76), TRI(1319, 65, 78), SOFT(1568, 130, 72)};
 static const Note N_EXPEDITION_CLAIM[] = {SOFT(988, 55, 66), TRI(1319, 70, 74), SL(1568, 115, 1976, 76, W_TRI)};
 static const Note N_ITEM_USE[] = {SOFT(659, 48, 62), SL(784, 95, 1175, 70, W_TRI)};
+static const Note N_NEED_SLEEP[] = {
+  SOFT(659, 150, 48), SIL(35), SOFT(523, 180, 44), SIL(45), SOFT(392, 260, 38)
+};
+static const Note N_NEED_HUNGER[] = {
+  SL(180, 190, 115, 54, W_SOFT), NS(45, 24), SIL(55), SL(155, 240, 95, 50, W_SOFT)
+};
+static const Note N_NEED_HYGIENE[] = {
+  NS(42, 28), TRI(988, 55, 48), SIL(24), TRI(1319, 62, 54), SIL(22), TRI(1760, 75, 58)
+};
 
 // Trois compositions originales "ville douce / lo-fi". Elles sont jouees
 // note par note afin qu'un SFX ou un cri puisse s'intercaler rapidement.
@@ -262,6 +272,7 @@ static const SfxDef SFX[SFX_COUNT] = {
   {N_ATTACK_QUICK, 2}, {N_ATTACK_HEAVY, 3}, {N_ENEMY_HIT, 2}, {N_EFFECTIVE, 3},
   {N_WEAK_HIT, 2}, {N_MINIGAME_OK, 2}, {N_MINIGAME_BAD, 2}, {N_LOW_HP, 3},
   {N_EXPEDITION_START, 3}, {N_EXPEDITION_FOUND, 4}, {N_EXPEDITION_CLAIM, 3}, {N_ITEM_USE, 2},
+  {N_NEED_SLEEP, 5}, {N_NEED_HUNGER, 4}, {N_NEED_HYGIENE, 6},
 };
 
 static const uint8_t SFX_MIN_MODE[SFX_COUNT] = {
@@ -304,6 +315,9 @@ static const uint8_t SFX_MIN_MODE[SFX_COUNT] = {
   SOUND_LOW,  // EXPEDITION_FOUND
   SOUND_MED,  // EXPEDITION_CLAIM
   SOUND_MED,  // ITEM_USE
+  SOUND_MED,  // NEED_SLEEP
+  SOUND_MED,  // NEED_HUNGER
+  SOUND_MED,  // NEED_HYGIENE
 };
 
 static uint16_t noiseState = 0xACE1;
@@ -388,6 +402,41 @@ static void playTone(const Note &note) {
 }
 
 static void playSpeciesChirp(uint16_t dex) {
+  // Les vrais cris, installes en option par l'importateur USB, ont priorite.
+  // Format garanti par la page Web : WAV PCM mono 16 bits, 16 kHz, en-tete 44 octets.
+  char path[24];
+  snprintf(path, sizeof(path), "/cries/%03u.wav", (unsigned)dex);
+  File cry = SD_MMC.open(path, FILE_READ);
+  if (cry && cry.size() > 44) {
+    uint8_t header[44];
+    bool valid = cry.read(header, sizeof(header)) == sizeof(header) &&
+                 !memcmp(header, "RIFF", 4) && !memcmp(header + 8, "WAVE", 4) &&
+                 header[20] == 1 && header[21] == 0 &&  // PCM
+                 header[22] == 1 && header[23] == 0 &&  // mono
+                 header[24] == 0x80 && header[25] == 0x3e && header[26] == 0 && header[27] == 0 &&
+                 header[34] == 16 && header[35] == 0;
+    if (valid) {
+      int16_t mono[256];
+      while (true) {
+        size_t got = cry.read((uint8_t *)mono, sizeof(mono));
+        got &= ~1U;
+        if (!got) break;
+        int samples = (int)(got / 2);
+        for (int i = 0; i < samples; i++) {
+          int16_t s = (int16_t)((int32_t)mono[i] * modeGainPct() / 115);
+          buf[i * 2] = s;
+          buf[i * 2 + 1] = s;
+        }
+        i2s.write((uint8_t *)buf, samples * 4);
+      }
+      cry.close();
+      return;
+    }
+    cry.close();
+  } else if (cry) {
+    cry.close();
+  }
+  // Secours toujours disponible si la SD ou un fichier manque.
   SpeciesChirpProfile profile{};
   if (!speciesChirpProfile(dex, &profile)) return;
   for (uint8_t i = 0; i < profile.count; i++) {
@@ -402,8 +451,8 @@ static void audioTask(void *) {
   for (;;) {
     if (!xQueueReceive(gQ, &event, portMAX_DELAY) || !gReady) continue;
     bool isSfx = event.kind == AUDIO_EVENT_SFX && event.value < SFX_COUNT;
-    bool isChirp = event.kind == AUDIO_EVENT_CHIRP && event.value >= 1 && event.value <= 386 && gMode >= SOUND_MED;
-    bool isAmbient = event.kind == AUDIO_EVENT_AMBIENT && event.value < 3 && gMode >= SOUND_LOW;
+    bool isChirp = event.kind == AUDIO_EVENT_CHIRP && event.value >= 1 && event.value <= 386 && gMode >= SOUND_LOW;
+    bool isAmbient = event.kind == AUDIO_EVENT_AMBIENT && event.value < 3 && gMode >= SOUND_LOW && gMusicEnabled;
     if (isSfx && gMode < SFX_MIN_MODE[event.value]) continue;
     if (isSfx || isChirp || isAmbient) {
       gBusy = true;
@@ -423,7 +472,7 @@ static void audioTask(void *) {
           do {
             if (!playMusicChunk(theme)) { wavOk=false; break; }
             if (uxQueueMessagesWaiting(gQ) > 0) break; // priorite aux SFX/cris
-          } while (gMode >= SOUND_LOW && gAmbientTheme == theme &&
+          } while (gMode >= SOUND_LOW && gMusicEnabled && gAmbientTheme == theme &&
                    (int32_t)(gAmbientKeepAliveUntil - millis()) > 0);
         }
         if (!wavOk) {
@@ -459,6 +508,7 @@ void audioBegin() {
   } else {
     gMode = p.getBool("snd", true) ? SOUND_FULL : SOUND_OFF;
   }
+  gMusicEnabled = p.getBool("music", true);
   p.end();
   if (gMode > SOUND_FULL) gMode = SOUND_FULL;
 
@@ -503,12 +553,23 @@ void audioSetMode(uint8_t mode) {
 
 uint8_t audioMode() { return gMode; }
 
+void audioSetMusicEnabled(bool on) {
+  gMusicEnabled = on;
+  if (!on) gAmbientKeepAliveUntil = 0;
+  Preferences p;
+  p.begin("tamapoke", false);
+  p.putBool("music", on);
+  p.end();
+}
+
+bool audioMusicEnabled() { return gMusicEnabled; }
+
 bool audioBusy() {
   return gBusy || (gQ && uxQueueMessagesWaiting(gQ) > 0);
 }
 
 void audioAmbientPlay(uint8_t theme) {
-  if (!gReady || gMode < SOUND_LOW || !gQ || theme >= 3) return;
+  if (!gReady || !gMusicEnabled || gMode < SOUND_LOW || !gQ || theme >= 3) return;
   gAmbientTheme = theme;
   gAmbientKeepAliveUntil = millis() + 650;
   if (audioBusy()) return;
@@ -517,12 +578,12 @@ void audioAmbientPlay(uint8_t theme) {
 }
 
 bool audioPreloadMusic(uint8_t theme) {
-  if (!gReady || gMode == SOUND_OFF || theme >= 3) return false;
+  if (!gReady || !gMusicEnabled || gMode == SOUND_OFF || theme >= 3) return false;
   return openMusic(theme);
 }
 
 void speciesChirpPlay(int16_t dex) {
-  if (!gReady || !gQ || gMode < SOUND_MED || dex < 1 || dex > 386) return;
+  if (!gReady || !gQ || gMode < SOUND_LOW || dex < 1 || dex > 386) return;
   uint32_t now = millis();
   if (now - gLastChirpAt < 800UL) return;
   gLastChirpAt = now;

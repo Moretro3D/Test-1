@@ -12,22 +12,128 @@ pet_h=(ROOT/"pet.h").read_text(encoding="utf-8")
 audio=(ROOT/"audio.cpp").read_text(encoding="utf-8")
 chirp=(ROOT/"species_chirp.cpp").read_text(encoding="utf-8")
 sdmon=(ROOT/"sdmon.cpp").read_text(encoding="utf-8")
+workflow=(ROOT/".github/workflows/pages.yml").read_text(encoding="utf-8")
 
 def ok(cond,msg):
     if not cond:
-        raise SystemExit("FAIL V9: "+msg)
+        raise SystemExit("FAIL V12: "+msg)
     print("OK  ",msg)
 
-ok("1.48.0-moretro3d-v12-sky-biome" in ino and
-   "1.48.0-moretro3d-v12-sky-biome" in (ROOT/"web/manifest.json").read_text(encoding="utf-8") and
-   "1.48.0-moretro3d-v12-sky-biome" in (ROOT/"web/index.html").read_text(encoding="utf-8") and
-   "1.48.0-moretro3d-v12-sky-biome" in (ROOT/"web/shopify.html").read_text(encoding="utf-8") and
-   "1.48.0-moretro3d-v12-sky-biome" in (ROOT/"tools/build_web.sh").read_text(encoding="utf-8"),
-   "version 1.48.0 coherente et caches installateur invalides")
-ok('gfx->setCursor(CX - 24, 366); gfx->print("V12")' in ino and
-   '<div class="version">Firmware V12</div>' in (ROOT/"web/index.html").read_text(encoding="utf-8") and
-   '<div class="version">Firmware V12</div>' in (ROOT/"web/shopify.html").read_text(encoding="utf-8"),
-   "V12 affichee au demarrage, sur la page officielle et sur Shopify")
+ok("1.50.7-moretro3d-v12-biome-battles-clean" in ino and
+   "1.50.7-moretro3d-v12-biome-battles-clean" in (ROOT/"web/manifest.json").read_text(encoding="utf-8") and
+   "1.50.7-moretro3d-v12-biome-battles-clean" in (ROOT/"web/index.html").read_text(encoding="utf-8") and
+   "1.50.7-moretro3d-v12-biome-battles-clean" in (ROOT/"web/shopify.html").read_text(encoding="utf-8") and
+   "1.50.7-moretro3d-v12-biome-battles-clean" in (ROOT/"tools/build_web.sh").read_text(encoding="utf-8"),
+   "version 1.50.7 coherente et caches installateur invalides")
+ok('gfx->setCursor(CX - 18, 366); gfx->print("V12")' in ino and
+   '<div class="version">PokeTama V12</div>' in (ROOT/"web/index.html").read_text(encoding="utf-8") and
+   '<div class="version">PokeTama V12</div>' in (ROOT/"web/shopify.html").read_text(encoding="utf-8") and
+   '"name": "PokeTama V12"' in (ROOT/"web/manifest.json").read_text(encoding="utf-8"),
+   "nom public limite a PokeTama V12 sur appareil, Test-2 et Shopify")
+ok("<footer>" not in (ROOT/"web/index.html").read_text(encoding="utf-8") and
+   "<footer>" not in (ROOT/"web/shopify.html").read_text(encoding="utf-8") and
+   "footer1" not in (ROOT/"web/index.html").read_text(encoding="utf-8") and
+   "footer1" not in (ROOT/"web/shopify.html").read_text(encoding="utf-8"),
+   "textes inferieurs retires de Test-2 et de la page officielle")
+ok("0 profil, 1 boite, 2 combat, 3 arenes Kanto, 4 caractere, 5 quotidien, 6 medailles, 7 progres, 8 expedition" in ino and
+   "if (cardPage == 1) renderCardBox();" in ino and
+   "else if (cardPage == 2) renderCardStats();" in ino and
+   "else if (cardPage == 3) renderCardKantoGyms();" in ino and
+   "else if (cardPage == 4) renderCardPersonality();" in ino and
+   "else if (cardPage == 5) renderCardDaily();" in ino and
+   "else if (cardPage == 6) renderCardMedals();" in ino and
+   "else if (cardPage == 7) renderCardProgress();" in ino and
+   "else renderCardExpedition();" in ino and
+   "if(cardPage!=1) boxSelectionDex=0;" in ino,
+   "ordre Profil, Boite, Combat, Arenes puis autres pages synchronise")
+pet_cpp = (ROOT/"pet.cpp").read_text(encoding="utf-8")
+pet_h = (ROOT/"pet.h").read_text(encoding="utf-8")
+ok(all(goal in pet_h for goal in ("DAILY_GOAL_FEED", "DAILY_GOAL_CLEAN")) and
+   "DAILY_GOAL_FEED, DAILY_GOAL_PLAY, DAILY_GOAL_CATCH, DAILY_GOAL_CLEAN" in pet_cpp and
+   "DAILY_GOAL_BATTLE, DAILY_GOAL_CARE, DAILY_GOAL_MEMO" in pet_cpp,
+   "sept missions quotidiennes variees sans doublon")
+ok("itemCounts[reward]++" in pet_cpp and
+   "joy = clamp100((int)joy + 12)" in pet_cpp and
+   "addBond(3)" in pet_cpp and
+   "gfx->print(T(dailyRewardLabelId(reward)))" in ino,
+   "lot quotidien visible avec objet, joie, energie et lien")
+ok("drawDailyGoalRow(136 + i * 66, i)" in ino and
+   "gfx->fillRoundRect(68, y + 38, 326, 7" in ino and
+   "gfx->print(idx + 1)" not in ino,
+   "page Quotidien corrigee sans numeros de cases et progression elargie")
+ok("Btn buttons[5]" in ino and
+   ino.count("for (int i = 0; i < 5; i++)") >= 2 and
+   "drawHomeBattleIcon" not in ino and
+   "drawHomeGamepadIcon" in ino and
+   "if (i == 4)" in ino and "drawBattleCaughtBall" in ino and
+   "if (!pet.sleeping) startBattle();" in ino,
+   "bouton Combat en Pokeball et bouton Mini-jeux en manette pixel-art")
+ok("GAME_MENU_TILES[6]" in ino and "case 5: startRunnerGame()" in ino and
+   "gameMode = 5" in ino and "renderRunnerGame" in ino and
+   "applyRunnerResult" in pet and "trSpe = v > 100 ? 100 : v" in pet and
+   "gameOpen && gameMode == 5) return 33" in ino and
+   "Sprite pixel-art transparent 18x10" in ino,
+   "course fluide a 30 fps, decor enrichi, score lisible et vraie manette pixel-art")
+audio_cpp = (ROOT/"audio.cpp").read_text(encoding="utf-8")
+audio_h = (ROOT/"audio.h").read_text(encoding="utf-8")
+ok("audioSetMusicEnabled" in audio_cpp and "audioMusicEnabled" in audio_h and
+   'p.putBool("music", on)' in audio_cpp and
+   "!gMusicEnabled || gMode < SOUND_LOW" in audio_cpp,
+   "musique desactivable independamment des sons et interactions")
+ok("maybePlayCareReminder" in ino and
+   "speciesChirpPlay(pet.speciesId)" in ino and
+   "audioMode() != SOUND_OFF" in ino,
+   "cri lors des caresses et rappels de besoins ecran assombri ou eteint")
+ok(all(name in audio_h for name in ("SFX_NEED_SLEEP", "SFX_NEED_HUNGER", "SFX_NEED_HYGIENE")) and
+   all(name in audio for name in ("N_NEED_SLEEP", "N_NEED_HUNGER", "N_NEED_HYGIENE")) and
+   "pet.energy <= pet.fullness" in ino and "pet.fullness <= pet.hygiene" in ino and
+   "speciesChirpPlay(pet.speciesId);  // vrai cri" in ino and
+   "if (pet.sleeping) sfxPlay(SFX_NEED_SLEEP)" in ino,
+   "vrai cri a la caresse et alertes distinctes sommeil faim hygiene")
+ok("void drawBiomeCanvasBackground(uint8_t biome)" in ino and
+   '#include "radar_biomes.h"' in ino and "RADAR_BIOME_RUNS[index]" in ino and
+   "radarRadius[4]={48,92,136,180}" in ino and
+   "drawBiomeCanvasBackground(biomeSelected);" in ino and
+   "if (biomeSelected<6) drawBattleBackgroundBiome" not in ino,
+   "radar de recherche sur les sept pixel arts de biomes sans ancien fond")
+ok("drawBiomeCanvasBackground(biome);" in ino and
+   "drawBattleBackgroundBiome" not in ino and "drawSkyBiomeBackground" not in ino and
+   '#include "battle_backgrounds.h"' not in ino,
+   "sept decors Canvas du radar reutilises comme fonds de combat")
+cries_web=(ROOT/"web/cries-installer.js").read_text(encoding="utf-8")
+ok("/cries/%03u.wav" in audio and "WAVE" in audio and "playSpeciesChirp" in audio and
+   "PREPARE_CRIES" in sdmon and 'SD_MMC.mkdir("/cries")' in sdmon and
+   "PokeAPI/cries" in cries_web and "for(let id=1;id<=386;id++)" in cries_web and
+   "TARGET_RATE=16000" in cries_web and "audioBufferToWav16" in cries_web,
+   "386 cris fideles convertis en WAV 16 kHz sur SD avec secours synthetique")
+ok('id="cries"' in (ROOT/"web/index.html").read_text(encoding="utf-8") and
+   'id="cries"' in (ROOT/"web/shopify.html").read_text(encoding="utf-8") and
+   "cries-installer.js?v=1.50.0" in (ROOT/"web/index.html").read_text(encoding="utf-8"),
+   "bouton Cris integre aux importateurs USB GitHub et Shopify")
+ok("Verifier que la page correspond exactement au firmware" in workflow and
+   'grep -q \'id="cries"\' web/index.html' in workflow and
+   (ROOT/"ENVOYER_FIRMWARE_ET_PAGE_OFFICIELLE.bat").exists() and
+   "Firmware et page officielle" in (ROOT/"ENVOYER_TEST_1.bat").read_text(encoding="utf-8"),
+   "firmware et page officielle publies ensemble avec verification bloquante")
+ok("ageMinutes % 5 == 0) fullness" in pet_cpp and
+   "ageMinutes % 6 == 0) energy" in pet_cpp and
+   "ageMinutes % 6 == 0) hygiene" in pet_cpp and
+   "ageMinutes % 6 == 0) joy" in pet_cpp,
+   "baisse des quatre jauges ralentie a plusieurs heures")
+ok("/save/profiles/p%03d%s" in pet_cpp and
+   "writeSdStoredProfile(speciesId, p)" in pet_cpp and
+   "readSdStoredProfile(dex, p)" in pet_cpp and
+   "profileChecksum" in pet_cpp,
+   "niveau et profil individuel de chaque Pokemon sauvegardes sur microSD avec CRC")
+ok("Migration transparente des profils des anciennes versions" in pet_cpp and
+   "for (int16_t dex=1; dex<=DEX_COUNT; dex++)" in pet_cpp,
+   "anciens profils NVS migres sur microSD sans effacer la collection")
+privacy_audit = (ROOT/"tools/audit_no_personal_save.py").read_text(encoding="utf-8")
+workflow = (ROOT/".github/workflows/pages.yml").read_text(encoding="utf-8")
+ok("aucune sauvegarde personnelle" in privacy_audit and
+   "audit_no_personal_save.py" in workflow and
+   "audit_no_personal_save.py" in (ROOT/"tools/build_web.sh").read_text(encoding="utf-8"),
+   "publication bloquee automatiquement si une sauvegarde personnelle est detectee")
 ok('location.replace("https://moretro3d.fr/pages/poketama")' in (ROOT/"web/index.html").read_text(encoding="utf-8") and
    'https://moretro3d.github.io/Test-1/manifest.json' in (ROOT/"web/shopify.html").read_text(encoding="utf-8"),
    "GitHub Pages redirige vers Shopify et conserve le Web Flasher officiel")
@@ -37,7 +143,7 @@ ok("github.repository == 'Moretro3D/Test-2'" in workflow and
    "! grep -q 'location.replace' web/index.html" in workflow,
    "Test-2 affiche son Web Flasher sans redirection Shopify")
 test2_launcher=(ROOT/"OUVRIR_WEB_FLASHER_TEST_2.bat").read_text(encoding="utf-8")
-ok("https://moretro3d.github.io/Test-2/?v=1.48.0-moretro3d-v12-sky-biome" in test2_launcher,
+ok("https://moretro3d.github.io/Test-2/?v=1.50.7-moretro3d-v12-biome-battles-clean" in test2_launcher,
    "lanceur direct Test-2 avec contournement du cache")
 scene=ino[ino.index("void drawScene("):ino.index("void drawStarterPokeball(")]
 ok("HORIZON-38" not in scene and "uint16_t sea=" not in scene and
@@ -66,10 +172,11 @@ ok("galleryFilter" not in ino and "S_FILTER_ALL" not in ino and
    "Pokedex sans filtres ni mentions eleve/capture")
 ok("drawBattleCaughtBall(350,354,24,26)" not in ino,
    "aucun pictogramme de capture personnel dans le Pokedex")
-ok("#define GAL_ROWS 4" in ino and "#define GAL_PAGE_SIZE (GAL_COLS * GAL_ROWS)" in ino and
+ok("#define GAL_ROWS 3" in ino and "#define GAL_PAGE_SIZE (GAL_COLS * GAL_ROWS)" in ino and
    "galleryPage * GAL_PAGE_SIZE" in ino and
-   "snprintf(caught,sizeof(caught),T(S_CAUGHT_COUNT_FMT),(unsigned)pet.caughtCount())" not in ino,
-   "Pokedex en grille 4x4 sans compteur de captures")
+   "pokedexSeenLabel()" in ino and "pet.knownDexCount()" in ino and
+   "pet.caughtCount(),(unsigned)DEX_COUNT" not in ino,
+   "Pokedex en grille 4x3 avec compteur des Pokemon vus")
 ok("switchToCaught(galleryDetail)" not in ino and
    "drawPokedexInfoPopup(galleryDetail)" in ino and
    "galleryInfoOpen=true" in ino and
@@ -79,7 +186,7 @@ ok("switchToCaught(galleryDetail)" not in ino and
 ok("boxSelectionDex=dex" in ino and
    "pet.switchToCaught(dex)" in ino and
    "const char *care=T(S_CARE_ACTION)" in ino and
-   "galleryDetail = dex;" not in ino[ino.index("else if (cardPage == 3)"):ino.index("else if (cardPage == 4")],
+   "galleryDetail = dex;" not in ino[ino.index("else if (cardPage == 1)"):ino.index("else if (cardPage == 2")],
    "popup S'occuper selectionne le compagnon sans quitter la Boite")
 ok("confirmUntil" not in ino and "pet.release();" not in ino,
    "relachement par appui long totalement retire de l'accueil")
@@ -111,9 +218,14 @@ ok("light sleep" not in ino and "Sans erase garde save" not in ino and
 
 # Fiche
 ok('const char *cardBack=T(S_LAN_BACK)' in ino, "bouton RETOUR fiche traduit")
-ok("#define CARD_COUNT 10" in ino and "renderCardKantoGyms" in ino and
+ok("#define CARD_COUNT 9" in ino and "renderCardKantoGyms" in ino and
+   "else if (cardPage == 8) renderCardRecords()" not in ino and
    "KANTO_LEADER_DEX[8] = { 95, 121, 26, 45, 110, 65, 59, 112 }" in ino,
-   "page des huit arenes de Kanto et Pokemon emblematiques")
+   "page Records retiree et huit arenes conservees")
+ok("gfx->fillRoundRect(54,94,220,166,18,uiPanel())" in ino and
+   "drawCollectionFrame(164,174,72,pet.collectionFrame)" in ino and
+   "SERIE / MAX" in ino and "berryLabel[LANG_COUNT]" in ino,
+   "fiche Pokemon reorganisee avec portrait et informations separees")
 ok("const char *title=kantoArenaTitle()" in ino and
    ino.index("const char *title=kantoArenaTitle()") > ino.index("if (kantoArenaDetail >= 0)") and
    "gfx->setCursor(CX-(int)strlen(count)*6,64)" in ino,
@@ -141,7 +253,7 @@ ok("void drawKantoArenaBackground(uint8_t index)" in ino and
    "drawKantoBadge(120,246,i" in ino,
    "huit fonds d'arene thematiques et champion decale dans le cadre")
 ok("gfx->fillRoundRect(136,302,194,46,12,UI_BAR_BAD)" in ino and
-   "cardPage == 9 && kantoArenaDetail >= 0" in ino and
+   "cardPage == 3 && kantoArenaDetail >= 0" in ino and
    "int x=(i&1)?242:54, y=94+(i/2)*52" in ino,
    "retour doublon retire, retour inferieur actif et badges agrandis descendus")
 ok('prefs.putUChar("kbadge", kantoBadges)' in pet and
@@ -290,8 +402,15 @@ ok("void drawHomeGymCabin(uint8_t phase, uint8_t biome)" in ino and
    "Toit rouge étagé, large et immédiatement lisible" in ino and
    "Grand emblème Poké Ball centré dans le fronton" in ino and
    "Deux colonnes épaisses encadrent les doubles portes" in ino and
-   "cardPage = 9" in ino and "kantoArenaDetail = -1" in ino,
+   "cardPage = 3" in ino and "kantoArenaDetail = -1" in ino,
    "arene Pokemon pixel art tactile ouvrant directement les arenes Kanto")
+ok('showHomeGym = p.getBool("homegym", true)' in ino and
+   'p.putBool("homegym", showHomeGym)' in ino and
+   "displayArenaLabel()" in ino and
+   "showHomeGym?T(S_ON):T(S_OFF)" in ino and
+   "if(showHomeGym)" in ino and
+   "if (showHomeGym && x >= 155" in ino,
+   "reglage Affichage Arenes persistant et zone tactile desactivee avec le decor")
 ok('#include "home_habitat_sprites.h"' in ino and
    "void drawHomeHabitatGround(uint8_t biome)" in ino and
    "drawHomeHabitatGround(b)" in ino and
@@ -377,12 +496,26 @@ ok("pickWildSpeciesForBiome" in battle and
    "testBiomeSelectionAlwaysMatchesChosenBiome" in (ROOT/"tests/battle_tests.cpp").read_text(encoding="utf-8"),
    "tirage sauvage filtre et teste sur six habitats plus le biome Ciel reserve au type Vol")
 ok("biomeSelectOpen" in ino and "renderBiomeSelection" in ino and
-   "drawBattleBackgroundBiome(biomeSelected)" in ino and
-   "drawSkyBiomeBackground()" in ino and
+   "drawBiomeCanvasBackground(biomeSelected)" in ino and
    "battleEnvironmentBiome" in ino and
    "biomeSearchUntil=millis()+2400UL" in ino and
    "startBattleWith(foundDex, foundLevel, -1)" in ino,
    "selection de biome et exploration animee avant revelation")
+ok("void biomeBubblePosition" in ino and
+   "gfx->fillCircle(cx,cy,44,colors[biome])" in ino and
+   "dx*dx+dy*dy>58L*58L" in ino and
+   "UI_BLACK" not in ino,
+   "sept petites bulles de biome avec zones tactiles circulaires")
+thumb=(ROOT/"biome_thumbnails.h").read_text(encoding="utf-8")
+ok('#include "biome_thumbnails.h"' in ino and
+   "BIOME_THUMB_PIXELS[index]" in ino and "BIOME_THUMB_PALETTES[index]" in ino and
+   "#define BIOME_THUMB_W 88" in thumb and "#define BIOME_THUMB_H 88" in thumb and
+   "drawBiomeIcon(biome,cx,cy);" in ino and
+   all(f"BIOME_{name}_PIXELS" in thumb for name in
+       ("PRAIRIE","PLAGE","FORET","VOLCAN","MONTAGNE","NEIGE","CIEL")) and
+   all((ROOT/"assets/biome_thumbnails_canva"/f"{name}.png").exists() for name in
+       ("prairie","plage","foret","volcan","montagne","neige","ciel")),
+   "sept images Canva etirees bord a bord dans leurs bulles")
 music=ROOT/"tools/sdcard/music"
 for filename in ("morning.wav", "lofi.wav", "night.wav"):
     with wave.open(str(music/filename), "rb") as wav:
@@ -441,12 +574,11 @@ ok(all(f'(\"{name}\",' in ground_generator for name in
    (ROOT/"tools/generate_battle_ground_map.py").exists() and
    len((ROOT/"assets/battle-ground-map-386.csv").read_text(encoding="utf-8").splitlines())==387,
    "sept sols semantiques et affectation des 386 Pokemon audites")
-ok('#include "battle_backgrounds.h"' in ino and
-   "drawBattleBackgroundBiome(biome)" in ino and
-   "sourcePhase=(phase==3)?2:(phase==1?0:1)" in ino and
-   "(uint32_t)(sy+1)*320/BATTLE_BG_H" in ino and
-   "gfx->fillRect(-23+sx*2,dy,take*2,dy2-dy,color)" in ino,
-   "18 fonds DP plein cadre par habitat et moment de la journee")
+ok('#include "radar_biomes.h"' in ino and
+   "drawBiomeCanvasBackground(biome);" in ino and
+   "RADAR_BIOME_RUN_COUNTS[index]" in ino and
+   "gfx->fillRect(x*2,y*2,length*2,2" in ino,
+   "sept fonds Canvas plein cadre partages entre radar et combats")
 ok("void drawBattleStatusBar" in ino and
    "void drawBattleSex" in ino and
    "battleSpeciesGenderless" in ino and
@@ -496,4 +628,4 @@ if shutil.which("bash"):
 else:
     print("SKIP build_web.sh syntaxe (bash absent sur ce poste)")
 
-print("AUDIT FINAL V9 OK")
+print("AUDIT FINAL V12 OK")

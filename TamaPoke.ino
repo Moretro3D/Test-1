@@ -29,17 +29,18 @@
 #include "battle_ball_icon.h"
 #include "battle_bases.h"
 #include "battle_ground_map.h"
-#include "battle_backgrounds.h"
 #include "box_backgrounds.h"
 #include "battle_sprite_layout.h"
 #include "kanto_leader_sprites.h"
 #include "kanto_badge_sprites.h"
 #include "home_gym_sprite.h"
 #include "home_habitat_sprites.h"
+#include "biome_thumbnails.h"
+#include "radar_biomes.h"
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.48.0-moretro3d-v12-sky-biome"
+#define FW_VERSION "1.50.7-moretro3d-v12-biome-battles-clean"
 #define HELP_PAGE_COUNT 6
 #define HELP_LINE_COUNT 6
 
@@ -84,7 +85,7 @@ PmdMon galleryPmd;  // sprite grande de la vista detalle de la galeria (PMD/TPK2
 // galeria pokedex
 bool galleryOpen = false;
 bool galleryDirty = false;
-int galleryPage = 0;        // 10 paginas de 16
+int galleryPage = 0;        // pages de 12 Pokemon, grille 4 x 3
 int16_t galleryDetail = 0;  // dex en vista detalle, 0 = rejilla
 bool galleryInfoOpen = false;
 
@@ -93,8 +94,8 @@ bool cardOpen = false;        // ficha del bicho (deslizar vertical)
 bool kbOpen = false;          // teclado para renombrar al bicho
 char nameBuf[12] = "";
 uint8_t nameLen = 0;
-#define CARD_COUNT 10
-uint8_t cardPage = 0;         // 0 profil, 1 caractere, 2 quotidien, 3 boite, 4 combat, 5 medailles, 6 progres, 7 expedition, 8 records, 9 arenes Kanto
+#define CARD_COUNT 9
+uint8_t cardPage = 0;         // 0 profil, 1 boite, 2 combat, 3 arenes Kanto, 4 caractere, 5 quotidien, 6 medailles, 7 progres, 8 expedition
 uint8_t boxPage = 0;
 uint8_t boxSort = 0;          // 0 dex, 1 tipo, 2 criados primero
 int16_t boxSelectionDex = 0;  // popup de choix, sans quitter la Boite
@@ -104,6 +105,7 @@ bool clockOpen = false;       // pantalla de ajuste de hora (deslizar abajo)
 int clockH = 12, clockM = 0;  // hora en edicion
 bool powerSave = false;       // ahorro opcional: off por defecto
 bool darkMode = false;        // thème sombre manuel, persistant
+bool showHomeGym = true;      // affiche l'arene et son raccourci sur l'accueil
 uint8_t settingsPage = 0;     // 0 = réglages principaux, 1 = affichage/cadres
 uint8_t boxBgPreview = 0;
 bool helpOpen = false;
@@ -127,7 +129,7 @@ uint32_t nextAmbientSoundAt = 0;
 // minijuego "toques": mantener la pokeball en el aire
 bool gameOpen = false;
 bool gameMenuOpen = false;
-uint8_t gameMode = 0;  // 0 ball, 1 catch, 2 memo
+uint8_t gameMode = 0;  // 0 ball, 1 catch, 2 memo, 3 clean, 4 type, 5 runner
 uint32_t gameOverUntil = 0;
 float ballX, ballY, ballVX, ballVY, gamePetX;
 uint8_t gameScore, gameMisses;
@@ -151,6 +153,9 @@ bool cleanAlive[4] = { false };
 uint32_t cleanUntil = 0, cleanSpawnAt = 0;
 uint8_t cleanActive = 0;
 uint8_t typeEnemy = TYPE_GRASS;
+float runnerY = 0, runnerVY = 0, runnerObstacleX = 0;
+uint32_t runnerLastFrameAt = 0;
+bool runnerGrounded = true;
 uint8_t typeChoice[3] = { TYPE_FIRE, TYPE_WATER, TYPE_GRASS };
 uint8_t typeCorrect = 0;
 uint32_t typeUntil = 0;
@@ -267,6 +272,7 @@ void loadDarkMode() {
   Preferences p;
   p.begin("tamapoke", true);
   darkMode = p.getBool("darkui", false);
+  showHomeGym = p.getBool("homegym", true);
   p.end();
 }
 
@@ -277,6 +283,15 @@ void setDarkMode(bool on) {
   p.putBool("darkui", darkMode);
   p.end();
   uiDirty = cardDirty = galleryDirty = clockDirty = helpDirty = true;
+}
+
+void setHomeGymVisible(bool on) {
+  showHomeGym = on;
+  Preferences p;
+  p.begin("tamapoke", false);
+  p.putBool("homegym", showHomeGym);
+  p.end();
+  uiDirty = clockDirty = true;
 }
 
 // Palette dynamique de l'interface. Les sprites conservent leurs vraies couleurs.
@@ -311,12 +326,13 @@ struct Btn {
   int8_t iconDx;
   int8_t iconDy;
 };
-Btn buttons[4] = {
+Btn buttons[5] = {
   // cx, cy, sprite, cadre, icone, tactile, dx, dy
-  { 140, 390, SPR_ICON_FOOD,  52, 32, 36, 0, 0 },
-  { 202, 404, SPR_ICON_PLAY,  52, 28, 36, 0, 0 },
-  { 264, 404, SPR_ICON_LIGHT, 52, 32, 36, 0, 0 },
-  { 326, 390, SPR_ICON_CLEAN, 52, 32, 36, 0, 0 },
+  { 108, 388, SPR_ICON_FOOD,  52, 32, 30, 0, 0 },
+  { 170, 408, SPR_ICON_PLAY,  52, 28, 30, 0, 0 },
+  { 233, 416, SPR_ICON_LIGHT, 52, 32, 30, 0, 0 },
+  { 296, 408, SPR_ICON_CLEAN, 52, 32, 30, 0, 0 },
+  { 358, 388, SPR_ICON_PLAY,  52, 28, 30, 0, 0 }, // combat direct
 };
 
 // grietas del huevo (pixeles 'k' sobre el sprite)
@@ -457,10 +473,10 @@ void setup() {
   gfx->setTextSize(3);
   // 9 caracteres x 6 px x taille 3 = 162 px : centre exact a x=152.
   gfx->setCursor(CX - 79, 326); gfx->print("Moretro3D");
-  // Version publique V12 : exploration des biomes avec environnement Ciel.
+  // Version publique V12 : sept miniatures pixel-art reellement embarquees.
   gfx->setTextColor(C565(0x61,0xda,0xf2));
   gfx->setTextSize(2);
-  gfx->setCursor(CX - 24, 366); gfx->print("V12");
+  gfx->setCursor(CX - 18, 366); gfx->print("V12");
   gfx->flush();
   panel->setBrightness(120);
 
@@ -536,7 +552,7 @@ void ensureMon() {
 }
 
 bool mainScreenReadyForAmbientSound() {
-  if (audioMode() < SOUND_LOW || screenOff || dimStage > 0) return false;
+  if (!audioMusicEnabled() || audioMode() < SOUND_LOW || screenOff || dimStage > 0) return false;
   // La musique reste continue dans toutes les pages et tous les menus. Elle ne
   // doit pas etre rechargee ni redemarree lors du retour a l'accueil.
   if (pet.sleeping || pet.ceremony) return false;
@@ -559,10 +575,27 @@ void maybePlayAmbientSound(uint32_t now) {
   nextAmbientSoundAt = now + 10;
 }
 
+void maybePlayCareReminder(uint32_t now) {
+  // Le Pokemon peut appeler le joueur lorsque l'ecran est eteint ou assombri.
+  // Une alerte au maximum toutes les 15 minutes evite les sons repetitifs.
+  static uint32_t nextReminderAt = 0;
+  if (nextReminderAt == 0) { nextReminderAt = now + 15UL * 60UL * 1000UL; return; }
+  if (now < nextReminderAt || audioMode() == SOUND_OFF) return;
+  if ((!screenOff && dimStage == 0) || pet.isEgg() || pet.sleeping || pet.ceremony) return;
+  if (pet.lowestStat() >= 25) { nextReminderAt = now + 15UL * 60UL * 1000UL; return; }
+  if (pet.energy < 25 && pet.energy <= pet.fullness && pet.energy <= pet.hygiene) sfxPlay(SFX_NEED_SLEEP);
+  else if (pet.fullness < 25 && pet.fullness <= pet.hygiene) sfxPlay(SFX_NEED_HUNGER);
+  else if (pet.hygiene < 25) sfxPlay(SFX_NEED_HYGIENE);
+  else sfxPlay(SFX_HEART);
+  speciesChirpPlay(pet.speciesId);
+  nextReminderAt = now + 15UL * 60UL * 1000UL;
+}
+
 uint16_t renderIntervalMs() {
   if (screenOff) return 5000;
 
   if (battleOpen) return battleResolved ? 210 : 125;
+  if (gameOpen && gameMode == 5) return 33;  // course fluide a environ 30 images/s
   if (gameOpen || sackOpen) return 78;
 
   // Pages statiques pilotées par Dirty : faible latence sans redraw permanent.
@@ -644,6 +677,7 @@ void loop() {
   pet.ensureDailyGoals();
   maybeOfferWildEncounter(now);
   maybeOfferPetEvent(now);
+  maybePlayCareReminder(now);
   maybePlayAmbientSound(now);
 
   // Le combat est statique entre deux actions. Seules l'entree Shiny et la
@@ -692,7 +726,7 @@ void loop() {
   // Die Expeditionskarte bleibt sonst als statischer Screen stehen. Ein
   // sekundenweises Dirty-Render ist nur aktiv, waehrend ihr Countdown sichtbar ist.
   static uint32_t lastExpeditionCardTick = 0;
-  if (cardOpen && cardPage == 7 && now - lastExpeditionCardTick >= 1000UL) {
+  if (cardOpen && cardPage == 8 && now - lastExpeditionCardTick >= 1000UL) {
     lastExpeditionCardTick = now;
     cardDirty = true;
   }
@@ -744,7 +778,7 @@ void loop() {
   bool expeditionActiveNow = pet.expeditionActive(pet.lastSeenEpoch);
   if (expeditionWasActive && !expeditionActiveNow && pet.expeditionEndEpoch) {
     sfxPlay(SFX_EXPEDITION_FOUND);
-    if (cardOpen && cardPage == 7) cardDirty = true;
+    if (cardOpen && cardPage == 8) cardDirty = true;
   }
   expeditionWasActive = expeditionActiveNow;
 
@@ -1114,16 +1148,17 @@ struct GameMenuTile {
   uint8_t game;
 };
 
-static const GameMenuTile GAME_MENU_TILES[5] = {
-  { 88, 156, 138, 58, 0 },
-  { 240, 156, 138, 58, 1 },
-  { 88, 226, 138, 58, 2 },
-  { 240, 226, 138, 58, 3 },
-  { 94, 296, 278, 62, 4 },
+static const GameMenuTile GAME_MENU_TILES[6] = {
+  { 88, 150, 138, 54, 0 },
+  { 240, 150, 138, 54, 1 },
+  { 88, 214, 138, 54, 2 },
+  { 240, 214, 138, 54, 3 },
+  { 88, 278, 138, 54, 4 },
+  { 240, 278, 138, 54, 5 },
 };
 
 int8_t gameMenuHit(int16_t x, int16_t y) {
-  for (uint8_t i = 0; i < 5; i++) {
+  for (uint8_t i = 0; i < 6; i++) {
     const GameMenuTile &t = GAME_MENU_TILES[i];
     if (x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h) return i;
   }
@@ -1137,6 +1172,7 @@ void startGameMenuChoice(uint8_t idx) {
     case 2: startMemoGame(); break;
     case 3: startCleanGame(); break;
     case 4: startTypeGame(); break;
+    case 5: startRunnerGame(); break;
   }
 }
 
@@ -1269,7 +1305,7 @@ void onTap(int16_t x, int16_t y) {
       return;
     }
     if (x >= 136 && x <= 330 && y >= cardNavY && y <= cardNavY + 58) {
-      if (cardPage == 9 && kantoArenaDetail >= 0) {
+      if (cardPage == 3 && kantoArenaDetail >= 0) {
         kantoArenaDetail = -1;
         galleryPmd.unload();
         cardDirty = true;
@@ -1282,7 +1318,7 @@ void onTap(int16_t x, int16_t y) {
       return;
     }
     if (cardPage == 0 && y < 84) openKeyboard();  // tocar el nombre = renombrar
-    else if (cardPage == 3) {
+    else if (cardPage == 1) {
       if(boxSelectionDex>0) {
         if(y>=254 && y<=296 && x>=82 && x<=226) {
           if(pet.toggleBoxFavorite(0,boxSelectionDex)) {
@@ -1352,19 +1388,19 @@ void onTap(int16_t x, int16_t y) {
           lockTouchBrief();
         }
       }
-    } else if (cardPage == 4 && y >= 264 && y <= 310 && x >= 82 && x <= 384) {
+    } else if (cardPage == 2 && y >= 264 && y <= 310 && x >= 82 && x <= 384) {
       cardOpen = false;
       markUiDirty();
       lockTouchBrief();
       startBattle();
-    } else if (cardPage == 4 && y >= 312 && y <= 358 && x >= 82 && x <= 384) {
+    } else if (cardPage == 2 && y >= 312 && y <= 358 && x >= 82 && x <= 384) {
       cardOpen = false;            // boton ENTRENAR FUERZA
       markUiDirty();
       lockTouchBrief();
       startSack();
-    } else if (cardPage == 7) {
+    } else if (cardPage == 8) {
       expeditionCardTap(x, y);
-    } else if (cardPage == 9) {
+    } else if (cardPage == 3) {
       if (kantoArenaDetail >= 0) {
         if (x >= 136 && x <= 330 && y >= 302 && y <= 348) {
           uint8_t arena = (uint8_t)kantoArenaDetail;
@@ -1458,9 +1494,9 @@ void onTap(int16_t x, int16_t y) {
     return;
   }
   // Raccourci permanent : toucher la cabane du décor ouvre les arènes.
-  if (x >= 155 && x <= 311 && y >= 122 && y <= 270) {
+  if (showHomeGym && x >= 155 && x <= 311 && y >= 122 && y <= 270) {
     cardOpen = true;
-    cardPage = 9;
+    cardPage = 3;
     kantoArenaDetail = -1;
     galleryPmd.unload();
     cardDirty = true;
@@ -1479,7 +1515,7 @@ void onTap(int16_t x, int16_t y) {
     choiceKind = 1; choiceUntil = millis() + 12000;
     return;
   }
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 5; i++) {
     int dx = x - buttons[i].cx, dy = y - buttons[i].cy;
     int hit = buttons[i].hitRadius;
     if (dx * dx + dy * dy <= hit * hit) {
@@ -1499,8 +1535,12 @@ void onTap(int16_t x, int16_t y) {
         }
       } else if (i == 2) {
         pet.toggleLight();
-      } else {
+        if (pet.sleeping) sfxPlay(SFX_NEED_SLEEP);
+      } else if (i == 3) {
         startBath();
+      } else {
+        if (!pet.sleeping) startBattle();
+        else sfxPlay(SFX_DENY);
       }
       return;
     }
@@ -1514,8 +1554,12 @@ void onTap(int16_t x, int16_t y) {
     else if (r & PET_INTERACT_JOY) msg = S_HAPPY_FB;
     snprintf(petEventMsg, sizeof(petEventMsg), "%s", T(msg));
     petEventFeedbackUntil = millis() + 1600;
-    if (!pet.sleeping) sfxPlay((r & PET_INTERACT_BOND) ? SFX_HEART : SFX_TAP);
-    if (r != PET_INTERACT_NONE && audioMode() == SOUND_FULL) speciesChirpPlay(pet.speciesId);
+    if (r != PET_INTERACT_NONE && audioMode() != SOUND_OFF) {
+      speciesChirpPlay(pet.speciesId);  // vrai cri /cries/xxx.wav si installe
+      if (r & PET_INTERACT_BOND) sfxPlay(SFX_HEART);
+    } else if (!pet.sleeping) {
+      sfxPlay(SFX_TAP);
+    }
   }
 }
 
@@ -1772,8 +1816,10 @@ void drawScene(uint8_t biome, uint32_t now, bool night) {
   // Les sols restent au fond. L'îlot aquatique puis l'arène sont dessinés
   // devant afin que la façade et les marches ne soient plus masquées.
   drawHomeHabitatGround(b);
-  drawHomeGymPlatform(b,phase);
-  drawHomeGymCabin(phase,b);
+  if(showHomeGym) {
+    drawHomeGymPlatform(b,phase);
+    drawHomeGymCabin(phase,b);
+  }
 }
 
 void drawStarterPokeball(int cx, int cy, int r) {
@@ -2118,9 +2164,10 @@ void drawGameMenu() {
   const char *title = T(S_GOAL_PLAY);
   gfx->setCursor(CX - strlen(title) * 9, 124);
   gfx->print(title);
-  const char *labels[5] = { T(S_GAME_BALL), T(S_GAME_CATCH), T(S_GAME_MEMO), T(S_GAME_CLEAN), T(S_GAME_TYPE) };
-  uint16_t cols[5] = { UI_BAR_BAD, UI_BAR_WARN, 0x4C98, UI_BAR_OK, 0xF3B7 };
-  for (int i = 0; i < 5; i++) {
+  static const char *runnerLabels[LANG_COUNT] = { "CORRER", "RUN", "COURSE", "LAUF", "CORSA", "CORRIDA" };
+  const char *labels[6] = { T(S_GAME_BALL), T(S_GAME_CATCH), T(S_GAME_MEMO), T(S_GAME_CLEAN), T(S_GAME_TYPE), runnerLabels[gLang < LANG_COUNT ? gLang : LANG_EN] };
+  uint16_t cols[6] = { UI_BAR_BAD, UI_BAR_WARN, 0x4C98, UI_BAR_OK, 0xF3B7, 0x7D8C };
+  for (int i = 0; i < 6; i++) {
     const GameMenuTile &t = GAME_MENU_TILES[i];
     gfx->fillRoundRect(t.x, t.y, t.w, t.h, 14, cols[i]);
     gfx->drawRoundRect(t.x, t.y, t.w, t.h, 14, uiInk());
@@ -2279,6 +2326,23 @@ void startTypeGame() {
   sfxPlay(SFX_GAME_START);
 }
 
+void startRunnerGame() {
+  if (pet.isEgg() || pet.sleeping || pet.ceremony) return;
+  gameMenuOpen = false;
+  gameOpen = true;
+  gameMode = 5;
+  gameOverUntil = 0;
+  gameScore = 0;
+  gameGain = 0;
+  gameNewHi = false;
+  runnerY = 315;
+  runnerVY = 0;
+  runnerObstacleX = 438;
+  runnerGrounded = true;
+  runnerLastFrameAt = millis();
+  sfxPlay(SFX_GAME_START);
+}
+
 void respawnBall() {
   ballX = 112 + random(242);
   ballY = 82;
@@ -2296,6 +2360,16 @@ int ballHitRadius() {
 }
 
 void gameTap(int16_t x, int16_t y) {
+  if (gameMode == 5) {
+    if (gameOverUntil) return;
+    if (y < 72) { gameOpen = false; sfxPlay(SFX_TAP); return; }
+    if (runnerGrounded) {
+      runnerVY = -9.8f;
+      runnerGrounded = false;
+      sfxPlay(SFX_TAP);
+    }
+    return;
+  }
   if (gameMode == 1) {
     catchTap(x, y);
     return;
@@ -2447,6 +2521,13 @@ void finishTypeGame() {
   gameGain = pet.applyTypeResult(gameScore);
   sfxPlay(gameNewHi && gameScore > 0 ? SFX_MEDAL : SFX_LEVEL);
   gameOverUntil = millis() + 4000;
+}
+
+void finishRunnerGame() {
+  if (gameOverUntil) return;
+  gameGain = pet.applyRunnerResult(gameScore);
+  sfxPlay(gameScore >= 6 ? SFX_LEVEL : SFX_MINIGAME_BAD);
+  gameOverUntil = millis() + 4200;
 }
 
 void typeTap(int16_t x, int16_t y) {
@@ -2907,12 +2988,123 @@ void renderTypeGame() {
   gfx->flush();
 }
 
+void drawRunnerCreature(int x, int y) {
+  const uint16_t body = C565(0x35, 0x42, 0x5d);
+  const uint16_t light = C565(0x62, 0xd6, 0xb3);
+  const uint16_t ink = C565(0x12, 0x18, 0x29);
+  gfx->fillRect(x + 7, y + 5, 20, 17, body);
+  gfx->fillRect(x + 17, y, 15, 13, body);
+  gfx->fillRect(x + 1, y + 13, 12, 6, body);
+  gfx->fillRect(x + 9, y + 20, 6, 9, body);
+  gfx->fillRect(x + 22, y + 20, 6, 9, body);
+  gfx->fillRect(x + 25, y + 4, 3, 3, light);
+  gfx->fillRect(x + 28, y + 10, 4, 3, ink);
+}
+
+void renderRunnerGame() {
+  const int groundY = 344;
+  const int runnerX = 108;
+  uint32_t now = millis();
+  uint32_t elapsed = now - runnerLastFrameAt;
+  if (elapsed > 120) elapsed = 120;
+  runnerLastFrameAt = now;
+  float step = elapsed / 16.0f;
+
+  if (!gameOverUntil) {
+    runnerVY += 0.72f * step;
+    runnerY += runnerVY * step;
+    if (runnerY >= 315) {
+      runnerY = 315;
+      runnerVY = 0;
+      runnerGrounded = true;
+    }
+    runnerObstacleX -= (4.2f + (gameScore > 20 ? 3.0f : gameScore * 0.15f)) * step;
+    if (runnerObstacleX < -28) {
+      runnerObstacleX = 470 + random(70, 170);
+      if (gameScore < 250) gameScore++;
+      sfxPlay(SFX_MINIGAME_OK);
+    }
+    int ox = (int)runnerObstacleX;
+    if (runnerX + 29 > ox + 3 && runnerX + 4 < ox + 23 && (int)runnerY + 29 > groundY - 35) {
+      finishRunnerGame();
+    }
+  }
+
+  uint16_t skyTop = C565(0x75, 0xc9, 0xef);
+  uint16_t skyMid = C565(0xae, 0xe1, 0xf3);
+  uint16_t skyLow = C565(0xe8, 0xf4, 0xe8);
+  uint16_t cloud = C565(0xf8, 0xfc, 0xff);
+  uint16_t grass = C565(0x68, 0xc6, 0x58);
+  uint16_t grassDark = C565(0x3e, 0x91, 0x45);
+  uint16_t dirt = C565(0xa8, 0x72, 0x47);
+  uint16_t ink = C565(0x16, 0x20, 0x35);
+  static const char *const runTitle[LANG_COUNT] = { "CARRERA", "RUN", "COURSE", "LAUF", "CORSA", "CORRIDA" };
+  static const char *const jumpHint[LANG_COUNT] = { "TOCA PARA SALTAR", "TOUCH TO JUMP", "TOUCHE POUR SAUTER", "TIPPE ZUM SPRUNG", "TOCCA PER SALTARE", "TOCA PARA SALTAR" };
+  static const char *const agilityWord[LANG_COUNT] = { "AGILIDAD", "AGILITY", "AGILITE", "BEWEGLICHKEIT", "AGILITA", "AGILIDADE" };
+  uint8_t uiLang = gLang < LANG_COUNT ? gLang : LANG_EN;
+  gfx->fillRect(0, 0, 466, 120, skyTop);
+  gfx->fillRect(0, 120, 466, 120, skyMid);
+  gfx->fillRect(0, 240, 466, groundY - 240, skyLow);
+  // Nuages pixel-art et collines en couches : aucun grand aplat vide.
+  gfx->fillRect(38, 92, 88, 12, cloud); gfx->fillRect(54, 82, 54, 10, cloud);
+  gfx->fillRect(316, 132, 104, 12, cloud); gfx->fillRect(337, 120, 60, 12, cloud);
+  gfx->fillTriangle(0, groundY, 112, 244, 226, groundY, C565(0x87, 0xbe, 0x73));
+  gfx->fillTriangle(166, groundY, 315, 230, 466, groundY, C565(0x72, 0xac, 0x69));
+  gfx->fillRect(0, groundY, 466, 10, grass);
+  gfx->fillRect(0, groundY + 10, 466, 112, dirt);
+  for (int x = 0; x < 466; x += 16) gfx->fillRect(x, groundY + ((x / 16) & 1 ? 3 : 0), 8, 4, grassDark);
+  for (int x = -20; x < 486; x += 34) gfx->drawLine(x, groundY + 31, x + 18, groundY + 43, C565(0x80, 0x55, 0x38));
+  drawRunnerCreature(runnerX, (int)runnerY);
+  int ox = (int)runnerObstacleX;
+  gfx->fillRect(ox + 7, groundY - 35, 14, 35, C565(0x31, 0x9b, 0x58));
+  gfx->fillRect(ox, groundY - 24, 9, 8, C565(0x31, 0x9b, 0x58));
+  gfx->fillRect(ox + 19, groundY - 18, 9, 8, C565(0x31, 0x9b, 0x58));
+
+  // Deux pastilles opaques, bien dans la zone ronde, au lieu d'une barre illisible.
+  gfx->fillRoundRect(72, 24, 150, 46, 14, ink);
+  gfx->fillRoundRect(244, 24, 150, 46, 14, ink);
+  gfx->setTextColor(UI_WHITE);
+  gfx->setTextSize(2);
+  gfx->setCursor(147 - strlen(runTitle[uiLang]) * 6, 39);
+  gfx->print(runTitle[uiLang]);
+  char scoreText[18];
+  snprintf(scoreText, sizeof(scoreText), T(S_SCORE_FMT), gameScore);
+  gfx->setCursor(319 - strlen(scoreText) * 6, 39);
+  gfx->print(scoreText);
+
+  if (gameOverUntil) {
+    if (now > gameOverUntil) { gameOpen = false; return; }
+    gfx->fillRoundRect(91, 170, 284, 112, 18, C565(0xf5, 0xfb, 0xff));
+    gfx->drawRoundRect(91, 170, 284, 112, 18, ink);
+    gfx->setTextSize(3);
+    gfx->setCursor(126, 190);
+    gfx->print(scoreText);
+    gfx->setTextSize(2);
+    char gainText[40];
+    snprintf(gainText, sizeof(gainText), "+%u %s", gameGain, agilityWord[uiLang]);
+    gfx->setCursor(CX - strlen(gainText) * 6, 242);
+    gfx->print(gainText);
+  } else {
+    gfx->setTextSize(2);
+    gfx->fillRoundRect(108, 394, 250, 38, 12, C565(0xff, 0xf3, 0xc7));
+    gfx->setTextColor(ink);
+    gfx->setCursor(CX - strlen(jumpHint[uiLang]) * 6, 405);
+    gfx->print(jumpHint[uiLang]);
+  }
+  gfx->flush();
+}
+
 void renderGame() {
   // sin fillScreen(NEGRO): drawGameScene cubre los 466x466 completos. Si el
   // DMA del flush anterior aun lee el buffer, vera contenido valido (no negro
   // a medio pintar), que era el parpadeo a 25 fps.
   bool night = sceneHour() < 6 || sceneHour() >= 20;
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
+
+  if (gameMode == 5) {
+    renderRunnerGame();
+    return;
+  }
 
   if (gameMode == 1) {
     renderCatchGame();
@@ -3148,7 +3340,7 @@ void closeBattle() {
   wildPmd.unload();
   if (returnToArena) {
     cardOpen = true;
-    cardPage = 9;
+    cardPage = 3;
     cardDirty = true;
   }
   markUiDirty();
@@ -3695,29 +3887,6 @@ uint8_t battleTerrainFor(uint8_t type1, uint8_t type2) {
   return 0;
 }
 
-void drawBattleBackgroundBiome(uint8_t biome) {
-  uint8_t phase=currentDayPhase();
-  uint8_t sourcePhase=(phase==3)?2:(phase==1?0:1); // jour, après-midi, nuit
-  const BattleBgRef &asset=BATTLE_BG_ASSETS[biome<6?biome:0][sourcePhase];
-  uint32_t pixel=0;
-  for(uint16_t i=0;i<asset.rleSize;i+=2) {
-    uint16_t left=pgm_read_byte(&asset.rle[i]);
-    uint8_t palette=pgm_read_byte(&asset.rle[i+1]);
-    uint16_t color=pgm_read_word(&asset.pal[palette]);
-    while(left) {
-      uint16_t sx=pixel%BATTLE_BG_W;
-      uint16_t sy=pixel/BATTLE_BG_W;
-      uint16_t rowLeft=BATTLE_BG_W-sx;
-      uint16_t take=left<rowLeft?left:rowLeft;
-      int dy=(int)((uint32_t)sy*320/BATTLE_BG_H);
-      int dy2=(int)((uint32_t)(sy+1)*320/BATTLE_BG_H);
-      gfx->fillRect(-23+sx*2,dy,take*2,dy2-dy,color);
-      pixel+=take;
-      left-=take;
-    }
-  }
-}
-
 const char *biomeChooseTitle() {
   static const char *const L[LANG_COUNT]={
     "ELIGE BIOMA","CHOOSE BIOME","CHOISIS UN BIOME","BIOM WAHLEN","SCEGLI BIOMA","ESCOLHE BIOMA"
@@ -3744,73 +3913,68 @@ const char *battleBiomeName(uint8_t biome) {
   return L[gLang<LANG_COUNT?gLang:LANG_EN][biome<7?biome:0];
 }
 
-void biomeTilePosition(uint8_t biome,int &x,int &y) {
-  if (biome<6) { x=54+(biome&1)*188; y=78+(biome>>1)*68; }
-  else { x=148; y=282; }
-}
-
-void drawSkyBiomeBackground() {
-  uint16_t top=C565(0x25,0x75,0xc4), bottom=C565(0x9d,0xdc,0xf2);
-  for(int y=0;y<320;y+=8) gfx->fillRect(0,y,466,8,lerp565(top,bottom,y,320));
-  const int cloudX[5]={54,150,255,355,420};
-  const int cloudY[5]={102,182,78,222,145};
-  for(uint8_t i=0;i<5;i++) {
-    gfx->fillCircle(cloudX[i],cloudY[i],24,UI_WHITE);
-    gfx->fillCircle(cloudX[i]+24,cloudY[i]+5,19,UI_WHITE);
-    gfx->fillCircle(cloudX[i]-22,cloudY[i]+8,16,UI_WHITE);
-    gfx->fillRect(cloudX[i]-22,cloudY[i]+5,46,20,UI_WHITE);
-  }
+void biomeBubblePosition(uint8_t biome,int &cx,int &cy) {
+  static const int16_t X[7]={112,233,354,72,179,287,394};
+  static const int16_t Y[7]={126,126,126,252,252,252,252};
+  uint8_t i=biome<7?biome:0;
+  cx=X[i]; cy=Y[i];
 }
 
 void drawBiomeIcon(uint8_t biome,int cx,int cy) {
-  if (biome==0) {
-    gfx->fillRect(cx-28,cy+8,56,12,C565(0x54,0xb8,0x48));
-    for(int x=-24;x<=24;x+=8) gfx->drawFastVLine(cx+x,cy+1+(abs(x)%5),12,C565(0x9a,0xdd,0x68));
-  } else if (biome==1) {
-    gfx->fillRect(cx-30,cy-4,60,24,C565(0x38,0x9f,0xdf));
-    gfx->drawFastHLine(cx-25,cy+2,22,UI_WHITE); gfx->drawFastHLine(cx+4,cy+10,20,UI_WHITE);
-  } else if (biome==2) {
-    gfx->fillRect(cx-4,cy+2,8,22,C565(0x78,0x4c,0x28));
-    gfx->fillCircle(cx,cy-5,18,C565(0x32,0x91,0x47));
-    gfx->fillCircle(cx-15,cy+1,11,C565(0x45,0xb2,0x58));
-    gfx->fillCircle(cx+15,cy+1,11,C565(0x45,0xb2,0x58));
-  } else if (biome==3) {
-    gfx->fillTriangle(cx-27,cy+22,cx,cy-17,cx+27,cy+22,C565(0x65,0x42,0x38));
-    gfx->fillTriangle(cx-8,cy-6,cx,cy-17,cx+8,cy-6,C565(0xff,0x75,0x28));
-    gfx->drawFastVLine(cx,cy-26,8,C565(0xff,0xc0,0x45));
-  } else if (biome==4) {
-    gfx->fillTriangle(cx-31,cy+22,cx-8,cy-14,cx+12,cy+22,C565(0x8a,0x82,0x78));
-    gfx->fillTriangle(cx-8,cy+22,cx+13,cy-22,cx+34,cy+22,C565(0xb0,0xa7,0x98));
-    gfx->fillTriangle(cx+4,cy-4,cx+13,cy-22,cx+22,cy-4,UI_WHITE);
-  } else if (biome==5) {
-    for(int i=0;i<6;i++) {
-      int x=cx-25+(i%3)*25, y=cy-13+(i/3)*25;
-      gfx->drawFastHLine(x-5,y,11,UI_WHITE); gfx->drawFastVLine(x,y-5,11,UI_WHITE);
-      gfx->drawLine(x-4,y-4,x+4,y+4,UI_WHITE); gfx->drawLine(x+4,y-4,x-4,y+4,UI_WHITE);
+  uint8_t index=biome<7?biome:0;
+  const uint8_t *pixels=BIOME_THUMB_PIXELS[index];
+  const uint16_t *palette=BIOME_THUMB_PALETTES[index];
+  int left=cx-BIOME_THUMB_W/2;
+  int top=cy-BIOME_THUMB_H/2;
+  for(int y=0;y<BIOME_THUMB_H;y++) {
+    int x=0;
+    while(x<BIOME_THUMB_W) {
+      uint8_t color=pgm_read_byte(&pixels[(uint16_t)y*BIOME_THUMB_W+x]);
+      int start=x++;
+      while(x<BIOME_THUMB_W && pgm_read_byte(&pixels[(uint16_t)y*BIOME_THUMB_W+x])==color) x++;
+      if(color!=BIOME_THUMB_TRANSPARENT)
+        gfx->fillRect(left+start,top+y,x-start,1,pgm_read_word(&palette[color]));
     }
-  } else {
-    gfx->fillCircle(cx-16,cy+4,15,UI_WHITE);
-    gfx->fillCircle(cx+2,cy-3,20,UI_WHITE);
-    gfx->fillCircle(cx+22,cy+5,14,UI_WHITE);
-    gfx->fillRect(cx-18,cy+4,42,15,UI_WHITE);
+  }
+}
+
+void drawBiomeCanvasBackground(uint8_t biome) {
+  // Sept decors originaux, composes specialement pour le cadran rond. Chaque
+  // ressource 233x233 est affichee en pixel-perfect x2 sur les 466x466 pixels.
+  // Aucune petite vignette n'est etiree et aucun ancien sol n'est superpose.
+  uint8_t index=biome<7?biome:0;
+  const uint16_t *runs=RADAR_BIOME_RUNS[index];
+  const uint16_t *palette=RADAR_BIOME_PALETTES[index];
+  uint16_t x=0,y=0;
+  for(uint32_t i=0;i<RADAR_BIOME_RUN_COUNTS[index] && y<RADAR_BIOME_H;i++) {
+    uint16_t packed=pgm_read_word(&runs[i]);
+    uint16_t length=packed>>6;
+    uint8_t color=packed&0x3f;
+    gfx->fillRect(x*2,y*2,length*2,2,pgm_read_word(&palette[color]));
+    x+=length;
+    if(x>=RADAR_BIOME_W) { x=0; y++; }
   }
 }
 
 void renderBiomeSelection() {
   biomeDirty=false;
   if (biomeSearchUntil) {
-    gfx->fillScreen(C565(0x0d,0x16,0x27));
-    if (biomeSelected<6) drawBattleBackgroundBiome(biomeSelected);
-    else drawSkyBiomeBackground();
+    drawBiomeCanvasBackground(biomeSelected);
     gfx->fillRoundRect(76,24,314,58,18,C565(0x12,0x20,0x35));
     gfx->drawRoundRect(76,24,314,58,18,C565(0x61,0xda,0xf2));
     gfx->setTextColor(UI_WHITE); gfx->setTextSize(2);
     const char *search=biomeSearchText();
     gfx->setCursor(CX-(int)strlen(search)*6,46); gfx->print(search);
     uint8_t pulse=(millis()/260)%4;
-    for(uint8_t i=0;i<4;i++) gfx->drawCircle(CX,205,38+i*18,(i==pulse)?UI_WHITE:C565(0x52,0xa8,0xc8));
-    gfx->drawFastHLine(CX-62,205,124,C565(0x61,0xda,0xf2));
-    gfx->drawFastVLine(CX,143,124,C565(0x61,0xda,0xf2));
+    static const int16_t radarRadius[4]={48,92,136,180};
+    for(uint8_t i=0;i<4;i++) {
+      gfx->drawCircle(CX,CY,radarRadius[i]+1,C565(0x08,0x12,0x20));
+      gfx->drawCircle(CX,CY,radarRadius[i],(i==pulse)?UI_WHITE:C565(0x61,0xda,0xf2));
+    }
+    gfx->drawFastHLine(CX-180,CY+1,360,C565(0x08,0x12,0x20));
+    gfx->drawFastVLine(CX+1,CY-180,360,C565(0x08,0x12,0x20));
+    gfx->drawFastHLine(CX-180,CY,360,C565(0x61,0xda,0xf2));
+    gfx->drawFastVLine(CX,CY-180,360,C565(0x61,0xda,0xf2));
     gfx->fillRoundRect(104,354,258,54,16,C565(0x12,0x20,0x35));
     gfx->setTextColor(UI_WHITE); gfx->setTextSize(2);
     const char *name=battleBiomeName(biomeSelected);
@@ -3820,18 +3984,32 @@ void renderBiomeSelection() {
   }
 
   gfx->fillScreen(C565(0x0a,0x12,0x22));
+  // Halo discret adapte a l'ecran rond : les choix restent lisibles sans
+  // recreer de grands cadres rectangulaires.
+  gfx->drawCircle(CX,CY,214,C565(0x18,0x2b,0x42));
+  gfx->drawCircle(CX,CY,213,C565(0x10,0x20,0x35));
   gfx->setTextColor(UI_WHITE); gfx->setTextSize(2);
   const char *title=biomeChooseTitle();
   gfx->setCursor(CX-(int)strlen(title)*6,40); gfx->print(title);
+  const uint16_t colors[7]={C565(0x36,0x8e,0x45),C565(0x2f,0x83,0xc7),C565(0x20,0x69,0x3b),C565(0xb8,0x48,0x28),C565(0x70,0x69,0x62),C565(0x88,0xb8,0xd8),C565(0x4f,0x98,0xd8)};
   for(uint8_t biome=0;biome<7;biome++) {
-    int x,y; biomeTilePosition(biome,x,y);
-    uint16_t colors[7]={C565(0x36,0x8e,0x45),C565(0x2f,0x83,0xc7),C565(0x20,0x69,0x3b),C565(0xb8,0x48,0x28),C565(0x70,0x69,0x62),C565(0x88,0xb8,0xd8),C565(0x4f,0x98,0xd8)};
-    gfx->fillRoundRect(x,y,170,58,14,colors[biome]);
-    gfx->drawRoundRect(x,y,170,58,14,UI_WHITE);
-    drawBiomeIcon(biome,x+40,y+27);
+    int cx,cy; biomeBubblePosition(biome,cx,cy);
+    uint16_t dark=lerp565(colors[biome],C565(0x00,0x00,0x00),5,16);
+    uint16_t light=lerp565(colors[biome],UI_WHITE,4,16);
+    // Ombre, double contour et reflet donnent une vraie petite bulle.
+    gfx->fillCircle(cx+3,cy+5,48,C565(0x04,0x09,0x12));
+    gfx->fillCircle(cx,cy,48,dark);
+    gfx->fillCircle(cx,cy,44,colors[biome]);
+    gfx->drawCircle(cx,cy,47,C565(0x80,0xd9,0xf0));
+    gfx->drawCircle(cx,cy,43,light);
+    gfx->drawArc(cx,cy,35,38,205,315,light);
+    drawBiomeIcon(biome,cx,cy);
     const char *name=battleBiomeName(biome);
     gfx->setTextColor(UI_WHITE); gfx->setTextSize(1);
-    gfx->setCursor(x+102-(int)strlen(name)*3,y+26); gfx->print(name);
+    int labelW=max(54,(int)strlen(name)*6+14);
+    gfx->fillRoundRect(cx-labelW/2,cy+29,labelW,21,10,C565(0x0d,0x18,0x29));
+    gfx->drawRoundRect(cx-labelW/2,cy+29,labelW,21,10,light);
+    gfx->setCursor(cx-(int)strlen(name)*3,cy+36); gfx->print(name);
   }
   gfx->fillRoundRect(136,358,194,42,12,UI_TRACK);
   gfx->setTextColor(uiContrastText(UI_TRACK)); gfx->setTextSize(2);
@@ -3846,8 +4024,9 @@ void biomeTap(int16_t x,int16_t y) {
     biomeSelectOpen=false; biomeDirty=true; markUiDirty(); lockTouchBrief(); sfxPlay(SFX_TAP); return;
   }
   for(uint8_t biome=0;biome<7;biome++) {
-    int bx,by; biomeTilePosition(biome,bx,by);
-    if(x<bx || x>bx+170 || y<by || y>by+58) continue;
+    int bx,by; biomeBubblePosition(biome,bx,by);
+    int32_t dx=x-bx,dy=y-by;
+    if(dx*dx+dy*dy>58L*58L) continue;
     biomeSelected=biome;
     biomeSearchDex=pickWildSpeciesForBiome(biome,(uint32_t)random(0x7FFFFFFF));
     biomeSearchLevel=wildLevelFor(pet.level(),(uint8_t)random(100));
@@ -3994,10 +4173,9 @@ void renderBattle() {
   const DexEntry &mine = DEX_TBL[playerDex];
   const DexEntry &foe = DEX_TBL[battleDex];
   uint8_t biome=battleEnvironmentBiome>=0?(uint8_t)battleEnvironmentBiome:(mine.biome<6?mine.biome:0);
-  static const uint16_t skies[7]={C565(0xe8,0xf3,0xd9),C565(0xd9,0xf4,0xfa),C565(0xdf,0xef,0xd4),C565(0xed,0xd8,0xc6),C565(0xf1,0xe4,0xcf),C565(0xe9,0xf3,0xfa),C565(0x9d,0xdc,0xf2)};
-  uint16_t sky=skies[biome];
-  gfx->fillScreen(sky);
-  if (biome<6) drawBattleBackgroundBiome(biome); else drawSkyBiomeBackground();
+  // Le combat conserve exactement le decor plein cadran choisi au radar.
+  // Les plateformes, sprites et barres de PV sont dessines ensuite par-dessus.
+  drawBiomeCanvasBackground(biome);
   drawBattleBaseFor(battleGroundStyleForDex(battleDex),true);
   drawBattleBaseFor(battleGroundStyleForDex(playerDex),false);
 
@@ -4449,6 +4627,11 @@ static const char *displayBoxLabel() {
   return L[gLang];
 }
 
+static const char *displayArenaLabel() {
+  static const char *const L[LANG_COUNT]={"ARENAS","GYMS","ARENES","ARENEN","PALESTRE","ARENAS"};
+  return L[gLang<LANG_COUNT?gLang:LANG_EN];
+}
+
 void drawSettingsTitle(const char *title);
 
 void drawBoxBackgroundAsset(uint8_t style,int x0,int y0,int scale) {
@@ -4540,13 +4723,14 @@ void renderFrameSettings() {
 void renderDisplaySettings() {
   clockDirty=false; gfx->fillScreen(uiBg());
   drawSettingsTitle(T(S_DISPLAY_LABEL));
-  drawSettingsRow(64,82,338,48,T(S_MODE_LABEL),darkMode?T(S_DARK):T(S_LIGHT),darkMode);
-  drawSettingsRow(64,144,338,48,displayFrameLabel(),frameTemplateName(pet.collectionFrame),false);
+  drawSettingsRow(64,76,338,42,T(S_MODE_LABEL),darkMode?T(S_DARK):T(S_LIGHT),darkMode);
+  drawSettingsRow(64,126,338,42,displayFrameLabel(),frameTemplateName(pet.collectionFrame),false);
   char boxVal[12]; snprintf(boxVal,sizeof(boxVal),"%u/16",(unsigned)(pet.boxBackground+1));
-  drawSettingsRow(64,206,338,48,displayBoxLabel(),boxVal,false);
+  drawSettingsRow(64,176,338,42,displayBoxLabel(),boxVal,false);
+  drawSettingsRow(64,226,338,42,displayArenaLabel(),showHomeGym?T(S_ON):T(S_OFF),showHomeGym);
   char langVal[10]; snprintf(langVal,sizeof(langVal),"%s",LANG_CODES[gLang]);
-  drawSettingsRow(64,268,164,42,T(S_LANG_LABEL),langVal,false);
-  drawSettingsRow(238,268,164,42,T(S_POWER_SAVE_LABEL),powerSave?T(S_ON):T(S_OFF),powerSave);
+  drawSettingsRow(64,276,164,38,T(S_LANG_LABEL),langVal,false);
+  drawSettingsRow(238,276,164,38,T(S_POWER_SAVE_LABEL),powerSave?T(S_ON):T(S_OFF),powerSave);
   gfx->fillRoundRect(128,342,210,46,14,UI_BAR_OK);
   gfx->setTextColor(UI_WHITE); gfx->setTextSize(2); gfx->setCursor(CX-12,356); gfx->print("OK");
   gfx->flush();
@@ -4599,15 +4783,18 @@ void renderTimeSettings() {
 void renderSoundSettings() {
   clockDirty=false; gfx->fillScreen(uiBg());
   drawSettingsTitle(T(S_SOUND_LABEL));
+  static const char *const musicLabels[LANG_COUNT]={"MUSICA","MUSIC","MUSIQUE","MUSIK","MUSICA","MUSICA"};
+  drawSettingsRow(64,76,338,48,musicLabels[gLang<LANG_COUNT?gLang:LANG_EN],
+                  audioMusicEnabled()?T(S_ON):T(S_OFF),audioMusicEnabled());
   static const StrId modes[4]={S_SND_FULL,S_SND_MED,S_SND_LOW,S_SND_OFF};
   static const uint8_t values[4]={SOUND_FULL,SOUND_MED,SOUND_LOW,SOUND_OFF};
   for(uint8_t i=0;i<4;i++) {
     bool active=audioMode()==values[i];
-    drawSettingsRow(64,92+i*62,338,48,T(modes[i]),active ? T(S_ACTIVE) : "",active);
+    drawSettingsRow(64,146+i*50,338,44,T(modes[i]),active ? T(S_ACTIVE) : "",active);
   }
-  gfx->fillRoundRect(128,358,210,46,14,UI_BAR_OK);
+  gfx->fillRoundRect(128,360,210,46,14,UI_BAR_OK);
   gfx->setTextColor(UI_WHITE); gfx->setTextSize(2);
-  gfx->setCursor(CX-12,372); gfx->print("OK");
+  gfx->setCursor(CX-12,374); gfx->print("OK");
   gfx->flush();
 }
 
@@ -4677,11 +4864,17 @@ void renderClock() {
 
 void clockTap(int16_t x,int16_t y) {
   if (settingsPage==2) {
-    if (y>=350 && y<=420) {
+    if (y>=352 && y<=420) {
       settingsPage=0; clockDirty=true; sfxPlay(SFX_TAP); lockTouchBrief(); return;
     }
-    if (x>=54 && x<=412 && y>=82 && y<=342) {
-      uint8_t row=(uint8_t)((y-82)/62);
+    if (x>=54 && x<=412 && y>=68 && y<=132) {
+      audioSetMusicEnabled(!audioMusicEnabled());
+      clockDirty=true;
+      sfxPlay(SFX_LEVEL);
+      return;
+    }
+    if (x>=54 && x<=412 && y>=140 && y<=346) {
+      uint8_t row=(uint8_t)((y-140)/50);
       static const uint8_t values[4]={SOUND_FULL,SOUND_MED,SOUND_LOW,SOUND_OFF};
       if(row<4) { audioSetMode(values[row]); clockDirty=true; if(audioEnabled()) sfxPlay(SFX_LEVEL); return; }
     }
@@ -4743,16 +4936,19 @@ void clockTap(int16_t x,int16_t y) {
     if (x>=118 && x<=348 && y>=330 && y<=410) {
       settingsPage=0; clockDirty=true; sfxPlay(SFX_TAP); lockTouchBrief(); return;
     }
-    if (x>=54 && x<=412 && y>=72 && y<=140) {
+    if (x>=54 && x<=412 && y>=68 && y<=122) {
       setDarkMode(!darkMode); clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
     }
-    if (x>=54 && x<=412 && y>=138 && y<=200) {
+    if (x>=54 && x<=412 && y>=122 && y<=172) {
       settingsPage=5; clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
     }
-    if (x>=54 && x<=412 && y>=200 && y<=262) {
+    if (x>=54 && x<=412 && y>=172 && y<=222) {
       boxBgPreview=pet.boxBackground; settingsPage=6; clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
     }
-    if (y>=260 && y<=326) {
+    if (x>=54 && x<=412 && y>=222 && y<=272) {
+      setHomeGymVisible(!showHomeGym); clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
+    }
+    if (y>=272 && y<=326) {
       if (x>=54 && x<=232) setLang((Lang)((gLang+1)%LANG_COUNT));
       else if (x>=232 && x<=412) setPowerSave(!powerSave);
       clockDirty=true; sfxPlay(SFX_MENU); lockTouchBrief(); return;
@@ -4998,63 +5194,64 @@ void drawMedalBadge(int x, int y, int i) {
   gfx->print(medalLabel(i));
 }
 
-// pagina 0: perfil (retrato grande, identidad, racha, vinculo, baya)
+// Page 0 : fiche principale compacte, portrait a gauche et informations a droite.
 void renderCardProfile() {
   const DexEntry &d = DEX_TBL[pet.speciesId];
   const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
-  char head[26];
-  snprintf(head, sizeof(head), T(S_NAME_FMT), pet.shiny ? "*" : "", nm, pet.level());
+  int nameLen=strlen(nm);
+  int nameSize=nameLen<=12?3:2;
   gfx->setTextColor(d.accent);
-  // auto-encoge: a tamano 3 los nombres largos no caben en la franja estrecha de
-  // arriba de la pantalla redonda, asi que se cortaban por el borde
-  int hlen = strlen(head);
-  int hts = (hlen <= 11) ? 3 : 2;
-  gfx->setTextSize(hts);
-  gfx->setCursor(CX - hlen * (hts == 3 ? 9 : 6), hts == 3 ? 34 : 40);
-  gfx->print(head);
-  if (pet.nick[0]) {  // especie real bajo el apodo
-    gfx->setTextColor(uiSub());
-    gfx->setTextSize(2);
-    const char *speciesName = dexName(pet.speciesId);
-    gfx->setCursor(CX - (strlen(speciesName) + 2) * 6, 64);
-    gfx->printf("(%s)", speciesName);
-  }
+  gfx->setTextSize(nameSize);
+  gfx->setCursor(CX-nameLen*(nameSize==3?9:6),30);
+  if(pet.shiny) gfx->print("*");
+  gfx->print(nm);
 
-  // retrato grande animado mit dem aktuell ausgewaehlten Sammlerrahmen
-  // Le cadre entoure la silhouette, pas le point d'ancrage situe aux pieds.
-  drawCollectionFrame(CX, 146, 98, pet.collectionFrame);
-  if (pmd.loaded) drawPmdAct(PMD_IDLE, CX, 206, millis(), true, false, 4);
+  const char *speciesName=dexName(pet.speciesId);
+  gfx->setTextColor(uiSub()); gfx->setTextSize(1);
+  gfx->setCursor(CX-(int)strlen(speciesName)*3,62); gfx->print(speciesName);
+  gfx->setCursor(CX-(int)strlen(T(S_RENAME_HINT))*3,76); gfx->print(T(S_RENAME_HINT));
 
-  // racha con llama
-  int sx = 138, sy = 224;
-  gfx->fillTriangle(sx + 8, sy, sx + 1, sy + 18, sx + 15, sy + 18, UI_BAR_BAD);
-  gfx->fillTriangle(sx + 8, sy + 7, sx + 4, sy + 18, sx + 12, sy + 18, UI_BAR_WARN);
-  char rl[30];
-  snprintf(rl, sizeof(rl), T(S_STREAK_FMT), pet.streak, pet.bestStreak);
-  gfx->setTextColor(uiInk());
-  gfx->setTextSize(2);
-  gfx->setCursor(sx + 24, sy + 2);
-  gfx->print(rl);
+  // Portrait isole dans une carte : le sprite ne se melange plus aux valeurs.
+  gfx->fillRoundRect(54,94,220,166,18,uiPanel());
+  gfx->drawRoundRect(54,94,220,166,18,uiLine());
+  drawCollectionFrame(164,174,72,pet.collectionFrame);
+  if(pmd.loaded) drawPmdAct(PMD_IDLE,164,232,millis(),true,false,3);
 
-  drawCardStat(258, T(S_VIN), pet.bond, 100, C565(0xd4, 0x52, 0x7e));
+  // Niveau.
+  gfx->fillRoundRect(286,94,126,48,12,lerp565(d.accent,uiPanel(),2,5));
+  gfx->setTextColor(uiContrastText(lerp565(d.accent,uiPanel(),2,5))); gfx->setTextSize(1);
+  gfx->setCursor(300,104); gfx->print(T(S_PROGRESS));
+  char levelText[16]; snprintf(levelText,sizeof(levelText),T(S_LVL_FMT),pet.level());
+  gfx->setTextSize(2); gfx->setCursor(300,120); gfx->print(levelText);
+
+  // Lien.
+  gfx->fillRoundRect(286,150,126,48,12,uiPanel());
+  gfx->drawRoundRect(286,150,126,48,12,C565(0xd4,0x52,0x7e));
+  gfx->setTextColor(uiSub()); gfx->setTextSize(1); gfx->setCursor(300,160); gfx->print(T(S_VIN));
+  char bondText[12]; snprintf(bondText,sizeof(bondText),"%u/100",pet.bond);
+  gfx->setTextColor(uiInk()); gfx->setTextSize(2); gfx->setCursor(300,176); gfx->print(bondText);
+
+  // Serie actuelle et meilleur score de combat.
+  gfx->fillRoundRect(286,206,126,54,12,uiPanel());
+  gfx->drawRoundRect(286,206,126,54,12,UI_BAR_WARN);
+  gfx->setTextColor(uiSub()); gfx->setTextSize(1); gfx->setCursor(300,216); gfx->print("SERIE / MAX");
+  char streakText[14]; snprintf(streakText,sizeof(streakText),"%u / %u",pet.streak,pet.bestStreak);
+  gfx->setTextColor(uiInk()); gfx->setTextSize(2); gfx->setCursor(300,234); gfx->print(streakText);
 
   const char *berry = !pet.berryKnown ? T(S_BERRY_UNK)
                       : pet.lovesBerry(0) ? T(S_BERRY_RED)
                       : pet.lovesBerry(1) ? T(S_BERRY_BLUE)
                                           : T(S_BERRY_GREEN);
-  char info[40];
-  snprintf(info, sizeof(info), T(S_INFO_FMT), berry,
-           (unsigned long)(pet.ageMinutes / 1440));
-  gfx->setTextColor(uiInk());
-  gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(info) * 6, 296);
-  gfx->print(info);
-
-  gfx->setTextColor(uiSub());
-  gfx->setCursor(CX - strlen(T(S_RENAME_HINT)) * 6, 326);
-  gfx->print(T(S_RENAME_HINT));
-
-
+  gfx->fillRoundRect(82,274,302,58,14,uiPanel());
+  gfx->drawRoundRect(82,274,302,58,14,uiLine());
+  static const char *const berryLabel[LANG_COUNT]={"BAYA","BERRY","BAIE","BEERE","BACCA","BAGA"};
+  gfx->setTextColor(uiSub()); gfx->setTextSize(1);
+  gfx->setCursor(98,286); gfx->print(berryLabel[gLang<LANG_COUNT?gLang:LANG_EN]);
+  gfx->setTextColor(uiInk()); gfx->setTextSize(2);
+  gfx->setCursor(98,304); gfx->print(berry);
+  char ageText[24]; snprintf(ageText,sizeof(ageText),T(S_AGE_DAYS_FMT),(unsigned long)(pet.ageMinutes/1440));
+  gfx->setTextColor(uiSub()); gfx->setTextSize(1);
+  gfx->setCursor(278,286); gfx->print(ageText);
 }
 
 StrId personalityNameId(PetPersonality p) {
@@ -5291,9 +5488,11 @@ StrId dailyGoalLabelId(uint8_t goalType) {
   switch (goalType) {
     case DAILY_GOAL_CARE: return S_GOAL_CARE;
     case DAILY_GOAL_PLAY: return S_GOAL_PLAY;
-    case DAILY_GOAL_BATTLE: return S_GOAL_BATTLE;
+    case DAILY_GOAL_BATTLE: return S_BATTLE;
     case DAILY_GOAL_CATCH: return S_GOAL_CATCH;
     case DAILY_GOAL_MEMO: return S_GOAL_MEMO;
+    case DAILY_GOAL_FEED: return S_ITEM_SNACK;
+    case DAILY_GOAL_CLEAN: return S_GAME_CLEAN;
     default: return S_GOAL_CARE;
   }
 }
@@ -5305,6 +5504,8 @@ uint16_t dailyGoalColor(uint8_t goalType) {
     case DAILY_GOAL_BATTLE: return UI_BAR_BAD;
     case DAILY_GOAL_CATCH: return UI_BAR_OK;
     case DAILY_GOAL_MEMO: return 0x4C98;
+    case DAILY_GOAL_FEED: return C565(0xf0, 0x8a, 0x45);
+    case DAILY_GOAL_CLEAN: return C565(0x48, 0xc7, 0xe8);
     default: return UI_INK;
   }
 }
@@ -5313,29 +5514,37 @@ uint16_t dailyTextColor() {
   return darkMode ? UI_WHITE : UI_INK;
 }
 
+StrId dailyRewardLabelId(ExpeditionItem item) {
+  switch (item) {
+    case EXP_ITEM_SNACK: return S_ITEM_SNACK;
+    case EXP_ITEM_ENERGY: return S_ITEM_ENERGY;
+    case EXP_ITEM_CARE: return S_ITEM_CARE;
+    case EXP_ITEM_TRAIN: return S_ITEM_TRAIN;
+    default: return S_REWARD;
+  }
+}
+
 void drawDailyGoalRow(int y, uint8_t idx) {
   uint8_t type = pet.dailyGoalType[idx];
   uint8_t target = pet.dailyGoalTarget(type);
   uint8_t progress = pet.dailyGoalProgress[idx] > target ? target : pet.dailyGoalProgress[idx];
   bool done = pet.dailyGoalComplete(idx);
   uint16_t col = dailyGoalColor(type);
-  gfx->fillRoundRect(58, y, 350, 52, 12, done ? col : uiPanel());
-  gfx->drawRoundRect(58, y, 350, 52, 12, col);
+  gfx->fillRoundRect(48, y, 370, 58, 14, done ? col : uiPanel());
+  gfx->drawRoundRect(48, y, 370, 58, 14, col);
   gfx->setTextSize(2);
   gfx->setTextColor(dailyTextColor());
-  gfx->setCursor(82, y + 18);
+  gfx->setCursor(68, y + 11);
   gfx->print(T(dailyGoalLabelId(type)));
 
   char prog[12];
   snprintf(prog, sizeof(prog), "%u/%u", progress, target);
-  gfx->setCursor(286, y + 18);
-  gfx->print(done ? T(S_DONE) : prog);
-  if (done) {
-    gfx->fillCircle(374, y + 26, 12, UI_BG_DAY);
-    gfx->setTextColor(dailyTextColor());
-    gfx->setCursor(368, y + 18);
-    gfx->print("v");
-  }
+  const char *rightText = done ? T(S_DONE) : prog;
+  gfx->setCursor(397 - strlen(rightText) * 12, y + 11);
+  gfx->print(rightText);
+  gfx->fillRoundRect(68, y + 38, 326, 7, 3, uiLine());
+  int fill = target ? (326 * progress) / target : 0;
+  if (fill > 0) gfx->fillRoundRect(68, y + 38, fill, 7, 3, col);
 }
 
 // pagina 2: objetivos diarios
@@ -5343,16 +5552,29 @@ void renderCardDaily() {
   pet.ensureDailyGoals();
   gfx->setTextColor(dailyTextColor());
   gfx->setTextSize(3);
-  gfx->setCursor(CX - strlen(T(S_DAILY)) * 9, 44);
+  gfx->setCursor(CX - strlen(T(S_DAILY)) * 9, 32);
   gfx->print(T(S_DAILY));
   const char *phase = T(dayPhaseTextId(currentDayPhase()));
   gfx->setTextColor(dailyTextColor());
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(phase) * 6, 74);
+  gfx->setCursor(CX - strlen(phase) * 6, 61);
   gfx->print(phase);
 
+  ExpeditionItem reward = pet.dailyRewardItem();
+  gfx->fillRoundRect(48, 82, 370, 40, 12, uiPanel());
+  gfx->drawRoundRect(48, 82, 370, 40, 12, UI_BAR_WARN);
+  gfx->setTextColor(UI_BAR_WARN);
+  gfx->setTextSize(2);
+  gfx->setCursor(68, 94);
+  gfx->print(T(S_REWARD));
+  gfx->setTextColor(dailyTextColor());
+  gfx->setCursor(174, 94);
+  gfx->print(T(dailyRewardLabelId(reward)));
+  gfx->setCursor(372, 94);
+  gfx->print("+1");
+
   for (uint8_t i = 0; i < DAILY_GOAL_COUNT; i++) {
-    drawDailyGoalRow(104 + i * 70, i);
+    drawDailyGoalRow(136 + i * 66, i);
   }
 }
 
@@ -6069,26 +6291,25 @@ void renderCardKantoGyms() {
 
 void renderCard() {
   cardDirty = false;
-  if(cardPage!=3) boxSelectionDex=0;
+  if(cardPage!=1) boxSelectionDex=0;
   gfx->fillScreen(uiBg());
   // Mode cover : 600x432, centré et rogné par l'écran rond. Le décor déborde
   // volontairement à gauche, à droite et en haut pour ne laisser aucune marge.
-  if (cardPage == 3) drawBoxBackgroundAsset(pet.boxBackground,-67,-20,4);
+  if (cardPage == 1) drawBoxBackgroundAsset(pet.boxBackground,-67,-20,4);
   if (cardPage == 0) renderCardProfile();
-  else if (cardPage == 1) renderCardPersonality();
-  else if (cardPage == 2) renderCardDaily();
-  else if (cardPage == 3) renderCardBox();
-  else if (cardPage == 4) renderCardStats();
-  else if (cardPage == 5) renderCardMedals();
-  else if (cardPage == 6) renderCardProgress();
-  else if (cardPage == 7) renderCardExpedition();
-  else if (cardPage == 8) renderCardRecords();
-  else renderCardKantoGyms();
+  else if (cardPage == 1) renderCardBox();
+  else if (cardPage == 2) renderCardStats();
+  else if (cardPage == 3) renderCardKantoGyms();
+  else if (cardPage == 4) renderCardPersonality();
+  else if (cardPage == 5) renderCardDaily();
+  else if (cardPage == 6) renderCardMedals();
+  else if (cardPage == 7) renderCardProgress();
+  else renderCardExpedition();
 
   // Pages remontées + vrai bouton RETOUR.
   int navY = 360;
-  uint16_t navInk = cardPage == 2 ? dailyTextColor() : uiInk();
-  uint16_t navSub = cardPage == 2 ? dailyTextColor() : uiSub();
+  uint16_t navInk = cardPage == 5 ? dailyTextColor() : uiInk();
+  uint16_t navSub = cardPage == 5 ? dailyTextColor() : uiSub();
   uint16_t prevCol = cardPage > 0 ? navInk : navSub;
   uint16_t nextCol = cardPage + 1 < CARD_COUNT ? navInk : navSub;
   gfx->fillRoundRect(76, navY, 56, 42, 12, uiPanel());
@@ -6190,7 +6411,7 @@ void keyboardTap(int16_t x, int16_t y) {
 #define GAL_Y 82
 #define GAL_CELL 72
 #define GAL_COLS 4
-#define GAL_ROWS 4
+#define GAL_ROWS 3
 #define GAL_PAGE_SIZE (GAL_COLS * GAL_ROWS)
 
 int galleryPageCount() {
@@ -6248,6 +6469,11 @@ void drawPokedexShell(bool detail) {
 
 const char *pokedexInfoLabel() {
   static const char *const L[LANG_COUNT]={"INFORMACION","INFORMATION","INFORMATIONS","INFORMATION","INFORMAZIONI","INFORMACOES"};
+  return L[gLang<LANG_COUNT?gLang:LANG_EN];
+}
+
+const char *pokedexSeenLabel() {
+  static const char *const L[LANG_COUNT]={"VISTOS","SEEN","VUS","GESEHEN","VISTI","VISTOS"};
   return L[gLang<LANG_COUNT?gLang:LANG_EN];
 }
 
@@ -6401,6 +6627,18 @@ void renderGallery() {
       }
     }
   }
+
+  // Compteur Pokédex : espèces vues, jamais le nombre possédé dans la Boîte.
+  // knownDexCount additionne les rencontres enregistrées et les captures sans
+  // confondre ce total avec caughtCount().
+  char seenText[28];
+  snprintf(seenText,sizeof(seenText),"%s %u/%u",pokedexSeenLabel(),
+           (unsigned)pet.knownDexCount(),(unsigned)DEX_COUNT);
+  gfx->fillRoundRect(142,314,182,34,11,uiPanel());
+  gfx->drawRoundRect(142,314,182,34,11,uiLine());
+  gfx->setTextColor(uiInk()); gfx->setTextSize(2);
+  gfx->setCursor(CX-(int)strlen(seenText)*6,325); gfx->print(seenText);
+
   // Navigation latérale : aucune rangée de petites billes.
   int pages = galleryPageCount();
   if (galleryPage > 0) {
@@ -7095,17 +7333,41 @@ void drawBar(int x, int y, const char *label, uint8_t val) {
   if (fw > 0) gfx->fillRoundRect(bx + 2, y + 2, fw, bh - 4, 3, fill);
 }
 
+void drawHomeGamepadIcon(int cx, int cy) {
+  // Sprite pixel-art transparent 18x10, reduit pour rester dans le bouton.
+  static const char *const px[10] = {
+    ".....11111111.....", "...112222222211...", "..12222222222221..",
+    ".12233222224455221", "122333222244455221", "122232222222245221",
+    "122222266222222221", ".1222222222222221.", "..11222222222211..",
+    "...11..........11."
+  };
+  const uint16_t pal[7] = {
+    0, C565(0x1d,0x27,0x3b), C565(0xa9,0xb8,0xd2), C565(0x2d,0x38,0x50),
+    C565(0x36,0x9d,0xe8), C565(0xef,0x4b,0x5e), C565(0x55,0x65,0x7f)
+  };
+  const int scale = 2, ox = cx - 18, oy = cy - 10;
+  for (int py = 0; py < 10; py++) {
+    for (int pxl = 0; pxl < 18; pxl++) {
+      uint8_t p = (uint8_t)(px[py][pxl] - '0');
+      if (p >= 1 && p <= 6) gfx->fillRect(ox + pxl * scale, oy + py * scale, scale, scale, pal[p]);
+    }
+  }
+}
+
 void drawButtons() {
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 5; i++) {
     bool off = pet.sleeping && i != 2;  // durmiendo solo funciona LUZ
     int frame = buttons[i].frameSize;
     int bx = buttons[i].cx - frame / 2, by = buttons[i].cy - frame / 2;
     if (!pet.sleeping) gfx->fillRoundRect(bx, by, frame, frame, 14, uiPanel());
     gfx->drawRoundRect(bx, by, frame, frame, 14, inkColor());
     if (!off) {
-      if (i == 1) {
+      if (i == 4) {
         drawBattleCaughtBall(buttons[i].cx + buttons[i].iconDx,
                              buttons[i].cy + buttons[i].iconDy, 29, 31);
+      } else if (i == 1) {
+        drawHomeGamepadIcon(buttons[i].cx + buttons[i].iconDx,
+                            buttons[i].cy + buttons[i].iconDy);
       } else {
         drawMapSized(buttons[i].icon, 16,
                      buttons[i].cx + buttons[i].iconDx,

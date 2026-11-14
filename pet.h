@@ -51,6 +51,8 @@ enum DailyGoalType : uint8_t {
   DAILY_GOAL_BATTLE,
   DAILY_GOAL_CATCH,
   DAILY_GOAL_MEMO,
+  DAILY_GOAL_FEED,
+  DAILY_GOAL_CLEAN,
 };
 #define DAILY_GOAL_COUNT 3
 
@@ -184,11 +186,13 @@ public:
   uint8_t applyMemoResult(uint8_t rounds);
   uint8_t applyCleanResult(uint8_t score);
   uint8_t applyTypeResult(uint8_t score);
+  uint8_t applyRunnerResult(uint8_t score);
   bool applyPetEvent(uint8_t eventType);
   uint8_t interactPet(bool eveningBonus);
   PetPersonality personality() const;
   void ensureDailyGoals();
   uint8_t dailyGoalTarget(uint8_t goalType) const;
+  ExpeditionItem dailyRewardItem() const;
   bool dailyGoalComplete(uint8_t index) const;
   uint8_t trainStrength(uint16_t hits);  // saco de entrenamiento (entrena FUE)
   BattleReward applyBattleWin(int16_t wildDex, bool closeWin);

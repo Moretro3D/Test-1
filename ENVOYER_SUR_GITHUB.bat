@@ -27,11 +27,16 @@ if errorlevel 1 goto :connexion
 git -c safe.directory="%CD%" reset --mixed origin/main
 if errorlevel 1 goto :connexion
 
-echo Preparation de la version officielle V11...
+rem Le pack complet depasse la limite GitHub de 100 Mo. Il ne change pas dans
+rem cette mise a jour : conserver strictement la copie deja publiee.
+git -c safe.directory="%CD%" checkout origin/main -- web/sprites.pak
+if errorlevel 1 goto :connexion
+
+echo Preparation de la version officielle V12...
 git -c safe.directory="%CD%" add -A
 git -c safe.directory="%CD%" diff --cached --quiet
 if errorlevel 1 (
-  git -c safe.directory="%CD%" commit -m "PokeTama V12 biome Ciel"
+  git -c safe.directory="%CD%" commit -m "PokeTama V12 quotidien et profils microSD"
   if errorlevel 1 goto :connexion
 )
 

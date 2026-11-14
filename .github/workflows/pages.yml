@@ -1,4 +1,4 @@
-name: PokeTama V11 - Web Flasher
+name: PokeTama V12 - Web Flasher
 on:
   push:
     branches: ["main"]
@@ -12,12 +12,14 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
-    name: Compiler et preparer le Web Flasher V11
+    name: Compiler et preparer le Web Flasher V12
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - name: Tests moteur
         run: make -C tests clean && make -C tests test
+      - name: Verifier qu'aucune sauvegarde personnelle ne sera publiee
+        run: python3 tools/audit_no_personal_save.py
       - uses: arduino/setup-arduino-cli@v2
         with:
           version: "1.x"
@@ -68,6 +70,14 @@ jobs:
         run: python3 tools/audit_battle_sprite_sizes.py
       - name: Verifier la page et les binaires
         run: python3 tools/verify_web.py
+      - name: Verifier que la page correspond exactement au firmware
+        run: |
+          grep -q '1.50.7-moretro3d-v12-biome-battles-clean' web/manifest.json
+          grep -q 'id="cries"' web/index.html
+          grep -q 'id="cries"' web/shopify.html
+          grep -q 'cries-installer.js?v=1.50.0' web/index.html
+          test -s web/cries-installer.js
+          grep -q 'for(let id=1;id<=386;id++)' web/cries-installer.js
       - name: Afficher directement le Web Flasher sur Test-2
         if: github.repository == 'Moretro3D/Test-2'
         run: |
