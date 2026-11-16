@@ -75,7 +75,8 @@ jobs:
           grep -q '1.50.8-moretro3d-v12-runner-display-fix' web/manifest.json
           grep -q 'id="cries"' web/index.html
           grep -q 'id="cries"' web/shopify.html
-          grep -q 'cries-installer.js?v=1.50.0' web/index.html
+          grep -q 'cries-installer.js?v=1.50.8' web/index.html
+          grep -q 'https://moretro3d.github.io/Test-1/cries-installer.js?v=1.50.8' web/shopify.html
           test -s web/cries-installer.js
           grep -q 'for(let id=1;id<=386;id++)' web/cries-installer.js
       - name: Afficher directement le Web Flasher sur Test-2

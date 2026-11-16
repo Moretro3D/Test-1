@@ -113,8 +113,13 @@ ok("/cries/%03u.wav" in audio and "WAVE" in audio and "playSpeciesChirp" in audi
    "386 cris fideles convertis en WAV 16 kHz sur SD avec secours synthetique")
 ok('id="cries"' in (ROOT/"web/index.html").read_text(encoding="utf-8") and
    'id="cries"' in (ROOT/"web/shopify.html").read_text(encoding="utf-8") and
-   "cries-installer.js?v=1.50.0" in (ROOT/"web/index.html").read_text(encoding="utf-8"),
+   "cries-installer.js?v=1.50.8" in (ROOT/"web/index.html").read_text(encoding="utf-8") and
+   "https://moretro3d.github.io/Test-1/cries-installer.js?v=1.50.8" in (ROOT/"web/shopify.html").read_text(encoding="utf-8"),
    "bouton Cris integre aux importateurs USB GitHub et Shopify")
+ok((ROOT/"web/index.html").read_text(encoding="utf-8").count("installAuthenticCries()") == 1 and
+   (ROOT/"web/shopify.html").read_text(encoding="utf-8").count("installAuthenticCries()") == 1 and
+   "document.getElementById('cries').onclick = () => installAuthenticCries();" in (ROOT/"web/shopify.html").read_text(encoding="utf-8"),
+   "cris conserves sur un bouton separe pour reinstallation independante")
 ok("Verifier que la page correspond exactement au firmware" in workflow and
    'grep -q \'id="cries"\' web/index.html' in workflow and
    (ROOT/"ENVOYER_FIRMWARE_ET_PAGE_OFFICIELLE.bat").exists() and
