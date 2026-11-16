@@ -4,6 +4,7 @@
 (function(){
   const CRY_BASE='https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/legacy/';
   const TARGET_RATE=16000;
+  const cryEncoder=new TextEncoder();
 
   function putAscii(view, offset, text){
     for(let i=0;i<text.length;i++) view.setUint8(offset+i,text.charCodeAt(i));
@@ -68,17 +69,15 @@
     setControls(true);
     const bar=options.bar||document.getElementById('bar'),fill=bar?(bar.firstElementChild||bar):null;
     if(bar) bar.style.display='block'; if(fill){ fill.style.width='0%'; fill.value=0; }
-    cryLog('Préparation du dossier /cries sans toucher aux sauvegardes…');
-    await cryWriter.write(enc.encode('PREPARE_CRIES\n'));
-    if(!await cryWait('READY',120000)){
-      cryLog('ÉCHEC MICROSD : impossible de préparer le dossier des cris.');
-      button.disabled=false; setControls(false);
-      return;
-    }
-    const AudioCtor=window.AudioContext||window.webkitAudioContext;
-    if(!AudioCtor){ cryLog('Ce navigateur ne peut pas convertir les fichiers audio. Utilise Chrome ou Edge.'); button.disabled=false; setControls(false); return; }
-    const ctx=new AudioCtor();
+    let ctx=null;
     try{
+      cryLog('Préparation du dossier /cries sans toucher aux sauvegardes…');
+      await cryWriter.write(cryEncoder.encode('PREPARE_CRIES\n'));
+      if(!await cryWait('READY',120000)) throw new Error('microSD non prête ou réponse USB absente');
+      if(fill){ fill.style.width='1%'; fill.value=1; }
+      const AudioCtor=window.AudioContext||window.webkitAudioContext;
+      if(!AudioCtor) throw new Error('conversion audio indisponible : utilise Chrome ou Edge');
+      ctx=new AudioCtor();
       cryLog('Téléchargement, conversion et copie des 386 cris fidèles…');
       for(let id=1;id<=386;id++){
         const wav=await fetchCry(id,ctx);
@@ -91,7 +90,7 @@
     }catch(error){
       cryLog('ÉCHEC CRIS : '+error.message+'. Relance le bouton pour recommencer proprement.');
     }finally{
-      await ctx.close();
+      if(ctx) await ctx.close();
       button.disabled=false; setControls(false);
     }
   };
