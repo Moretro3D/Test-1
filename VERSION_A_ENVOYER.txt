@@ -1,6 +1,6 @@
 PokeTama V12
 
-VERSION INTERNE : 1.50.7-moretro3d-v12-biome-battles-clean
+VERSION INTERNE : 1.50.8-moretro3d-v12-runner-display-fix
 
 NOUVEAUTES :
 - Réglages séparés pour la musique et les sons d'interaction.

@@ -9,7 +9,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 FQBN="esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
-VERSION="1.50.7-moretro3d-v12-biome-battles-clean"
+VERSION="1.50.8-moretro3d-v12-runner-display-fix"
 
 echo "Préparation du sketch TamaPoke..."
 python3 "$ROOT/tools/audit_no_personal_save.py"

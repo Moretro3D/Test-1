@@ -40,7 +40,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.50.7-moretro3d-v12-biome-battles-clean"
+#define FW_VERSION "1.50.8-moretro3d-v12-runner-display-fix"
 #define HELP_PAGE_COUNT 6
 #define HELP_LINE_COUNT 6
 
@@ -595,7 +595,11 @@ uint16_t renderIntervalMs() {
   if (screenOff) return 5000;
 
   if (battleOpen) return battleResolved ? 210 : 125;
-  if (gameOpen && gameMode == 5) return 33;  // course fluide a environ 30 images/s
+  // La course garde une physique calculee avec le temps reel, mais limite les
+  // transferts plein ecran. A 30 i/s, certaines revisions AMOLED recevaient le
+  // frame suivant avant la fin du DMA precedent et affichaient un bref ecran
+  // noir. 58 ms reste fluide visuellement et laisse une marge sure au panneau.
+  if (gameOpen && gameMode == 5) return 58;
   if (gameOpen || sackOpen) return 78;
 
   // Pages statiques pilotées par Dirty : faible latence sans redraw permanent.
